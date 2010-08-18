@@ -1,0 +1,13 @@
+on boot
+#    setprop net.eth0.dns1 10.32.192.11
+#    setprop net.eth0.dns2 10.32.193.11
+    setprop ro.build.product smdkc110
+    setprop ro.product.device smdkc110
+    setprop ro.radio.noril yes
+
+# fake some battery state
+    setprop status.battery.state Slow
+    setprop status.battery.level 5
+    setprop status.battery.level_raw  50
+    setprop status.battery.level_scale 9
+
