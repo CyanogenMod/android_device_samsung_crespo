@@ -56,3 +56,6 @@ endif
 # to build the bootloader you need the common boot stuff,
 # the architecture specific stuff, and the board specific stuff
 # include bootloader/legacy/Android.mk
+
+# Use the non-open-source parts, if they're present
+-include vendor/samsung/crespo/AndroidBoardVendor.mk

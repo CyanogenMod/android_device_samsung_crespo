@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# config.mk
+# BoardConfig.mk
 # 
 # Product-specific compile-time definitions.
 #
+
+# Use the non-open-source parts, if they're present
+-include vendor/samsung/crespo/BoardConfigVendor.mk
 
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
