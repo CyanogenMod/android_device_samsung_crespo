@@ -14,6 +14,24 @@
 
 LOCAL_PATH := $(call my-dir)
 
+file := $(TARGET_OUT_KEYLAYOUT)/s3c-keypad.kl
+ALL_PREBUILT += $(file)
+$(file) : $(LOCAL_PATH)/s3c-keypad.kl | $(ACP)
+	$(transform-prebuilt-to-target)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := s3c-keypad.kcm
+include $(BUILD_KEY_CHAR_MAP)
+
+file := $(TARGET_OUT_KEYLAYOUT)/melfas-touchkey.kl
+ALL_PREBUILT += $(file)
+$(file) : $(LOCAL_PATH)/melfas-touchkey.kl | $(ACP)
+	$(transform-prebuilt-to-target)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := melfas-touchkey.kcm
+include $(BUILD_KEY_CHAR_MAP)
+
 include $(CLEAR_VARS)
 target_init_rc_file := $(TARGET_ROOT_OUT)/init.rc
 $(target_init_rc_file) : $(LOCAL_PATH)/init.rc | $(ACP)
