@@ -1,0 +1,31 @@
+This version of the ALSA library was obtained from the following location:
+ftp://ftp.alsa-project.org/pub/lib/alsa-lib-1.0.19.tar.bz2
+
+This package was (previously in 1.0.16) configured with the following options:
+
+./configure \
+ --disable-debug \
+ --disable-resmgr \
+ --enable-aload \
+ --enable-mixer \
+ --enable-pcm \
+ --disable-rawmidi \
+ --enable-hwdep \
+ --disable-seq \
+ --disable-alisp \
+ --disable-old-symbols \
+ --disable-python \
+ --with-confdir=/system/usr/share/alsa \
+ --with-plugindir=/system/usr/lib/alsa-lib \
+ --with-versioned=no \
+ --with-debug=no \
+ --with-tmpdir=/tmp \
+ --with-softfloat=yes \
+ --with-libdl=yes \
+ --with-pthread=yes \
+ --with-librt=no \
+ --with-alsa-devdir=/dev/snd \
+ --with-aload-devdir=/dev \
+ --with-pcm-plugins="plug null empty hooks asym extplug ioplug" \
+ --with-ctl-plugins="ext"
+
