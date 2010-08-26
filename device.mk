@@ -38,6 +38,11 @@ PRODUCT_COPY_FILES += \
        vendor/samsung/crespo/libpvrANDROID_WSEGL.so:system/lib/libpvrANDROID_WSEGL.so \
        vendor/samsung/crespo/pvrsrvinit:system/bin/pvrsrvinit
 endif
+PRODUCT_COPY_FILES += \
+	vendor/samsung/crespo/libril.so:system/lib/libril.so \
+	vendor/samsung/crespo/libsec-ril.so:system/lib/libsec-ril.so \
+	vendor/samsung/crespo/libsecril-client.so:system/lib/libsecril-client.so \
+	vendor/samsung/crespo/rild:system/bin/rild \
 
 # Get non-open-source aspects if available
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor.mk)
