@@ -19,15 +19,15 @@
 # product configuration (apps).
 #
 
-$(call inherit-product, build/target/product/generic.mk)
-
+$(call inherit-product, $(SRC_TARGET_DIR)/product/generic.mk)
+$(call inherit-product, device/samsung/crespo/device.mk)
 
 # Overrides
 PRODUCT_MANUFACTURER := samsung
 PRODUCT_NAME := crespo
 PRODUCT_DEVICE := crespo
 PRODUCT_MODEL := Andorid on Crespo
-PRODUCT_LOCALES += en_US hdpi 
+PRODUCT_LOCALES += en_US hdpi
 
 PRODUCT_PROPERTY_OVERRIDES += \
         keyguard.no_require_sim=true
