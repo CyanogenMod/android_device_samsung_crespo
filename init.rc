@@ -44,6 +44,7 @@ loglevel 3
     mkdir /data 0771 system system
     mkdir /cache 0770 system cache
     mkdir /config 0500 root root
+    mkdir /efs 0664 radio radio
 
     # Directory for putting things only root should see.
     mkdir /mnt/secure 0700 root root
@@ -99,6 +100,7 @@ on fs
     mount yaffs2 mtd@system /system ro remount
     mount yaffs2 mtd@userdata /data nosuid nodev
     mount yaffs2 mtd@cache /cache nosuid nodev
+    mount yaffs2 mtd@efs /efs nosuid nodev
 
 on post-fs
     # We chown/chmod /data again so because mount is run as root + defaults
@@ -268,6 +270,9 @@ on boot
     # dev files for 3D
 	chmod 0666 /dev/pvrsrvkm
 
+    # for phone
+    chown radio radio /dev/onedram
+    chmod 0664 /dev/onedram
 
 # Define TCP buffer sizes for various networks
 #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
