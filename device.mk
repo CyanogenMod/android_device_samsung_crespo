@@ -20,6 +20,9 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_COPY_FILES += \
        device/samsung/crespo/egl.cfg:system/lib/egl/egl.cfg
+	
+PRODUCT_PROPERTY_OVERRIDES := \
+       wifi.interface=eth0
 
 # Get non-open-source aspects if available
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor.mk)
