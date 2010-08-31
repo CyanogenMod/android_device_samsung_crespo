@@ -32,8 +32,7 @@ ifeq ($(TARGET_BOARD_PLATFORM),s5pc100)
   LOCAL_CFLAGS += -DSLSI_S5PC100
 endif
 
-  LOCAL_C_INCLUDES += external/alsa-lib/include
-
+  LOCAL_C_INCLUDES += device/samsung/crespo/alsa-lib/include
   LOCAL_SRC_FILES := AudioHardwareALSA.cpp
 
   LOCAL_MODULE := libaudio

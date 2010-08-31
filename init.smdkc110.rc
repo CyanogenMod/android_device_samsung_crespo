@@ -11,3 +11,15 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
+# wi-fi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/wpa_supplicant.conf
+   socket wpa_eth0 dgram 0660 wifi wifi
+   disabled
+   oneshot
+
+service dhcpcd /system/bin/dhcpcd -ABKL
+   disabled
+   oneshot

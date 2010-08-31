@@ -28,7 +28,7 @@
 #include <hardware/hardware.h>
 
 // sangsu fix : headers for IPC
-#include "../libsecril-client/secril-client.h"
+#include "secril-client.h"
 
 // sangsu fix : defines for IPC
 #define OEM_FUNCTION_ID_SOUND 0x08 // sound Main Cmd
