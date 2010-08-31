@@ -19,8 +19,9 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/vold.fstab:system/etc/vold.fstab
 
 PRODUCT_COPY_FILES += \
-       device/samsung/crespo/egl.cfg:system/lib/egl/egl.cfg
-	
+	device/samsung/crespo/egl.cfg:system/lib/egl/egl.cfg \
+	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.distinct.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.distinct.xml
+
 PRODUCT_PROPERTY_OVERRIDES := \
        wifi.interface=eth0 \
        dalvik.vm.heapsize=24m
