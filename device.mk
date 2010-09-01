@@ -71,6 +71,9 @@ PRODUCT_PROPERTY_OVERRIDES := \
        wifi.interface=eth0 \
        dalvik.vm.heapsize=24m
 
+# we have enough storage space to hold precise GC data
+PRODUCT_TAGS += dalvik.gc.type-precise
+
 # Screen density is actually considered a locale (since it is taken into account
 # the the build-time selection of resources). The product definitions including
 # this file must pay attention to the fact that the first entry in the final
