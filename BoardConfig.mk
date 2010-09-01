@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # BoardConfig.mk
-# 
+#
 # Product-specific compile-time definitions.
 #
 
@@ -62,3 +62,5 @@ BOARD_NAND_PAGE_SIZE := 4096 -s 128
 
 BOARD_KERNEL_BASE := 0x30000000
 BOARD_KERNEL_PAGESIZE := 4096
+
+TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
