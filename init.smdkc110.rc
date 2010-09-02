@@ -15,6 +15,22 @@ on boot
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
 
+# create data/gps for GPS demon
+    chown root system /dev/s3c2410_serial1
+    chmod 664 /dev/s3c2410_serial1
+    mkdir /data/gps 771 system system
+    chown system system /data/gps
+    chown root system /sys/class/sec/gps/GPS_PWR_EN/value
+    chmod 664 /sys/class/sec/gps/GPS_PWR_EN/value
+    chown root system /sys/class/gpio/gpio104/value
+    chmod 664 /sys/class/gpio/gpio104/value
+    chown root system /sys/class/gpio/gpio105/value
+    chmod 664 /sys/class/gpio/gpio105/value
+    
+service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
+    user system
+    group system inet
+        
 service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/wpa_supplicant.conf
    socket wpa_eth0 dgram 0660 wifi wifi
    disabled
