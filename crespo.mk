@@ -26,7 +26,7 @@ $(call inherit-product, device/samsung/crespo/device.mk)
 PRODUCT_MANUFACTURER := samsung
 PRODUCT_NAME := crespo
 PRODUCT_DEVICE := crespo
-PRODUCT_MODEL := Andorid on Crespo
+PRODUCT_MODEL := Android on Crespo
 PRODUCT_LOCALES += en_US hdpi
 
 PRODUCT_PROPERTY_OVERRIDES += \
