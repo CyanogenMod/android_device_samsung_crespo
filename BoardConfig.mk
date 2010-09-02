@@ -17,6 +17,9 @@
 # Product-specific compile-time definitions.
 #
 
+# Set this up here so that BoardVendorConfig.mk can override it
+BOARD_USES_GENERIC_AUDIO := true
+
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/BoardConfigVendor.mk
 
@@ -42,7 +45,6 @@ ARCH_ARM_HAVE_TLS_REGISTER := true
 # Enable JIT
 WITH_JIT := true
 
-BOARD_USES_GENERIC_AUDIO := false
 ifeq ($(BOARD_USES_GENERIC_AUDIO),false)
 BOARD_USES_ALSA_AUDIO := true
 BUILD_WITH_ALSA_UTILS := true
