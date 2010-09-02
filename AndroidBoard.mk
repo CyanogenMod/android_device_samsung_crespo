@@ -14,40 +14,13 @@
 
 LOCAL_PATH := $(call my-dir)
 
-file := $(TARGET_OUT_KEYLAYOUT)/s3c-keypad.kl
-ALL_PREBUILT += $(file)
-$(file) : $(LOCAL_PATH)/s3c-keypad.kl | $(ACP)
-	$(transform-prebuilt-to-target)
-
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := s3c-keypad.kcm
 include $(BUILD_KEY_CHAR_MAP)
 
-file := $(TARGET_OUT_KEYLAYOUT)/melfas-touchkey.kl
-ALL_PREBUILT += $(file)
-$(file) : $(LOCAL_PATH)/melfas-touchkey.kl | $(ACP)
-	$(transform-prebuilt-to-target)
-
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := melfas-touchkey.kcm
 include $(BUILD_KEY_CHAR_MAP)
-
-include $(CLEAR_VARS)
-target_init_rc_file := $(TARGET_ROOT_OUT)/init.rc
-$(target_init_rc_file) : $(LOCAL_PATH)/init.rc | $(ACP)
-	$(transform-prebuilt-to-target)
-ALL_PREBUILT += $(target_init_rc_file)
-
-target_hw_init_rc_file := $(TARGET_ROOT_OUT)/init.smdkc110.rc
-$(target_hw_init_rc_file) : $(LOCAL_PATH)/init.smdkc110.rc | $(ACP)
-	$(transform-prebuilt-to-target)
-ALL_PREBUILT += $(target_hw_init_rc_file)
-
-$(INSTALLED_RAMDISK_TARGET): $(target_init_rc_file) $(target_hw_init_rc_file) 
-
-# to build the bootloader you need the common boot stuff,
-# the architecture specific stuff, and the board specific stuff
-# include bootloader/legacy/Android.mk
 
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/AndroidBoardVendor.mk
