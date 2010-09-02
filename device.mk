@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+DEVICE_PACKAGE_OVERLAYS := device/samsung/crespo/overlay
+
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/asound.conf:system/etc/asound.conf \
 	device/samsung/crespo/vold.conf:system/etc/vold.conf \
