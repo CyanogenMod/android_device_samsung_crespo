@@ -53,10 +53,15 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/init.rc:root/init.rc \
 	device/samsung/crespo/init.smdkc110.rc:root/init.smdkc110.rc
 
-# Prebuilt keymaps
+# Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
 	device/samsung/crespo/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl
+
+# Generated kcm keymaps
+PRODUCT_PACKAGES := \
+	s3c-keypad.kcm \
+	melfas-touchkey.kcm
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \

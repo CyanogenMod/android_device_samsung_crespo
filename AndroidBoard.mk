@@ -14,13 +14,5 @@
 
 LOCAL_PATH := $(call my-dir)
 
-include $(CLEAR_VARS)
-LOCAL_SRC_FILES := s3c-keypad.kcm
-include $(BUILD_KEY_CHAR_MAP)
-
-include $(CLEAR_VARS)
-LOCAL_SRC_FILES := melfas-touchkey.kcm
-include $(BUILD_KEY_CHAR_MAP)
-
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/AndroidBoardVendor.mk
