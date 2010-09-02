@@ -22,7 +22,7 @@
 
 #define LOG_TAG "copybit"
 
-#define LOG_DEBUG 0
+//#define LOG_DEBUG 0
 
 #define USE_HW_PMEM
 #define USE_SGX_GRALLOC
@@ -613,7 +613,10 @@ static int stretch_copybit(struct copybit_device_t *dev,
 	int status = 0, ret = 0;
 
 	if ((ret = can_support_rgb(ctx, src->format)) < 0)
+	{
+		LOGE("%s::sec_stretch: not support src->format = 0x%x", __func__, src->format);
 		return -1;
+	}
 
 	if (ctx)
 	{
@@ -825,6 +828,9 @@ static int sec_stretch(struct copybit_context_t *ctx,
 	unsigned int 	dst_phys_addr  	= 0;
 	int          	rotate_value   	= 0;
 	int          	flag_force_memcpy = 0;
+	int32_t			src_color_space;
+	int32_t			dst_color_space;
+
 
 	// 1 : source address and size
 	// becase of tierring issue...very critical..
@@ -838,34 +844,21 @@ static int sec_stretch(struct copybit_context_t *ctx,
 	if(0 == (dst_phys_addr = get_dst_phys_addr(ctx, dst_img, dst_rect, &flag_force_memcpy)))
 		return -2;
 
-	// PP(FIMC) handles YUV format
-	if (COPYBIT_FORMAT_YCbCr_422_SP <= src_img->format)
-	{
-		unsigned int	thru_g2d_path	= 0;
-		int32_t			src_color_space;
-		int32_t			dst_color_space;
+	// check whether fimc supports the src format
+	if (0 > (src_color_space = colorFormatCopybit2PP(src_img->format)))
+		return -3;
 
-		// check whether fimc supports the src format
-		if (0 > (src_color_space = colorFormatCopybit2PP(src_img->format)))
-			return -3;
+	if (0 > (dst_color_space = colorFormatCopybit2PP(dst_img->format)))
+		return -4;
 
-		if (0 > (dst_color_space = colorFormatCopybit2PP(dst_img->format)))
-			return -4;
-
-		if(doPP(ctx, src_phys_addr, src_img, src_rect, (uint32_t)src_color_space,
+	if(doPP(ctx, src_phys_addr, src_img, src_rect, (uint32_t)src_color_space,
 			         dst_phys_addr, dst_img, dst_rect, (uint32_t)dst_color_space, ctx->mFlags) < 0) 
-			return -5;
-	}
-	else
-	{
-		return -11;
-	}
+		return -5;
 
 	if(flag_force_memcpy == 1)
 	{
 #ifdef USE_HW_PMEM
-		if (0 != ctx->sec_pmem.sec_pmem_alloc[1].size)
-		{
+		if (0 != ctx->sec_pmem.sec_pmem_alloc[1].size) {
 			struct s3c_mem_dma_param s3c_mem_dma;
 
 			s3c_mem_dma.src_addr = (unsigned long)(ctx->sec_pmem.sec_pmem_alloc[1].virt_addr);
@@ -873,8 +866,7 @@ static int sec_stretch(struct copybit_context_t *ctx,
 			ioctl(ctx->s3c_mem.dev_fd, S3C_MEM_CACHE_INV, &s3c_mem_dma);
 
 			memcpy((void*)((unsigned int)dst_img->base), (void *)(ctx->sec_pmem.sec_pmem_alloc[1].virt_addr), ctx->sec_pmem.sec_pmem_alloc[1].size);
-		}
-		else
+		} else
 #endif
 		{
 			struct s3c_mem_alloc *s3c_mem  	= &ctx->s3c_mem.mem_alloc[1];
@@ -1240,16 +1232,14 @@ static int doPP(struct copybit_context_t *ctx,
 	params->src.buf_addr_phy_rgb_y 	= src_phys_addr;
 
 	// check minimum
-	if (src_rect->w < 16 || src_rect->h < 8) 
-	{
+	if (src_rect->w < 16 || src_rect->h < 8) {
 		LOGE("%s src size is not supported by fimc : f_w=%d f_h=%d x=%d y=%d w=%d h=%d (ow=%d oh=%d) format=0x%x", __func__,
 			params->src.full_width, params->src.full_height, params->src.start_x, params->src.start_y, 
 			params->src.width, params->src.height, src_rect->w, src_rect->h, params->src.color_space);
 		return -1;
 	}
 
-	if (90 == rotate_value || 270 == rotate_value)
-	{
+	if (90 == rotate_value || 270 == rotate_value) {
 		params->dst.full_width  = dst_img->height;
 		params->dst.full_height = dst_img->width;
 
@@ -1261,9 +1251,7 @@ static int doPP(struct copybit_context_t *ctx,
 
 		if (0x50 != s5p_fimc->hw_ver)
 			params->dst.start_y     += (dst_rect->w - params->dst.height);
-	}
-	else
-	{
+	} else {
 		params->dst.full_width  = dst_img->width;
 		params->dst.full_height = dst_img->height;
 
@@ -1277,8 +1265,7 @@ static int doPP(struct copybit_context_t *ctx,
 	params->dst.color_space = dst_color_space;
 
 	// check minimum
-	if (dst_rect->w < 8 || dst_rect->h < 4) 
-	{
+	if (dst_rect->w < 8 || dst_rect->h < 4) {
 		LOGE("%s dst size is not supported by fimc : f_w=%d f_h=%d x=%d y=%d w=%d h=%d (ow=%d oh=%d) format=0x%x", __func__, 
 			params->dst.full_width, params->dst.full_height, params->dst.start_x, params->dst.start_y, 
 			params->dst.width, params->dst.height, dst_rect->w, dst_rect->h, params->dst.color_space);
@@ -1291,8 +1278,7 @@ static int doPP(struct copybit_context_t *ctx,
 	 *   - set input buffer
 	 *   - set buffer type (V4L2_MEMORY_USERPTR)
 	 */
-	if (fimc_v4l2_set_src(s5p_fimc->dev_fd, s5p_fimc->hw_ver, &params->src) < 0) 
-	{
+	if (fimc_v4l2_set_src(s5p_fimc->dev_fd, s5p_fimc->hw_ver, &params->src) < 0) {
 		return -1;
 	}
 
@@ -1302,25 +1288,27 @@ static int doPP(struct copybit_context_t *ctx,
 	 *   - set input buffer
 	 *   - set buffer type (V4L2_MEMORY_USERPTR)
 	 */
-	if (fimc_v4l2_set_dst(s5p_fimc->dev_fd, &params->dst, rotate_value, dst_phys_addr) < 0) 
-	{
+	if (fimc_v4l2_set_dst(s5p_fimc->dev_fd, &params->dst, rotate_value, dst_phys_addr) < 0) {
 		return -1;
 	}
 
 	// set input dma address (Y/RGB, Cb, Cr)
-	if (COPYBIT_FORMAT_CUSTOM_YCbCr_420_SP == src_img->format || COPYBIT_FORMAT_CUSTOM_YCrCb_420_SP == src_img->format) //Kamat
+	switch (src_img->format) 
 	{
+	case COPYBIT_FORMAT_CUSTOM_YCbCr_420_SP:
+	case COPYBIT_FORMAT_CUSTOM_YCrCb_420_SP:
 		// for video contents zero copy case
 		fimc_src_buf.base[0]	= params->src.buf_addr_phy_rgb_y;
 		fimc_src_buf.base[1]	= params->src.buf_addr_phy_cb; 
-	}
-	else if (COPYBIT_FORMAT_CUSTOM_YCbCr_422_I == src_img->format || COPYBIT_FORMAT_CUSTOM_CbYCrY_422_I == src_img->format) //Kamat
-	{
+		break;
+
+	case COPYBIT_FORMAT_CUSTOM_YCbCr_422_I:
+	case COPYBIT_FORMAT_CUSTOM_CbYCrY_422_I:
+	case COPYBIT_FORMAT_RGB_565:
 		// for camera capture zero copy case
 		fimc_src_buf.base[0]	= params->src.buf_addr_phy_rgb_y;
-	}
-	else
-	{
+
+	default:
 		// set source image
 		src_bpp		= get_yuv_bpp(src_color_space);
 		src_planes 	= get_yuv_planes(src_color_space);
@@ -1349,8 +1337,7 @@ static int doPP(struct copybit_context_t *ctx,
 		}
 	}
 
-	if (fimc_handle_oneshot(s5p_fimc->dev_fd, &fimc_src_buf) < 0)
-	{
+	if (fimc_handle_oneshot(s5p_fimc->dev_fd, &fimc_src_buf) < 0) {
 		fimc_v4l2_clr_buf(s5p_fimc->dev_fd);
 		return -1;
 	}
@@ -1953,7 +1940,7 @@ static int can_support_rgb(struct copybit_context_t *ctx, int32_t format)
 {
 	switch(format)
 	{
-		case COPYBIT_FORMAT_RGB_565:
+		//case COPYBIT_FORMAT_RGB_565:
 		case COPYBIT_FORMAT_RGBA_8888:
 		case COPYBIT_FORMAT_RGBX_8888:
 		case COPYBIT_FORMAT_BGRA_8888:
