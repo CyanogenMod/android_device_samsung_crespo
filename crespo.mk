@@ -14,7 +14,7 @@
 
 #
 # This file is the build configuration for a full Android
-# build for dream hardware. This cleanly combines a set of
+# build for crespo hardware. This cleanly combines a set of
 # device-specific aspects (drivers) with a device-agnostic
 # product configuration (apps).
 #
