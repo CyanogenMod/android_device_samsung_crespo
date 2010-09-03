@@ -68,8 +68,11 @@ PRODUCT_COPY_FILES += \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES := \
-       wifi.interface=eth0 \
-       dalvik.vm.heapsize=24m
+	wifi.interface=eth0 \
+	dalvik.vm.heapsize=24m \
+	rild.libpath=/system/lib/libsec-ril.so \
+	rild.libargs=-d /dev/ttyS0 \
+	ro.sf.lcd_density=240
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
