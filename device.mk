@@ -48,6 +48,21 @@ PRODUCT_COPY_FILES := \
 	device/samsung/crespo/vold.fstab:system/etc/vold.fstab \
 	device/samsung/crespo/egl.cfg:system/lib/egl/egl.cfg
 
+# Init files
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/init.rc:root/init.rc \
+	device/samsung/crespo/init.smdkc110.rc:root/init.smdkc110.rc
+
+# Prebuilt kl keymaps
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
+	device/samsung/crespo/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl
+
+# Generated kcm keymaps
+PRODUCT_PACKAGES := \
+	s3c-keypad.kcm \
+	melfas-touchkey.kcm
+
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
@@ -59,8 +74,6 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
 	frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
 	frameworks/base/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
-	frameworks/base/data/etc/android.software.sip.xml:system/etc/permissions/android.software.sip.xml \
-	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
 	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.distinct.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.distinct.xml \
 	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
@@ -68,8 +81,11 @@ PRODUCT_COPY_FILES += \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES := \
-       wifi.interface=eth0 \
-       dalvik.vm.heapsize=24m
+	wifi.interface=eth0 \
+	dalvik.vm.heapsize=24m \
+	rild.libpath=/system/lib/libsec-ril.so \
+	rild.libargs=-d /dev/ttyS0 \
+	ro.sf.lcd_density=240
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise

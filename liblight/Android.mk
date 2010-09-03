@@ -13,25 +13,21 @@
 # limitations under the License.
 
 ifeq ($(TARGET_DEVICE),crespo)
-ifeq ($(BOARD_USES_COPYBIT),true)
 
 LOCAL_PATH:= $(call my-dir)
+# HAL module implemenation, not prelinked and stored in
+# hw/<COPYPIX_HARDWARE_MODULE_ID>.<ro.board.platform>.so
 include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := lights.c
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
-LOCAL_SHARED_LIBRARIES := liblog libutils
 
-LOCAL_CFLAGS  += -DDEFAULT_FB_NUM=$(DEFAULT_FB_NUM) -DSLSI_S5PC110
+LOCAL_SHARED_LIBRARIES := liblog
 
-LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/../include \
-	hardware/libhardware/modules/gralloc
+LOCAL_MODULE := lights.$(TARGET_BOARD_PLATFORM)
 
-LOCAL_SRC_FILES := copybit.cpp
-
-LOCAL_MODULE := copybit.$(TARGET_BOARD_PLATFORM)
 include $(BUILD_SHARED_LIBRARY)
 
-endif
 endif

@@ -1,3 +1,5 @@
+ifeq ($(TARGET_DEVICE),crespo)
+
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -9,3 +11,5 @@ LOCAL_SRC_FILES := recovery_ui.c
 LOCAL_MODULE := librecovery_ui_crespo
 
 include $(BUILD_STATIC_LIBRARY)
+
+endif

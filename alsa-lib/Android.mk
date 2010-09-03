@@ -3,6 +3,7 @@
 # Copyright 2008 Wind River Systems
 #
 
+ifeq ($(TARGET_DEVICE),crespo)
 ifeq ($(strip $(BOARD_USES_ALSA_AUDIO)),true)
 
 LOCAL_PATH := $(call my-dir)
@@ -72,5 +73,6 @@ LOCAL_SRC_FILES := $(filter-out src/shmarea.c, $(LOCAL_SRC_FILES))
 
 include $(BUILD_STATIC_LIBRARY)
 
+endif
 endif
 

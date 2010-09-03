@@ -1,3 +1,4 @@
+ifeq ($(TARGET_DEVICE),crespo)
 # When zero we link against libqcamera; when 1, we dlopen libqcamera.
 ifeq ($(BOARD_CAMERA_LIBRARIES),libcamera)
 
@@ -42,4 +43,4 @@ LOCAL_MODULE:= libcamera
 include $(BUILD_SHARED_LIBRARY)
 
 endif
-
+endif
