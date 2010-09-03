@@ -39,3 +39,6 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wif
 service dhcpcd /system/bin/dhcpcd -ABKL
    disabled
    oneshot
+
+# Permissions for System Server and daemons.
+   chown system system /sys/class/backlight/s5p_bl/brightness
