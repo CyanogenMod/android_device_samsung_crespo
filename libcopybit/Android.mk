@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(TARGET_DEVICE),crespo)
 ifeq ($(BOARD_USES_COPYBIT),true)
 
 LOCAL_PATH:= $(call my-dir)
@@ -32,4 +33,5 @@ LOCAL_SRC_FILES := copybit.cpp
 LOCAL_MODULE := copybit.$(TARGET_BOARD_PLATFORM)
 include $(BUILD_SHARED_LIBRARY)
 
+endif
 endif

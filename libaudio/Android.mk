@@ -3,6 +3,7 @@
 # Copyright 2008 Wind River Systems
 #
 
+ifeq ($(TARGET_DEVICE),crespo)
 ifeq ($(filter-out s5pc110 s5pc100 s5p6440,$(TARGET_BOARD_PLATFORM)),)
 ifeq ($(BOARD_USES_GENERIC_AUDIO),false)
 
@@ -77,5 +78,6 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+endif
 endif
 endif
