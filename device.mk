@@ -63,6 +63,10 @@ PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
 	melfas-touchkey.kcm
 
+# Misc other modules
+PRODUCT_PACKAGES += \
+	lights.s5pc110
+
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
