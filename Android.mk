@@ -18,10 +18,12 @@ ifeq ($(TARGET_DEVICE),crespo)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := s3c-keypad.kcm
+LOCAL_MODULE_TAGS := optional
 include $(BUILD_KEY_CHAR_MAP)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := melfas-touchkey.kcm
+LOCAL_MODULE_TAGS := optional
 include $(BUILD_KEY_CHAR_MAP)
 
 endif
