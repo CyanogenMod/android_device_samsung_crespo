@@ -4,6 +4,7 @@ on boot
     setprop ro.build.product smdkc110
     setprop ro.product.device smdkc110
     setprop ro.radio.noril yes
+    setprop ro.bt.bdaddr_path "/data/misc/bluetoothd/bt_addr"
 
 # fake some battery state
     setprop status.battery.state Slow
@@ -26,11 +27,19 @@ on boot
     chmod 664 /sys/class/gpio/gpio104/value
     chown root system /sys/class/gpio/gpio105/value
     chmod 664 /sys/class/gpio/gpio105/value
-    
+
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
     group system inet
-        
+
+# permissions for bluetooth.
+    chown bluetooth bluetooth ro.bt.bdaddr_path
+    chown bluetooth bluetooth /dev/s3c2410_serial0
+    chmod 0600 /dev/s3c2410_serial0
+    chmod 0660 /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+
 service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/wpa_supplicant.conf
    socket wpa_eth0 dgram 0660 wifi wifi
    disabled
@@ -42,3 +51,10 @@ service dhcpcd /system/bin/dhcpcd -ABKL
 
 # Permissions for System Server and daemons.
    chown system system /sys/class/backlight/s5p_bl/brightness
+
+service hciattach /system/bin/bcm_attach -d --enable_hci \
+    --baudrate 921600 --patchram system/etc/firmware/bcm4329.hcd /dev/s3c2410_serial0
+    user bluetooth
+    group bluetooth net_bt_admin
+    disabled
+    oneshot
