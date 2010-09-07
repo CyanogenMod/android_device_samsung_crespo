@@ -31,6 +31,12 @@ on boot
     chown root system /sys/class/gpio/gpio105/value
     chmod 664 /sys/class/gpio/gpio105/value
 
+
+on fs
+	mkdir /efs 0775 radio radio
+	mount yaffs2 mtd@efs /efs nosuid nodev
+
+
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
     group system inet
