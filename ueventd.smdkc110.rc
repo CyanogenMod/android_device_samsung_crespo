@@ -1,0 +1,16 @@
+# dev files for 3D
+/dev/pvrsrvkm             0666   system     system
+/dev/video1               0664   system     camera
+/dev/pmem_gpu1            0664   system     graphics
+/dev/s3c-mem              0664   system     system
+/dev/s3c_bc               0664   system     system
+/dev/onedram              0664   radio      radio
+
+# for Sensor HAL
+/dev/akm8973_dev	0660	system	system
+/dev/akmd8973_aot	0660	system	system
+/dev/accelerometer	0660	system	system
+/dev/k3g		0660	system	system
+/dev/proximity		0660	system	system
+/dev/light		0660	system	system
+

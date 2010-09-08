@@ -19,11 +19,6 @@ loglevel 3
     export LOOP_MOUNTPOINT /mnt/obb
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/system/framework/core-junit.jar
 
-    # ko files for 3D
-    insmod /modules/pvrsrvkm.ko
-    insmod /modules/s3c_lcd.ko
-    insmod /modules/s3c_bc.ko
-
 # Backward compatibility
     symlink /system/etc /etc
     symlink /sys/kernel/debug /d
@@ -267,13 +262,6 @@ on boot
     chown system system /sys/kernel/ipv4/tcp_rmem_max
     chown root radio /proc/cmdline
 
-    # dev files for 3D
-	chmod 0666 /dev/pvrsrvkm
-
-    # for phone
-    chown radio radio /dev/onedram
-    chmod 0664 /dev/onedram
-
 # Define TCP buffer sizes for various networks
 #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
     setprop net.tcp.buffersize.default 4096,87380,110208,4096,16384,110208
@@ -305,12 +293,6 @@ on property:persist.service.adb.enable=1
 
 on property:persist.service.adb.enable=0
     stop adbd
-
-# 3D init
-service pvrsrvinit /system/bin/pvrsrvinit
-   user root
-   group root
-   oneshot
 
 service servicemanager /system/bin/servicemanager
     user system

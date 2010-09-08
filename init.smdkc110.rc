@@ -1,6 +1,4 @@
 on boot
-#    setprop net.eth0.dns1 10.32.192.11
-#    setprop net.eth0.dns2 10.32.193.11
     setprop ro.build.product smdkc110
     setprop ro.product.device smdkc110
     setprop ro.radio.noril yes
@@ -12,9 +10,18 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
+# ko files for 3D
+    insmod /modules/pvrsrvkm.ko
+    insmod /modules/s3c_lcd.ko
+    insmod /modules/s3c_bc.ko
+
 # wi-fi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
+
+# phone
+    chown radio radio /sys/class/modemctl/xmm/control
+    chmod 660 /sys/class/modemctl/xmm/control
 
 # create data/gps for GPS demon
     chown root system /dev/s3c2410_serial1
@@ -31,6 +38,12 @@ on boot
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
     group system inet
+
+# 3D init
+service pvrsrvinit /system/bin/pvrsrvinit
+   user root
+   group root
+   oneshot
 
 # permissions for bluetooth.
     chown bluetooth bluetooth ro.bt.bdaddr_path
@@ -58,3 +71,8 @@ service hciattach /system/bin/bcm_attach -d --enable_hci \
     group bluetooth net_bt_admin
     disabled
     oneshot
+
+# sensor service
+	service akmd8973 /system/bin/akmd8973
+	enabled
+	oneshot
