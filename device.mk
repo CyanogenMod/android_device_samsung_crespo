@@ -50,6 +50,7 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
+	device/samsung/crespo/init.rc:root/init.rc \
 	device/samsung/crespo/init.smdkc110.rc:root/init.smdkc110.rc \
 	device/samsung/crespo/ueventd.smdkc110.rc:root/ueventd.smdkc110.rc
 
