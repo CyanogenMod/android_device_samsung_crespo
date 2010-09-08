@@ -19,6 +19,10 @@ on boot
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
 
+# phone
+    chown radio radio /sys/class/modemctl/xmm/control
+    chmod 660 /sys/class/modemctl/xmm/control
+
 # create data/gps for GPS demon
     chown root system /dev/s3c2410_serial1
     chmod 664 /dev/s3c2410_serial1
