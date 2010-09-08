@@ -71,6 +71,8 @@ LOCAL_SRC_FILES := $(filter-out src/pcm/pcm_shm.c, $(LOCAL_SRC_FILES))
 LOCAL_SRC_FILES := $(filter-out src/pcm/scopes/level.c, $(LOCAL_SRC_FILES))
 LOCAL_SRC_FILES := $(filter-out src/shmarea.c, $(LOCAL_SRC_FILES))
 
+LOCAL_MODULE_TAGS := optional
+
 include $(BUILD_STATIC_LIBRARY)
 
 endif
