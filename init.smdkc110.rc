@@ -73,3 +73,8 @@ service hciattach /system/bin/bcm_attach -d --enable_hci \
     group bluetooth net_bt_admin
     disabled
     oneshot
+
+# sensor service
+	service akmd8973 /system/bin/akmd8973
+	enabled
+	oneshot
