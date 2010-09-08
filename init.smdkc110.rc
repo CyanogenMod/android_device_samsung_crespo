@@ -35,15 +35,9 @@ on boot
     chown root system /sys/class/gpio/gpio105/value
     chmod 664 /sys/class/gpio/gpio105/value
 
-service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
-    user system
-    group system inet
-
-# 3D init
-service pvrsrvinit /system/bin/pvrsrvinit
-   user root
-   group root
-   oneshot
+on fs
+    mkdir /efs 0775 radio radio
+    mount yaffs2 mtd@efs /efs nosuid nodev
 
 # permissions for bluetooth.
     chown bluetooth bluetooth ro.bt.bdaddr_path
@@ -53,17 +47,27 @@ service pvrsrvinit /system/bin/pvrsrvinit
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
 
+# Permissions for System Server and daemons.
+    chown system system /sys/class/backlight/s5p_bl/brightness
+
+service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
+    user system
+    group system inet
+
+# 3D init
+service pvrsrvinit /system/bin/pvrsrvinit
+    user root
+    group root
+    oneshot
+
 service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/wpa_supplicant.conf
-   socket wpa_eth0 dgram 0660 wifi wifi
-   disabled
-   oneshot
+    socket wpa_eth0 dgram 0660 wifi wifi
+    disabled
+    oneshot
 
 service dhcpcd /system/bin/dhcpcd -ABKL
-   disabled
-   oneshot
-
-# Permissions for System Server and daemons.
-   chown system system /sys/class/backlight/s5p_bl/brightness
+    disabled
+    oneshot
 
 service hciattach /system/bin/bcm_attach -d --enable_hci \
     --baudrate 921600 --patchram system/etc/firmware/bcm4329.hcd /dev/s3c2410_serial0
@@ -73,6 +77,6 @@ service hciattach /system/bin/bcm_attach -d --enable_hci \
     oneshot
 
 # sensor service
-	service akmd8973 /system/bin/akmd8973
-	enabled
-	oneshot
+    service akmd8973 /system/bin/akmd8973
+    enabled
+    oneshot
