@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# This file is the build configuration for a full Android
-# build for crespo hardware. This cleanly combines a set of
-# device-specific aspects (drivers) with a device-agnostic
-# product configuration (apps).
-#
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/generic.mk)
-$(call inherit-product, device/samsung/crespo/device.mk)
+# DO NOT USE OR MODIFY
+# This is a deprecated product configuration, which is kept for
+# legacy purposes. It is identical to full_crespo. You should
+# be using full_crespo instead.
+
+$(call inherit-product, device/samsung/crespo/full_crespo.mk)
+
+ifeq ($(TARGET_PRODUCT),crespo)
+  $(warning ************************************)
+  $(warning * The crespo config is deprecated. *)
+  $(warning * Please use full_crespo instead.  *)
+  $(warning ************************************)
+endif
 
 # Overrides
-PRODUCT_MANUFACTURER := samsung
 PRODUCT_NAME := crespo
-PRODUCT_DEVICE := crespo
-PRODUCT_MODEL := Android on Crespo
-PRODUCT_LOCALES += en_US hdpi
-
-PRODUCT_PROPERTY_OVERRIDES += \
-        keyguard.no_require_sim=true
+PRODUCT_MODEL := Deprecated crespo config

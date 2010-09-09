@@ -68,6 +68,10 @@ PRODUCT_PACKAGES := \
 PRODUCT_PACKAGES += \
 	lights.s5pc110
 
+# Input device calibration files
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/qt602240_ts_input.idc:system/usr/idc/qt602240_ts_input.idc
+
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
