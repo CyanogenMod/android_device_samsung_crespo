@@ -38,6 +38,9 @@ on boot
 on fs
     mkdir /efs 0775 radio radio
     mount yaffs2 mtd@efs /efs nosuid nodev
+    mount ext4 /dev/block/mmcblk0p2 /system wait ro
+    mount ext4 /dev/block/mmcblk0p3 /cache wait noatime
+    mount ext4 /dev/block/mmcblk0p4 /data wait noatime
 
 # permissions for bluetooth.
     chown bluetooth bluetooth ro.bt.bdaddr_path
