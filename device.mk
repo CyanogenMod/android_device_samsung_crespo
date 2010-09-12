@@ -67,7 +67,8 @@ PRODUCT_PACKAGES := \
 # Misc other modules
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
-	overlay.s5pc110
+	overlay.s5pc110 \
+	sensors.crespo
 
 # Camera module
 PRODUCT_PACKAGES += \
