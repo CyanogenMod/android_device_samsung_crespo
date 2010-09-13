@@ -50,7 +50,6 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/init.rc:root/init.rc \
 	device/samsung/crespo/init.smdkc110.rc:root/init.smdkc110.rc \
 	device/samsung/crespo/ueventd.smdkc110.rc:root/ueventd.smdkc110.rc
 
@@ -62,7 +61,8 @@ PRODUCT_COPY_FILES += \
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
-	melfas-touchkey.kcm
+	melfas-touchkey.kcm \
+	make_ext4fs
 
 # Misc other modules
 PRODUCT_PACKAGES += \

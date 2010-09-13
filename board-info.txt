@@ -1,2 +1,3 @@
 require board=crespo
 require version-bootloader=I9020XXJI3
+require version-baseband=I9020XXJI2
