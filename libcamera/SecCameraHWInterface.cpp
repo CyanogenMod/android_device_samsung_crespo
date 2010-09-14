@@ -1129,6 +1129,9 @@ int CameraHardwareSec::pictureThread()
 	if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE)
 	{
 		if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK){
+			const int EXIF_FILE_SIZE = 28800;
+			const int JPG_STREAM_BUF_SIZE = 3145728;
+
             sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
             JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(), 
                                                (unsigned char *)PostviewHeap->base());
