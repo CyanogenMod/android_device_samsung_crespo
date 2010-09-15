@@ -2,7 +2,7 @@ on boot
     setprop ro.build.product smdkc110
     setprop ro.product.device smdkc110
     setprop ro.radio.noril yes
-    setprop ro.bt.bdaddr_path "/data/misc/bluetoothd/bt_addr"
+    setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
 # fake some battery state
     setprop status.battery.state Slow
@@ -78,7 +78,7 @@ service dhcpcd /system/bin/dhcpcd -ABKL
     disabled
     oneshot
 
-service hciattach /system/bin/bcm_attach -d --enable_hci \
+service hciattach /system/bin/brcm_patchram_plus -d --enable_hci \
     --baudrate 921600 --patchram system/etc/firmware/bcm4329.hcd /dev/s3c2410_serial0
     user bluetooth
     group bluetooth net_bt_admin
