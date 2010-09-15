@@ -66,7 +66,8 @@ PRODUCT_PACKAGES := \
 
 # Misc other modules
 PRODUCT_PACKAGES += \
-	lights.s5pc110
+	lights.s5pc110 \
+	overlay.s5pc110
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \

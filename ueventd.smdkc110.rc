@@ -1,6 +1,8 @@
 # dev files for 3D
 /dev/pvrsrvkm             0666   system     system
+/dev/video0               0664   system     camera
 /dev/video1               0664   system     camera
+/dev/video2               0664   system     camera
 /dev/pmem_gpu1            0664   system     graphics
 /dev/s3c-mem              0664   system     system
 /dev/s3c_bc               0664   system     system
