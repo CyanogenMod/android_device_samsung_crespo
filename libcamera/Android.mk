@@ -34,6 +34,10 @@ LOCAL_SHARED_LIBRARIES+= libcamera_client
 #LOCAL_SHARED_LIBRARIES+= libhdmi
 #endif
 
+ifeq ($(BOARD_USES_OVERLAY),true)
+LOCAL_CFLAGS += -DBOARD_USES_OVERLAY
+endif
+
 ifeq ($(DLOPEN_LIBSECCAMERA),1)
 LOCAL_SHARED_LIBRARIES+= libdl
 endif

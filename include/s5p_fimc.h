@@ -17,6 +17,8 @@
 #ifndef _S5P_FIMC_H_
 #define _S5P_FIMC_H_
 
+#include <linux/videodev2.h>
+
 /*
  * G E N E R A L S
  *

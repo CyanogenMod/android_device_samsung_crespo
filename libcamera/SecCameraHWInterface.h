@@ -42,6 +42,10 @@ public:
     virtual bool        msgTypeEnabled(int32_t msgType);
 
     virtual status_t    startPreview();
+#if defined(BOARD_USES_OVERLAY)
+    virtual bool        useOverlay();
+    virtual status_t    setOverlay(const sp<Overlay> &overlay);
+#endif
     virtual void        stopPreview();
     virtual bool        previewEnabled();
 
@@ -175,6 +179,10 @@ private:
     int                 mRawFrameSize;
     int			mPreviewFrameRateMicrosec;
 
+#if defined(BOARD_USES_OVERLAY)
+    sp<Overlay>         mOverlay;
+    bool                mUseOverlay;
+#endif
 
     // protected by mLock
     sp<PreviewThread>   mPreviewThread;
