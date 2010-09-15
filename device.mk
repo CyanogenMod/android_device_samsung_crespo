@@ -64,6 +64,18 @@ PRODUCT_PACKAGES := \
 	make_ext4fs \
 	setup_fs
 
+# These is the OpenMAX IL configuration files
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry
+
+# These are the OpenMAX IL modules
+PRODUCT_PACKAGES += \
+	libSEC_OMX_Core \
+	libOMX.SEC.AVC.Decoder \
+	libOMX.SEC.M4V.Decoder \
+	libOMX.SEC.M4V.Encoder \
+	libOMX.SEC.AVC.Encoder
+
 # Misc other modules
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
