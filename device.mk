@@ -82,9 +82,10 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.crespo
 
-# Camera module
+# Libs
 PRODUCT_PACKAGES += \
-	libcamera
+	libcamera \
+	libstagefrighthw
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \
