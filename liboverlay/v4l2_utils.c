@@ -39,6 +39,7 @@
 
 extern unsigned int g_lcd_width;
 extern unsigned int g_lcd_height;
+extern unsigned int g_lcd_bpp;
 
 int v4l2_overlay_get(int name)
 {
@@ -208,19 +209,21 @@ int configure_pixfmt(struct v4l2_pix_format *pix, int32_t fmt,
         break;
     case OVERLAY_FORMAT_BGRA_8888:
         return -1;
-    case OVERLAY_FORMAT_YCbCr_420_SP:
-        pix->pixelformat = V4L2_PIX_FMT_NV21;
-        break;
     case OVERLAY_FORMAT_YCbYCr_422_I:
+    case HAL_PIXEL_FORMAT_CUSTOM_YCbCr_422_I:
         pix->pixelformat = V4L2_PIX_FMT_YUYV;
         break;
     case OVERLAY_FORMAT_CbYCrY_422_I:
+    case HAL_PIXEL_FORMAT_CUSTOM_CbYCrY_422_I:
         pix->pixelformat = V4L2_PIX_FMT_UYVY;
         break;
     case HAL_PIXEL_FORMAT_YCbCr_420_P:
         pix->pixelformat = V4L2_PIX_FMT_YUV420;
         break;
     case HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP:
+        pix->pixelformat = V4L2_PIX_FMT_NV12T;
+        break;
+    case HAL_PIXEL_FORMAT_CUSTOM_YCrCb_420_SP:
         pix->pixelformat = V4L2_PIX_FMT_NV21;
         break;
     default:
@@ -303,7 +306,11 @@ int v4l2_overlay_s_fbuf(int fd, int rotation)
         fbuf.fmt.width         = g_lcd_height;
         fbuf.fmt.height     = g_lcd_width;
     }
-    fbuf.fmt.pixelformat     = V4L2_PIX_FMT_RGB32;
+
+    if (g_lcd_bpp == 32)
+        fbuf.fmt.pixelformat     = V4L2_PIX_FMT_RGB32;
+    else
+        fbuf.fmt.pixelformat     = V4L2_PIX_FMT_RGB565;
 
     ret = v4l2_overlay_ioctl(fd, VIDIOC_S_FBUF, &fbuf, "set fbuf");
     if (ret)
@@ -554,13 +561,17 @@ int v4l2_overlay_set_local_alpha(int fd, int enable)
     return ret;
 }
 
-int v4l2_overlay_req_buf(int fd, uint32_t *num_bufs, int cacheable_buffers)
+int v4l2_overlay_req_buf(int fd, uint32_t *num_bufs, int cacheable_buffers, int zerocopy)
 {
     struct v4l2_requestbuffers reqbuf;
     int ret, i;
 
     reqbuf.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-    reqbuf.memory = V4L2_MEMORY_MMAP;
+
+    if (zerocopy)
+        reqbuf.memory = V4L2_MEMORY_USERPTR;
+    else
+        reqbuf.memory = V4L2_MEMORY_MMAP;
     reqbuf.count = *num_bufs;
 
     ret = ioctl(fd, VIDIOC_REQBUFS, &reqbuf);
