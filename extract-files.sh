@@ -47,7 +47,6 @@ adb pull /system/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so ../../../vendor/$MAN
 adb pull /system/lib/egl/libGLESv2_POWERVR_SGX540_120.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libGLESv2_POWERVR_SGX540_120.so
 adb pull /system/lib/hw/gps.s5pc110.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/gps.s5pc110.so
 adb pull /system/lib/hw/gralloc.s5pc110.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/gralloc.s5pc110.so
-adb pull /system/lib/hw/sensors.default.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensors.default.so
 adb pull /system/lib/libaudiopolicy.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libaudiopolicy.so
 adb pull /system/lib/libaudio.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libaudio.so
 adb pull /system/lib/libglslcompiler.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libglslcompiler.so
@@ -128,7 +127,6 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libGLESv2_POWERVR_SGX540_120.so:system/lib/egl/libGLESv2_POWERVR_SGX540_120.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/gps.s5pc110.so:system/lib/hw/gps.s5pc110.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/gralloc.s5pc110.so:system/lib/hw/gralloc.s5pc110.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/sensors.default.so:system/lib/hw/sensors.default.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libaudiopolicy.so:system/lib/libaudiopolicy.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libaudio.so:system/lib/libaudio.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libglslcompiler.so:system/lib/libglslcompiler.so \\
