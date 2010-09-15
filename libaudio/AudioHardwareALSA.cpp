@@ -33,6 +33,8 @@
 
 #include <alsa/asoundlib.h>
 #include "AudioHardwareALSA.h"
+#define READ_FRAME_SIZE 2080
+#define READ_FRAME_SIZE_STANDARD 4160
 
 #if defined SEC_IPC
 // sangsu fix : headers for IPC
@@ -668,6 +670,33 @@ status_t AudioHardwareALSA::getMicMute(bool *state)
 status_t AudioHardwareALSA::dump(int fd, const Vector<String16>& args)
 {
     return NO_ERROR;
+}
+
+
+size_t AudioHardwareALSA::getInputBufferSize(uint32_t sampleRate, int format, int channelCount)
+{
+    if (sampleRate != 8000  && sampleRate != 11025 && sampleRate != 16000 && sampleRate != 22050 &&
+        sampleRate != 24000 && sampleRate != 32000 && sampleRate != 44100 && sampleRate != 48000) {
+        LOGW("getInputBufferSize bad sampling rate: %d", sampleRate);
+        return 0;
+    }
+    if (format != AudioSystem::PCM_16_BIT) {
+        LOGW("getInputBufferSize bad format: %d", format);
+        return 0;
+    }
+    if (channelCount != 1) {
+        LOGW("getInputBufferSize bad channel count: %d", channelCount);
+        return 0;
+    }
+
+#if defined SEC_SWP_SOUND
+    if (sampleRate == 32000 || sampleRate == 44100 || sampleRate == 48000)
+        return READ_FRAME_SIZE_STANDARD;
+    else
+        return READ_FRAME_SIZE;
+#else /* SEC_SWP_SOUND */
+    return 320;
+#endif /* SEC_SWP_SOUND */
 }
 
 // ----------------------------------------------------------------------------
