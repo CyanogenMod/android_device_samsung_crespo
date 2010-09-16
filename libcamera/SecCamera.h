@@ -37,8 +37,6 @@
 #include <videodev2_samsung.h>
 #endif
 
-#include "JpegEncoder.h"
-
 #ifdef ENABLE_HDMI_DISPLAY
 #include "hdmi_lib.h"
 #endif
@@ -866,8 +864,6 @@ private:
 	int m_jpeg_quality;
 
 	int m_postview_offset;
-
-	exif_attribute_t mExifInfo;
 
 	struct fimc_buffer m_buffers_c[MAX_BUFFERS];
 	struct pollfd m_events_c;
