@@ -48,7 +48,7 @@ BOARD_USES_ALSA_AUDIO := true
 BUILD_WITH_ALSA_UTILS := true
 endif
 
-USE_CAMERA_STUB := true
+USE_CAMERA_STUB := false
 ifeq ($(USE_CAMERA_STUB),false)
 BOARD_CAMERA_LIBRARIES := libcamera
 endif
