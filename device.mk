@@ -62,7 +62,8 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
 	melfas-touchkey.kcm \
-	make_ext4fs
+	make_ext4fs \
+	setup_fs
 
 # Misc other modules
 PRODUCT_PACKAGES += \
