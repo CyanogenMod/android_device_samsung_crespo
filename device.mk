@@ -70,6 +70,10 @@ PRODUCT_PACKAGES += \
 	lights.s5pc110 \
 	overlay.s5pc110
 
+# Camera module
+PRODUCT_PACKAGES += \
+	libcamera
+
 # Input device calibration files
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/qt602240_ts_input.idc:system/usr/idc/qt602240_ts_input.idc
