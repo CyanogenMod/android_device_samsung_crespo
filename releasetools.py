@@ -56,7 +56,7 @@ def IncrementalOTA_InstallEnd(info):
     if source_bootloader_img == target_bootloader_img:
       print "bootloader unchanged; skipping"
     else:
-      common.ZipWriteStr(info.output_zip, "bootloader.img", bootloader_img)
+      common.ZipWriteStr(info.output_zip, "bootloader.img", target_bootloader_img)
       info.script.Print("Writing bootloader...")
       info.script.WriteRawImage("bootloader", "bootloader.img")
 
@@ -69,21 +69,24 @@ def IncrementalOTA_InstallEnd(info):
     try:
       sf = common.File("radio.img", info.source_zip.read("RADIO/radio.img"))
 
-      diff = common.Difference(tf, sf)
-      common.ComputeDifferences([diff])
-      _, _, d = diff.GetPatch()
-      if d is None or len(d) > tf.size * common.OPTIONS.patch_threshold:
-        # computing difference failed, or difference is nearly as
-        # big as the target:  simply send the target.
-        tf.AddToZip(info.output_zip)
-        info.script.Print("Writing radio...")
-        info.script.WriteRawImage("radio", tf.name)
+      if tf.sha1 == sf.sha1:
+        print "radio image unchanged; skipping"
       else:
-        common.ZipWriteStr(info.output_zip, "radio.img.p", d)
-        info.script.Print("Patching radio...")
-        info.script.ApplyPatch(
-            "MTD:radio:%d:%s:%d:%s" % (sf.size, sf.sha1, tf.size, tf.sha1),
-            "-", tf.size, tf.sha1, sf.sha1, "radio.img.p")
+        diff = common.Difference(tf, sf)
+        common.ComputeDifferences([diff])
+        _, _, d = diff.GetPatch()
+        if d is None or len(d) > tf.size * common.OPTIONS.patch_threshold:
+          # computing difference failed, or difference is nearly as
+          # big as the target:  simply send the target.
+          tf.AddToZip(info.output_zip)
+          info.script.Print("Writing radio...")
+          info.script.WriteRawImage("radio", tf.name)
+        else:
+          common.ZipWriteStr(info.output_zip, "radio.img.p", d)
+          info.script.Print("Patching radio...")
+          info.script.ApplyPatch(
+              "MTD:radio:%d:%s:%d:%s" % (sf.size, sf.sha1, tf.size, tf.sha1),
+              "-", tf.size, tf.sha1, sf.sha1, "radio.img.p")
 
     except KeyError:
       # failed to read SOURCE radio image: include the whole target
