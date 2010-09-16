@@ -52,7 +52,6 @@ adb pull /system/lib/libaudio.so ../../../vendor/$MANUFACTURER/$DEVICE/proprieta
 adb pull /system/lib/libglslcompiler.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libglslcompiler.so
 adb pull /system/lib/libIMGegl.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libIMGegl.so
 adb pull /system/lib/libImmVibeJ.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libImmVibeJ.so
-adb pull /system/lib/libImmVibe.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libImmVibe.so
 adb pull /system/lib/libpvr2d.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libpvr2d.so
 adb pull /system/lib/libpvrANDROID_WSEGL.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libpvrANDROID_WSEGL.so
 adb pull /system/lib/libPVRScopeServices.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libPVRScopeServices.so
@@ -132,7 +131,6 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libglslcompiler.so:system/lib/libglslcompiler.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libIMGegl.so:system/lib/libIMGegl.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libImmVibeJ.so:system/lib/libImmVibeJ.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libImmVibe.so:system/lib/libImmVibe.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libpvr2d.so:system/lib/libpvr2d.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libpvrANDROID_WSEGL.so:system/lib/libpvrANDROID_WSEGL.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libPVRScopeServices.so:system/lib/libPVRScopeServices.so \\
