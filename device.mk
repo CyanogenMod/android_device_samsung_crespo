@@ -62,12 +62,17 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
 	melfas-touchkey.kcm \
-	make_ext4fs
+	make_ext4fs \
+	setup_fs
 
 # Misc other modules
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
 	overlay.s5pc110
+
+# Camera module
+PRODUCT_PACKAGES += \
+	libcamera
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \

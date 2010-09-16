@@ -57,6 +57,12 @@ service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
     group system inet
 
+# create filesystems if necessary
+service setup_fs /system/bin/setup_fs mmcblk0p3 mmcblk0p4
+    user root
+    group root
+    oneshot
+
 # 3D init
 service pvrsrvinit /system/bin/pvrsrvinit
     user root
