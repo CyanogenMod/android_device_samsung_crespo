@@ -95,28 +95,21 @@ namespace android {
 #define JOIN_AGAIN(x, y) x ## y
 
 #define FRONT_CAM VGA
-#define BACK_CAM CE147
+#define BACK_CAM ISX006
 
 #if !defined (FRONT_CAM) || !defined(BACK_CAM)
 #error "Please define the Camera module"
 #endif
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-#define CE147_PREVIEW_WIDTH 640
-#define CE147_PREVIEW_HEIGHT 480
-#define CE147_SNAPSHOT_WIDTH 2560
-#define CE147_SNAPSHOT_HEIGHT 1920
-#else
-#define CE147_PREVIEW_WIDTH 1280
-#define CE147_PREVIEW_HEIGHT 720
-#define CE147_SNAPSHOT_WIDTH 2592
-#define CE147_SNAPSHOT_HEIGHT 1936
-#endif
+#define ISX006_PREVIEW_WIDTH 			640
+#define ISX006_PREVIEW_HEIGHT 			480
+#define ISX006_SNAPSHOT_WIDTH 		2560
+#define ISX006_SNAPSHOT_HEIGHT 		1920
 
-#define CE147_POSTVIEW_WIDTH	640
-#define CE147_POSTVIEW_WIDE_WIDTH	800
-#define CE147_POSTVIEW_HEIGHT 	480
-#define CE147_POSTVIEW_BPP 	16
+#define ISX006_POSTVIEW_WIDTH			640
+#define ISX006_POSTVIEW_WIDE_WIDTH	800
+#define ISX006_POSTVIEW_HEIGHT 		480
+#define ISX006_POSTVIEW_BPP 			16
 
 #define VGA_PREVIEW_WIDTH 640
 #define VGA_PREVIEW_HEIGHT 480
@@ -213,8 +206,8 @@ public:
 
 	enum CAMERA_ID
 	{
-		CAMERA_ID_BACK  = 1,
-		CAMERA_ID_FRONT = 2,
+		CAMERA_ID_BACK  = 0,
+		CAMERA_ID_FRONT = 1,
 	};
 	
 	enum AUTO_FOCUS
@@ -760,7 +753,7 @@ public:
 	void setFrameRate(int frame_rate);
 //	void setJpegQuality(int quality);
 	unsigned char* getJpeg(int*, unsigned int*);
-	unsigned char* getSnapshotAndJpeg(void); 
+	unsigned char* getSnapshotAndJpeg(unsigned int* output_size);
 	//[zzangdol] add function 
 	int getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);
 
@@ -780,7 +773,7 @@ public:
 	void getYUVBuffers(unsigned char** virYAddr, unsigned char** virCaddr, int index);
 #endif
 	void pausePreview();
-	int initCamera();
+	int initCamera(int index);
 	void DeinitCamera();
 
 private:

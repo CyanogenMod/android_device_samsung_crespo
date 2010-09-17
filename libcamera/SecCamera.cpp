@@ -76,7 +76,6 @@ namespace android {
 
 static struct timeval time_start;
 static struct timeval time_stop;
-static int cam_id = 0;
 
 unsigned long measure_time(struct timeval *start, struct timeval *stop)
 {
@@ -243,7 +242,7 @@ static int save_yuv(struct fimc_buffer *m_buffers_c, int width, int height, int 
         char filename[100], *buffer = NULL;
 
         /* file create/open, note to "wb" */
-        yuv_fp = fopen("/sdcard/camera_dump.yuv", "wb");
+        yuv_fp = fopen("/data/main.yuv", "wb");
         if (yuv_fp==NULL)
 	{
 		LOGE("Save YUV] file open error");
@@ -295,11 +294,11 @@ static int fimc_v4l2_querycap(int fp)
 	return ret;
 }
 
-static int fimc_v4l2_enuminput(int fp)
+static int fimc_v4l2_enuminput(int fp, int index)
 {
         struct v4l2_input input;
 
-        input.index = cam_id;
+        input.index = index;
         if(ioctl(fp, VIDIOC_ENUMINPUT, &input) != 0)
 	{
 		LOGE("ERR(%s):No matching index found\n", __FUNCTION__);
@@ -307,7 +306,7 @@ static int fimc_v4l2_enuminput(int fp)
 	}
 	LOGI("Name of input channel[%d] is %s\n", input.index, input.name);
 
-        return input.index;
+	return 0;
 }
 
 
@@ -724,7 +723,8 @@ SecCamera::SecCamera() :
 			m_jpeg_thumbnail_height(0),
 			m_jpeg_quality(100),
 			m_camera_af_flag(-1),
-			m_shot_mode(0)
+			m_shot_mode(0),
+			m_flag_init(0)
 {
 	LOGV("%s()", __FUNCTION__);
 #ifdef BOARD_USES_SDTV
@@ -752,7 +752,6 @@ SecCamera::SecCamera() :
 #endif
 
 #endif 
-	initCamera();
 }
 
 int SecCamera::flagCreate(void) const
@@ -765,7 +764,6 @@ SecCamera::~SecCamera()
 {
 	LOGV("%s()", __FUNCTION__);
 
-	DeinitCamera(); 
 #ifdef BOARD_USES_SDTV
 	nsecs_t   before1, after1;
 
@@ -789,10 +787,10 @@ SecCamera::~SecCamera()
 #endif 
 }
 
-int SecCamera::initCamera()
+int SecCamera::initCamera(int index)
 {
 	LOGV("%s()", __FUNCTION__);
-	int ret = 0, index = 0;
+	int ret = 0;
 
 	if(!m_flag_init)
 	{
@@ -892,8 +890,8 @@ int SecCamera::initCamera()
 
 		ret = fimc_v4l2_querycap(m_cam_fd);
 		CHECK(ret);
-		index = fimc_v4l2_enuminput(m_cam_fd);
-		CHECK(index);
+		ret = fimc_v4l2_enuminput(m_cam_fd, index);
+		CHECK(ret);
 		ret = fimc_v4l2_s_input(m_cam_fd, index);
 		CHECK(ret);
 
@@ -949,13 +947,14 @@ int SecCamera::initCamera()
 
 		ret = fimc_v4l2_querycap(m_cam_fd2);
 		CHECK(ret);
-		index = fimc_v4l2_enuminput(m_cam_fd2);
-		CHECK(index);
+		ret = fimc_v4l2_enuminput(m_cam_fd2, index);
+		CHECK(ret);
 		ret = fimc_v4l2_s_input(m_cam_fd2, index);
 		CHECK(ret);
 #endif
         setExifFixedAttribute();
 
+		m_camera_id = index;
 		m_flag_init = 1;
 	}
 	return 0;
@@ -965,7 +964,7 @@ void SecCamera::resetCamera()
 {
 	LOGV("%s()", __FUNCTION__);
 	DeinitCamera();
-	initCamera();
+	initCamera(m_camera_id);
 }
 
 void SecCamera::DeinitCamera()
@@ -1274,7 +1273,7 @@ int SecCamera::startPreview(void)
 int SecCamera::stopPreview(void)
 {
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-	LOGE("%s()", __FUNCTION__);
+	LOGE("%s()\n", __FUNCTION__);
 	
 	close_buffers(m_buffers_c);
 
@@ -1495,8 +1494,8 @@ int SecCamera::getPreview()
 		/* Reset Only Camera Device */
 		ret = fimc_v4l2_querycap(m_cam_fd);
 		CHECK(ret);
-		index = fimc_v4l2_enuminput(m_cam_fd);
-		CHECK(index);
+		ret = fimc_v4l2_enuminput(m_cam_fd, m_camera_id);
+		CHECK(ret);
 		ret = fimc_v4l2_s_input(m_cam_fd, 1000);
 		CHECK(ret);
 		//setCameraSensorReset();
@@ -1815,7 +1814,7 @@ int SecCamera::getSnapshot(unsigned char * buffer, unsigned int buffer_size)
 
 #endif
 
-unsigned char*  SecCamera::getSnapshotAndJpeg()
+unsigned char*  SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
 { 
 	LOGV("%s()", __FUNCTION__);
 	
@@ -2027,7 +2026,6 @@ int SecCamera::setCameraId(int camera_id)
 			m_preview_max_height  = MAX_FRONT_CAMERA_PREVIEW_HEIGHT;
 			m_snapshot_max_width  = MAX_FRONT_CAMERA_SNAPSHOT_WIDTH;
 			m_snapshot_max_height = MAX_FRONT_CAMERA_SNAPSHOT_HEIGHT;
-			cam_id = 1;
 			break;
 
 		case CAMERA_ID_BACK:
@@ -2035,7 +2033,6 @@ int SecCamera::setCameraId(int camera_id)
 			m_preview_max_height  = MAX_BACK_CAMERA_PREVIEW_HEIGHT;
 			m_snapshot_max_width  = MAX_BACK_CAMERA_SNAPSHOT_WIDTH;
 			m_snapshot_max_height = MAX_BACK_CAMERA_SNAPSHOT_HEIGHT;
-			cam_id = 0;
 			break;
 	}
 

@@ -57,7 +57,7 @@ struct ADDRS_CAP
 	unsigned int height;
 };
 
-CameraHardwareSec::CameraHardwareSec()
+CameraHardwareSec::CameraHardwareSec(int cameraId)
 		: mParameters(),
 		  mPreviewHeap(0),
 		  mRawHeap(0),
@@ -102,7 +102,7 @@ CameraHardwareSec::CameraHardwareSec()
 		LOGE("ERR(%s):Fail on mSecCamera object creation", __func__);
 	}
 
-	ret = mSecCamera->initCamera();
+	ret = mSecCamera->initCamera(cameraId);
 	if(ret < 0)
 	{
 		LOGE("ERR(%s):Fail on mSecCamera init", __func__);
@@ -155,10 +155,10 @@ CameraHardwareSec::CameraHardwareSec()
                 mRawHeap.clear();
         }
 
-	initDefaultParameters();
+	initDefaultParameters(cameraId);
 }
 
-void CameraHardwareSec::initDefaultParameters()
+void CameraHardwareSec::initDefaultParameters(int cameraId)
 {
         if(mSecCamera == NULL)
         {
@@ -173,11 +173,9 @@ void CameraHardwareSec::initDefaultParameters()
 	int snapshot_max_width	= 0;
 	int snapshot_max_height = 0;
 
-	int camera_id = 1;
-
-	p.set("camera-id", camera_id);
-
-	if(camera_id == 1)
+	p.set("camera-id", cameraId);
+	/* set camera ID & reset camera */
+	if(cameraId == 0)
 		mSecCamera->setCameraId(SecCamera::CAMERA_ID_BACK);
 	else
 		mSecCamera->setCameraId(SecCamera::CAMERA_ID_FRONT);
@@ -208,7 +206,7 @@ void CameraHardwareSec::initDefaultParameters()
 	p.set("jpeg-quality", "100"); // maximum quality
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
 	p.set("preview-size-values","640x480,800x480"); 	//s1_camera [ 3-party application 에서 get supported preview size 안되는 현상 수정 ]
-	p.set("picture-size-values","2560x1920,2048x1536,1600x1200,640x480,2560x1536,2048x1232,1600x960,800x480");
+	p.set("picture-size-values","2560x1920,2048x1536,1600x1200,640x480");
     p.set("preview-format-values", "yuv420sp");
 	p.set("preview-frame-rate-values", "15,30");
     p.set("picture-format-values", "jpeg");
@@ -217,7 +215,7 @@ void CameraHardwareSec::initDefaultParameters()
     p.set("focus-mode-values", "auto,macro");
 	p.set("antibanding-values", "auto,50hz,60hz,off");
 	p.set("effect-values", "none,mono,negative,sepia");
-	p.set("flash-mode-values", "off");
+	p.set("flash-mode-values", "on,off,auto");
 //	p.set("focus-mode-values", "auto,infinity,macro");
 	p.set("scene-mode-values", "auto,portrait,landscape,night,beach,snow,sunset,fireworks,sports,party,candlelight");
 	p.set("whitebalance-values", "auto,incandescent,fluorescent,daylight,cloudy-daylight"); 
@@ -661,9 +659,9 @@ void CameraHardwareSec::stopPreview()
 	}
 
 	// don't hold the lock while waiting for the thread to quit
-//	if (previewThread != 0) {
-//		previewThread->requestExitAndWait();
-//	}
+	if (previewThread != 0) {
+		previewThread->requestExitAndWait();
+	}
 
 	Mutex::Autolock lock(mLock);
 	mPreviewThread.clear();
@@ -1015,6 +1013,8 @@ int CameraHardwareSec::pictureThread()
 	unsigned char * addr = NULL;
 	int mPostViewWidth, mPostViewHeight, mPostViewSize;
 	int cap_width, cap_height, cap_frame_size;
+
+	unsigned int output_size = 0;
 	
 	mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
 	int postviewHeapSize = mPostViewWidth*mPostViewHeight*2; //*size = (BACK_CAMERA_POSTVIEW_WIDTH * BACK_CAMERA_POSTVIEW_HEIGHT * BACK_CAMERA_POSTVIEW_BPP)/8; 
@@ -1082,7 +1082,7 @@ int CameraHardwareSec::pictureThread()
 		}//[zzangdol] CAMERA_ID_BACK
 		else
 		{
-			addr = mSecCamera->getSnapshotAndJpeg(); 
+			addr = mSecCamera->getSnapshotAndJpeg(&output_size);
 			//LOGV("[zzangdol] getSnapshotAndJpeg\n");
 		}
 #else
@@ -1110,6 +1110,10 @@ int CameraHardwareSec::pictureThread()
 
 	sp<MemoryBase> postview = new MemoryBase(PostviewHeap, 0, postviewHeapSize);
 	memcpy(mRawHeap->base(),PostviewHeap->base(), postviewHeapSize);
+	if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE)
+	{
+		mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
+	}
 #if 0//def SWP1_CAMERA_ADD_ADVANCED_FUNCTION
  	if (mMsgEnabled & CAMERA_MSG_POSTVIEW_FRAME)
 	{		
@@ -1145,8 +1149,6 @@ int CameraHardwareSec::pictureThread()
             sp<MemoryBase> mem = new MemoryBase(JpegHeap, 0, JpegImageSize + JpegExifSize);
 
             mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
-			
-			mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
 		}//[zzangdol] CAMERA_ID_BACK
 		else
 		{
@@ -2386,7 +2388,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 		}	
 	} 
 #endif
-
 	return ret;
 }
 
@@ -2449,7 +2450,7 @@ void CameraHardwareSec::release()
 
 wp<CameraHardwareInterface> CameraHardwareSec::singleton;
 
-sp<CameraHardwareInterface> CameraHardwareSec::createInstance()
+sp<CameraHardwareInterface> CameraHardwareSec::createInstance(int cameraId)
 {
 	LOGV("%s()", __func__);
 	if (singleton != 0) {
@@ -2458,7 +2459,7 @@ sp<CameraHardwareInterface> CameraHardwareSec::createInstance()
 			return hardware;
 		}
 	}
-	sp<CameraHardwareInterface> hardware(new CameraHardwareSec());
+	sp<CameraHardwareInterface> hardware(new CameraHardwareSec(cameraId));
 	singleton = hardware;
 	return hardware;
 }
@@ -2474,6 +2475,11 @@ static CameraInfo sCameraInfo[] = {
     {
         CAMERA_FACING_BACK,
         90,  /* orientation */
+    },
+
+  {
+        CAMERA_FACING_FRONT,
+        0,  /* orientation */
     }
 };
 
@@ -2489,7 +2495,7 @@ extern "C" void HAL_getCameraInfo(int cameraId, struct CameraInfo* cameraInfo)
 
 extern "C" sp<CameraHardwareInterface> HAL_openCameraHardware(int cameraId)
 {
-    return CameraHardwareSec::createInstance();
+    return CameraHardwareSec::createInstance(cameraId);
 }
 
 }; // namespace android
