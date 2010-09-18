@@ -10,7 +10,8 @@
 
 int v4l2_overlay_open(int id);
 int v4l2_overlay_get_caps(int fd, struct v4l2_capability *caps);
-int v4l2_overlay_req_buf(int fd, uint32_t *num_bufs, int cacheable_buffers);
+int v4l2_overlay_req_buf(int fd, uint32_t *num_bufs, int cacheable_buffers,
+                         int zerocopy);
 int v4l2_overlay_query_buffer(int fd, int index, struct v4l2_buffer *buf);
 int v4l2_overlay_map_buf(int fd, int index, void **start, size_t *len);
 int v4l2_overlay_unmap_buf(void *start, size_t len);
@@ -43,21 +44,15 @@ enum {
     V4L2_OVERLAY_PLANE_VIDEO2,
 };
 
-
-enum {
-    OVERLAY_FORMAT_YCbCr_420_SP = 0x21,
-};
-
 enum {
     /* support customed format for zero copy */
     HAL_PIXEL_FORMAT_YCbCr_420_SP = 0x21,
     HAL_PIXEL_FORMAT_YCbCr_420_P = 0x13,
-
     HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP = 0x100,
     HAL_PIXEL_FORMAT_CUSTOM_YCbCr_422_I = 0x101,
     HAL_PIXEL_FORMAT_CUSTOM_CbYCrY_422_I = 0x102,
     HAL_PIXEL_FORMAT_CUSTOM_YCrCb_420_SP = 0x103,
-
+    HAL_PIXEL_FORMAT_CUSTOM_MAX
 };
 
 struct mapping_data {

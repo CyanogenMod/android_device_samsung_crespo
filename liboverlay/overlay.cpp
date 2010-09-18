@@ -43,13 +43,14 @@ extern "C" {
 
 #define LOG_FUNCTION_NAME LOGV(" %s %s",  __FILE__, __func__)
 
-#define NUM_OVERLAY_BUFFERS_REQUESTED  (2)
+#define NUM_OVERLAY_BUFFERS_REQUESTED  (3)
 /* OVRLYSHM on phone keypad*/
 #define SHARED_DATA_MARKER             (0x68759746)
 
 /* These values should come from Surface Flinger */
 unsigned int g_lcd_width = 480;
 unsigned int g_lcd_height = 800;
+unsigned int g_lcd_bpp = 32;
 
 #define CACHEABLE_BUFFERS 0x1
 
@@ -405,6 +406,41 @@ static int disable_streaming_locked(overlay_shared_t *shared, int ovly_fd)
     return ret;
 }
 
+static void set_color_space(unsigned int overlay_color_format, unsigned int *v4l2_color_format)
+{
+    switch (overlay_color_format) {
+    case OVERLAY_FORMAT_RGB_565:
+        *v4l2_color_format = V4L2_PIX_FMT_RGB565;
+        break;
+
+    case OVERLAY_FORMAT_YCbYCr_422_I:
+    case HAL_PIXEL_FORMAT_CUSTOM_YCbCr_422_I:
+        *v4l2_color_format = V4L2_PIX_FMT_YUYV;
+        break;
+
+    case OVERLAY_FORMAT_CbYCrY_422_I:
+    case HAL_PIXEL_FORMAT_CUSTOM_CbYCrY_422_I:
+        *v4l2_color_format = V4L2_PIX_FMT_UYVY;
+        break;
+
+    case HAL_PIXEL_FORMAT_YCbCr_420_P:
+        *v4l2_color_format = V4L2_PIX_FMT_YUV420;
+        break;
+
+    case HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP:
+        *v4l2_color_format = V4L2_PIX_FMT_NV12T;
+        break;
+
+    case HAL_PIXEL_FORMAT_CUSTOM_YCrCb_420_SP:
+        *v4l2_color_format = V4L2_PIX_FMT_NV21;
+        break;
+
+    default :
+        LOGE("unsupported pixel format (0x%x)", overlay_color_format);
+        *v4l2_color_format = -1;
+    }
+}
+
 /****************************************************************************
  *  Control module
  *****************************************************************************/
@@ -478,13 +514,14 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
     int fd;
     int shared_fd;
     struct fb_var_screeninfo info;
+    bool zerocopy = false;
 
     phyAddr = 0;
 
     if (format == OVERLAY_FORMAT_DEFAULT) {
         LOGV("format == OVERLAY_FORMAT_DEFAULT\n");
-        LOGV("set to HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP\n");
-        format = HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP;
+        LOGV("set to HAL_PIXEL_FORMAT_CUSTOM_YCrCb_420_SP\n");
+        format = HAL_PIXEL_FORMAT_CUSTOM_YCrCb_420_SP;
     }
 
     if (ctx->overlay_video1) {
@@ -508,10 +545,7 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
     g_s5p_fimc.params.src.full_height = h;
     g_s5p_fimc.params.src.width = w;
     g_s5p_fimc.params.src.height = h;
-    if(format == HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP)
-        g_s5p_fimc.params.src.color_space = V4L2_PIX_FMT_NV12T;
-    else
-        g_s5p_fimc.params.src.color_space = V4L2_PIX_FMT_YUV420;
+    set_color_space(format, &g_s5p_fimc.params.src.color_space);
     ret = check_fimc_src_constraints(&g_s5p_fimc);
     if(ret != 0) {
         if(ret < 0) {
@@ -541,7 +575,11 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
         goto error1;
     }
 
-    if (v4l2_overlay_req_buf(fd, &num, 0)) {
+    if (format >= HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP
+            && format < HAL_PIXEL_FORMAT_CUSTOM_MAX)
+        zerocopy = true;
+
+    if (v4l2_overlay_req_buf(fd, &num, 0, (int)zerocopy)) {
         LOGE("Failed requesting buffers\n");
         goto error1;
     }
@@ -566,6 +604,7 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
         shared->dispH = info.yres;
         g_lcd_width = info.xres;
         g_lcd_height = info.yres;
+        g_lcd_bpp = info.bits_per_pixel;
     } else {
         shared->dispW = g_lcd_width; /* Need to determine this properly */
         shared->dispH = g_lcd_height; /* Need to determine this properly */
@@ -612,7 +651,7 @@ static void overlay_destroyOverlay(struct overlay_control_device_t *dev,
     destroy_shared_data(obj->shared_fd(), shared, true);
     obj->setShared(NULL);
 
-    if (v4l2_overlay_req_buf(fd, &num, 0)) {
+    if (v4l2_overlay_req_buf(fd, &num, 0, 0)) {
         LOGE("Failed requesting buffers\n");
     }
 
@@ -789,41 +828,42 @@ static int overlay_commit(struct overlay_control_device_t *dev,
             LOGE("Set Rotation Failed!/%d\n", ret);
             goto end;
         }
-        data->rotation = stage->rotation;
         v4l2_overlay_s_fbuf(fd, stage->rotation);
     }
 
-    if (!(stage->posX == data->posX && stage->posY == data->posY &&
-                stage->posW == data->posW && stage->posH == data->posH)) {
-        g_s5p_fimc.params.dst.full_width = g_lcd_width;
-        g_s5p_fimc.params.dst.full_height = g_lcd_height;
-        g_s5p_fimc.params.dst.width = stage->posW;
-        g_s5p_fimc.params.dst.height = stage->posH;
-        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_NV12T;
-        ret = check_fimc_dst_constraints(&g_s5p_fimc, stage->rotation);
-        if(ret != 0) {
-            if(ret < 0) {
-                LOGE("Not supported destination image size");
-                goto end;
-            } else {
-                LOGD("dst width, height are changed [w= %d, h= %d] -> [w=%d, h= %d]",
-                        stage->posW, stage->posH, g_s5p_fimc.params.dst.width,
-                        g_s5p_fimc.params.dst.height);
-                stage->posW = g_s5p_fimc.params.dst.width;
-                stage->posH = g_s5p_fimc.params.dst.height;
-            }
-        }
-        ret = v4l2_overlay_set_position(fd, stage->posX, stage->posY,
-                stage->posW, stage->posH, stage->rotation);
-        if (ret) {
-            LOGE("Set Position Failed!/%d\n", ret);
+    g_s5p_fimc.params.dst.full_width = g_lcd_width;
+    g_s5p_fimc.params.dst.full_height = g_lcd_height;
+    g_s5p_fimc.params.dst.width = stage->posW;
+    g_s5p_fimc.params.dst.height = stage->posH;
+    if (g_lcd_bpp == 32)
+        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB32;
+    else
+        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB565;
+    ret = check_fimc_dst_constraints(&g_s5p_fimc, stage->rotation);
+    if (ret != 0) {
+        if (ret < 0) {
+            LOGE("Unsupported destination image size");
             goto end;
+        } else {
+            LOGD("dst width, height have changed [w= %d, h= %d] -> [w=%d, h= %d]",
+                    stage->posW, stage->posH, g_s5p_fimc.params.dst.width,
+                    g_s5p_fimc.params.dst.height);
+            stage->posW = g_s5p_fimc.params.dst.width;
+            stage->posH = g_s5p_fimc.params.dst.height;
         }
-        data->posX = stage->posX;
-        data->posY = stage->posY;
-        data->posW = stage->posW;
-        data->posH = stage->posH;
     }
+    ret = v4l2_overlay_set_position(fd, stage->posX, stage->posY,
+            stage->posW, stage->posH, stage->rotation);
+    if (ret) {
+        LOGE("Set Position Failed!/%d\n", ret);
+        goto end;
+    }
+
+    data->posX = stage->posX;
+    data->posY = stage->posY;
+    data->posW = stage->posW;
+    data->posH = stage->posH;
+    data->rotation = stage->rotation;
 
     ret = enable_streaming_locked(shared, fd);
 
@@ -931,7 +971,8 @@ int overlay_initialize(struct overlay_data_device_t *dev,
     ctx->qd_buf_count = 0;
     ctx->cacheable_buffers = 0;
 
-    if(ctx->format >= HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP)
+    if (ctx->format >= HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP
+            && ctx->format < HAL_PIXEL_FORMAT_CUSTOM_MAX)
         ctx->zerocopy = true;
     else
         ctx->zerocopy = false;
@@ -1031,10 +1072,7 @@ static int overlay_resizeInput(struct overlay_data_device_t *dev, uint32_t w,
     g_s5p_fimc.params.src.full_height = h;
     g_s5p_fimc.params.src.width = w;
     g_s5p_fimc.params.src.height = h;
-    if(ctx->zerocopy)
-        g_s5p_fimc.params.src.color_space = V4L2_PIX_FMT_NV12T;
-    else
-        g_s5p_fimc.params.src.color_space = V4L2_PIX_FMT_YUV420;
+    set_color_space(ctx->format, &g_s5p_fimc.params.src.color_space);
     ret = check_fimc_src_constraints(&g_s5p_fimc);
 
     if(ret != 0) {
@@ -1061,7 +1099,7 @@ static int overlay_resizeInput(struct overlay_data_device_t *dev, uint32_t w,
         goto end;
     }
     rc = v4l2_overlay_req_buf(ctx->ctl_fd, (uint32_t *)(&ctx->num_buffers),
-            ctx->cacheable_buffers);
+            ctx->cacheable_buffers, (int)ctx->zerocopy);
     if (rc) {
         LOGE("Error creating buffers");
         goto end;
@@ -1237,7 +1275,13 @@ void *overlay_getBufferAddress(struct overlay_data_device_t *dev,
     struct v4l2_buffer buf;
     struct overlay_data_context_t* ctx = (struct overlay_data_context_t*)dev;
 
-    return (void*) ctx->buffers[(int)buffer];
+    if (ctx->zerocopy)
+        return NULL;
+
+    if ((int)buffer >= 0 && (int)buffer < ctx->num_buffers)
+        return (void*) ctx->buffers[(int)buffer];
+    else
+        return NULL;
 }
 
 int overlay_getBufferCount(struct overlay_data_device_t *dev)
