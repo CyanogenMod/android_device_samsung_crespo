@@ -35,14 +35,14 @@ int device_recovery_start() {
 
 int device_toggle_display(volatile char* key_pressed, int key_code) {
     // hold power and press volume-up
-    return key_pressed[0x1a] && key_code == 0x2a;
+    return key_pressed[KEY_POWER] && key_code == KEY_VOLUMEUP;
 }
 
 int device_reboot_now(volatile char* key_pressed, int key_code) {
     // Reboot if the power key is pressed five times in a row, with
     // no other keys in between.
     static int presses = 0;
-    if (key_code == 0x1a) {   // power button
+    if (key_code == KEY_POWER) {   // power button
         ++presses;
         return presses == 5;
     } else {
@@ -56,16 +56,14 @@ int device_handle_key(int key_code, int visible) {
         switch (key_code) {
             case KEY_DOWN:
             case KEY_VOLUMEDOWN:
-            case 0x3a:   // crespo volume-down
                 return HIGHLIGHT_DOWN;
 
             case KEY_UP:
             case KEY_VOLUMEUP:
-            case 0x2a:   // crespo volume-up
                 return HIGHLIGHT_UP;
 
             case KEY_ENTER:
-            case 0x1a:   // crespo power
+            case KEY_POWER:   // crespo power
                 return SELECT_ITEM;
         }
     }

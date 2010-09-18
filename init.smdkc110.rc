@@ -2,7 +2,7 @@ on boot
     setprop ro.build.product smdkc110
     setprop ro.product.device smdkc110
     setprop ro.radio.noril yes
-    setprop ro.bt.bdaddr_path "/data/misc/bluetoothd/bt_addr"
+    setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
 # fake some battery state
     setprop status.battery.state Slow
@@ -34,6 +34,51 @@ on boot
     chmod 664 /sys/class/gpio/gpio104/value
     chown root system /sys/class/gpio/gpio105/value
     chmod 664 /sys/class/gpio/gpio105/value
+
+# sensors sysfs attributes.  input devices are created dynamically 
+# so we can't be sure which is which.  this is a bit of a hack until 
+# (and if) init is modified to handle uevents (or ueventd is modified 
+# to support sysfs).
+    chown input input /sys/class/input/event0/device/enable
+    chown input input /sys/class/input/event1/device/enable
+    chown input input /sys/class/input/event2/device/enable
+    chown input input /sys/class/input/event3/device/enable
+    chown input input /sys/class/input/event4/device/enable
+    chown input input /sys/class/input/event5/device/enable
+    chown input input /sys/class/input/event6/device/enable
+    chown input input /sys/class/input/event7/device/enable
+    chown input input /sys/class/input/event8/device/enable
+    chown input input /sys/class/input/event9/device/enable
+    chmod 660 /sys/class/input/event0/device/enable
+    chmod 660 /sys/class/input/event1/device/enable
+    chmod 660 /sys/class/input/event2/device/enable
+    chmod 660 /sys/class/input/event3/device/enable
+    chmod 660 /sys/class/input/event4/device/enable
+    chmod 660 /sys/class/input/event5/device/enable
+    chmod 660 /sys/class/input/event6/device/enable
+    chmod 660 /sys/class/input/event7/device/enable
+    chmod 660 /sys/class/input/event8/device/enable
+    chmod 660 /sys/class/input/event9/device/enable
+    chown input input /sys/class/input/event0/device/poll_delay
+    chown input input /sys/class/input/event1/device/poll_delay
+    chown input input /sys/class/input/event2/device/poll_delay
+    chown input input /sys/class/input/event3/device/poll_delay
+    chown input input /sys/class/input/event4/device/poll_delay
+    chown input input /sys/class/input/event5/device/poll_delay
+    chown input input /sys/class/input/event6/device/poll_delay
+    chown input input /sys/class/input/event7/device/poll_delay
+    chown input input /sys/class/input/event9/device/poll_delay
+    chown input input /sys/class/input/event9/device/poll_delay
+    chmod 660 /sys/class/input/event0/device/poll_delay
+    chmod 660 /sys/class/input/event1/device/poll_delay
+    chmod 660 /sys/class/input/event2/device/poll_delay
+    chmod 660 /sys/class/input/event3/device/poll_delay
+    chmod 660 /sys/class/input/event4/device/poll_delay
+    chmod 660 /sys/class/input/event5/device/poll_delay
+    chmod 660 /sys/class/input/event6/device/poll_delay
+    chmod 660 /sys/class/input/event7/device/poll_delay
+    chmod 660 /sys/class/input/event9/device/poll_delay
+    chmod 660 /sys/class/input/event9/device/poll_delay
 
 on fs
     mkdir /efs 0775 radio radio
@@ -78,7 +123,7 @@ service dhcpcd /system/bin/dhcpcd -ABKL
     disabled
     oneshot
 
-service hciattach /system/bin/bcm_attach -d --enable_hci \
+service hciattach /system/bin/brcm_patchram_plus -d --enable_hci \
     --baudrate 921600 --patchram system/etc/firmware/bcm4329.hcd /dev/s3c2410_serial0
     user bluetooth
     group bluetooth net_bt_admin

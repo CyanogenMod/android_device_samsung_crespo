@@ -12,7 +12,5 @@
 /dev/akm8973_dev	0660	system	system
 /dev/akmd8973_aot	0660	system	system
 /dev/accelerometer	0660	system	system
-/dev/k3g		0660	system	system
-/dev/proximity		0660	system	system
-/dev/light		0660	system	system
+
 
