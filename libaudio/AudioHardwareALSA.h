@@ -347,6 +347,10 @@ namespace android
             // mic mute
             virtual status_t        setMicMute(bool state);
             virtual status_t        getMicMute(bool* state);
+		virtual size_t getInputBufferSize(
+			uint32_t sampleRate,
+			int format,
+			int channelCount);
 #if defined TURN_ON_DEVICE_ONLY_USE
                 virtual int             setMicStatus(int on);   // To deliver status of input stream(activated or not). If it's activated, doesn't turn off codec.
 #endif
