@@ -106,6 +106,12 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 # PRODUCT_LOCALES expansion must not be a density.
 PRODUCT_LOCALES := hdpi
 
+
+TARGET_PREBUILT_KERNEL := $(LOCAL_PATH)/kernel
+
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
+
 # See comment at the top of this file. This is where the other
 # half of the device-specific product definition file takes care
 # of the aspects that require proprietary drivers that aren't
