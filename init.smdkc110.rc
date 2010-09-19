@@ -1,4 +1,6 @@
 on boot
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+
     setprop ro.build.product smdkc110
     setprop ro.product.device smdkc110
     setprop ro.radio.noril yes
