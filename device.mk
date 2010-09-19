@@ -107,8 +107,6 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 PRODUCT_LOCALES := hdpi
 
 
-TARGET_PREBUILT_KERNEL := $(LOCAL_PATH)/kernel
-
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
 
