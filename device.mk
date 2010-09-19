@@ -110,6 +110,15 @@ PRODUCT_LOCALES := hdpi
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
 
+ifeq ($(TARGET_PREBUILT_KERNEL),)
+LOCAL_KERNEL := device/samsung/crespo/kernel
+else
+LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
+endif
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_KERNEL):kernel
+
 # See comment at the top of this file. This is where the other
 # half of the device-specific product definition file takes care
 # of the aspects that require proprietary drivers that aren't
