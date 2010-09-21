@@ -38,7 +38,8 @@ public:
             const sp<ISurface> &surface,
             size_t displayWidth, size_t displayHeight,
             size_t decodedWidth, size_t decodedHeight,
-            OMX_COLOR_FORMATTYPE colorFormat);
+            OMX_COLOR_FORMATTYPE colorFormat,
+            bool fromHardwareDecoder);
 
     virtual ~SecHardwareRenderer();
 
