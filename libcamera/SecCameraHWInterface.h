@@ -71,10 +71,10 @@ public:
                                     int32_t arg2);
     virtual void release();
 
-    static sp<CameraHardwareInterface> createInstance();
+    static sp<CameraHardwareInterface> createInstance(int cameraId);
 
 private:
-                        CameraHardwareSec();
+                        CameraHardwareSec(int cameraId);
     virtual             ~CameraHardwareSec();
 
     static wp<CameraHardwareInterface> singleton;
@@ -133,7 +133,7 @@ private:
 		}
 	};
 #endif
-    void initDefaultParameters();
+    void initDefaultParameters(int cameraId);
     void initHeapLocked();
 
     int previewThread();
