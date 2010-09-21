@@ -1,3 +1,3 @@
-require board=crespo|herring
-require version-bootloader=I9020XXJI5
-require version-baseband=I9020XXJI2
+require board=herring
+require version-bootloader=I9020XXJI6
+require version-baseband=I9020XXJI4
