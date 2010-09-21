@@ -41,6 +41,7 @@
 #define SEC_LOG_OFF
 #include "SEC_OSAL_Log.h"
 
+//#define ADD_SPS_PPS_I_FRAME
 
 /* H.264 Decoder Supported Levels & profiles */
 SEC_OMX_VIDEO_PROFILELEVEL supportedAVCProfileLevels[] ={
@@ -111,10 +112,19 @@ static int Check_H264_Frame(OMX_U8 *pInputStream, int buffSize, OMX_U32 flag, OM
 
             SEC_OSAL_Log(SEC_LOG_TRACE, "NaluType : %d", naluType);
             if (naluStart == 0) {
-                if (naluType == 1 || naluType == 5 || naluType == 6 || naluType == 7 || naluType == 8)
+#ifdef ADD_SPS_PPS_I_FRAME
+                if (naluType == 1 || naluType == 5)
+#else
+                if (naluType == 1 || naluType == 5 || naluType == 7 || naluType == 8)
+#endif
                     naluStart = 1;
             } else {
+#ifdef OLD_DETECT
                 frameTypeBoundary = (8 - naluType) & (naluType - 10); //AUD(9)
+#else
+                if (naluType == 9)
+                    frameTypeBoundary = -2;
+#endif
                 if (naluType == 1 || naluType == 5) {
                     if (accessUnitSize == buffSize) {
                         accessUnitSize--;
@@ -144,8 +154,7 @@ static int Check_H264_Frame(OMX_U8 *pInputStream, int buffSize, OMX_U32 flag, OM
     return (accessUnitSize + nextNaluSize);
 
 EXIT:
-
-        *pbEndOfFrame = OMX_FALSE;
+    *pbEndOfFrame = OMX_FALSE;
 
     return accessUnitSize;
 }
@@ -207,6 +216,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_GetParameter(
         OMX_VIDEO_PARAM_AVCTYPE *pDstAVCComponent = (OMX_VIDEO_PARAM_AVCTYPE *)pComponentParameterStructure;
         OMX_VIDEO_PARAM_AVCTYPE *pSrcAVCComponent = NULL;
         SEC_H264DEC_HANDLE      *pH264Dec = NULL;
+
         ret = SEC_OMX_Check_SizeVersion(pDstAVCComponent, sizeof(OMX_VIDEO_PARAM_AVCTYPE));
         if (ret != OMX_ErrorNone) {
             goto EXIT;
@@ -359,6 +369,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_SetParameter(
         OMX_VIDEO_PARAM_AVCTYPE *pDstAVCComponent = NULL;
         OMX_VIDEO_PARAM_AVCTYPE *pSrcAVCComponent = (OMX_VIDEO_PARAM_AVCTYPE *)pComponentParameterStructure;
         SEC_H264DEC_HANDLE      *pH264Dec = NULL;
+
         ret = SEC_OMX_Check_SizeVersion(pSrcAVCComponent, sizeof(OMX_VIDEO_PARAM_AVCTYPE));
         if (ret != OMX_ErrorNone) {
             goto EXIT;
@@ -677,8 +688,10 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pStreamBuffer;
     pSECComponent->processData[INPUT_PORT_INDEX].allocSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
 
-    SEC_OSAL_Memset(pH264Dec->hMFCH264Handle.timeStamp, 0, sizeof(OMX_TICKS)*MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
     pH264Dec->hMFCH264Handle.indexTimestamp = 0;
+    pSECComponent->getAllDelayBuffer = OMX_FALSE;
 
 EXIT:
     return ret;
@@ -730,6 +743,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     if (pH264Dec->hMFCH264Handle.bConfiguredMFC == OMX_FALSE) {
         SSBSIP_MFC_CODEC_TYPE eCodecType = H264_DEC;
 
+        if ((oneFrameSize <= 0) && (pInputData->nFlags & OMX_BUFFERFLAG_EOS)) {
+            pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
+            ret = OMX_ErrorNone;
+            goto EXIT;
+        }
+
         setConfVal = 5;
         SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_EXTRA_BUFFER_NUM, &setConfVal);
 
@@ -745,19 +765,31 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         returnCodec = SsbSipMfcDecInit(pH264Dec->hMFCH264Handle.hMFCHandle, eCodecType, oneFrameSize);
         if (returnCodec == MFC_RET_OK) {
             SSBSIP_MFC_IMG_RESOLUTION imgResol;
+            SSBSIP_MFC_CROP_INFORMATION cropInfo;
             SEC_OMX_BASEPORT *secInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
 
             SsbSipMfcDecGetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_GETCONF_BUF_WIDTH_HEIGHT, &imgResol);
-            SEC_OSAL_Log(SEC_LOG_TRACE, "set width height information : %d, %d", secInputPort->portDefinition.format.video.nFrameWidth, secInputPort->portDefinition.format.video.nFrameHeight);
-            SEC_OSAL_Log(SEC_LOG_TRACE, "mfc width height information : %d, %d", imgResol.width, imgResol.height);
+            SEC_OSAL_Log(SEC_LOG_TRACE, "set width height information : %d, %d",
+                            secInputPort->portDefinition.format.video.nFrameWidth,
+                            secInputPort->portDefinition.format.video.nFrameHeight);
+            SEC_OSAL_Log(SEC_LOG_TRACE, "mfc width height information : %d, %d",
+                            imgResol.width, imgResol.height);
+
+            SsbSipMfcDecGetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_GETCONF_CROP_INFO, &cropInfo);
+            SEC_OSAL_Log(SEC_LOG_TRACE, "mfc crop_top crop_bottom crop_left crop_right :  %d, %d, %d, %d",
+                            cropInfo.crop_top_offset , cropInfo.crop_bottom_offset ,
+                            cropInfo.crop_left_offset , cropInfo.crop_right_offset);
+
+            int actualWidth = imgResol.width - cropInfo.crop_left_offset - cropInfo.crop_right_offset;
+            int actualHeight = imgResol.height - cropInfo.crop_top_offset - cropInfo.crop_bottom_offset;
 
             /** Update Frame Size **/
-            if((secInputPort->portDefinition.format.video.nFrameWidth != imgResol.width) ||
-               (secInputPort->portDefinition.format.video.nFrameHeight != imgResol.height)) {
+            if((secInputPort->portDefinition.format.video.nFrameWidth != actualWidth) ||
+               (secInputPort->portDefinition.format.video.nFrameHeight != actualHeight)) {
                 SEC_OSAL_Log(SEC_LOG_TRACE, "change width height information : OMX_EventPortSettingsChanged");
                 /* change width and height information */
-                secInputPort->portDefinition.format.video.nFrameWidth = imgResol.width;
-                secInputPort->portDefinition.format.video.nFrameHeight  = imgResol.height;
+                secInputPort->portDefinition.format.video.nFrameWidth = actualWidth;
+                secInputPort->portDefinition.format.video.nFrameHeight = actualHeight;
                 secInputPort->portDefinition.format.video.nStride      = ((imgResol.width + 15) & (~15));
                 secInputPort->portDefinition.format.video.nSliceHeight = ((imgResol.height + 15) & (~15));
 
@@ -774,7 +806,14 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             }
 
             pH264Dec->hMFCH264Handle.bConfiguredMFC = OMX_TRUE;
+#ifdef ADD_SPS_PPS_I_FRAME
+            ret = OMX_ErrorInputDataDecodeYet;
+#else
+            pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
+
             ret = OMX_ErrorNone;
+#endif
             goto EXIT;
         } else {
             ret = OMX_ErrorMFCInit;
@@ -787,18 +826,19 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
 
-    pH264Dec->hMFCH264Handle.timeStamp[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->timeStamp[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pH264Dec->hMFCH264Handle.indexTimestamp));
     pH264Dec->hMFCH264Handle.indexTimestamp++;
     if (pH264Dec->hMFCH264Handle.indexTimestamp >= MAX_TIMESTAMP)
         pH264Dec->hMFCH264Handle.indexTimestamp = 0;
 
-    if (oneFrameSize <= 0) {
-        ret = OMX_ErrorNone;
-        goto EXIT;
+    if (Check_H264_StartCode(pInputData->dataBuffer, pInputData->dataLen) == OMX_TRUE) {
+        returnCodec = SsbSipMfcDecExe(pH264Dec->hMFCH264Handle.hMFCHandle, oneFrameSize);
+    } else {
+        returnCodec = MFC_RET_OK;
     }
 
-    returnCodec = SsbSipMfcDecExe(pH264Dec->hMFCH264Handle.hMFCHandle, oneFrameSize);
     if (returnCodec == MFC_RET_OK) {
         SSBSIP_MFC_DEC_OUTBUF_STATUS status;
         OMX_S32 indexTimestamp = 0;
@@ -807,10 +847,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         bufWidth =    (outputInfo.img_width + 15) & (~15);
         bufHeight =  (outputInfo.img_height + 15) & (~15);
 
-        if (SsbSipMfcDecGetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) {
+        if ((SsbSipMfcDecGetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
+            (((indexTimestamp < 0) || (indexTimestamp > MAX_TIMESTAMP)))) {
             pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
         } else {
-            pOutputData->timeStamp = pH264Dec->hMFCH264Handle.timeStamp[indexTimestamp];
+            pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
+            pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
         }
 
         if ((status == MFC_GETOUTBUF_DISPLAY_DECODING) ||
@@ -825,27 +868,30 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                 break;
             }
         }
+        if (pOutputData->nFlags & OMX_BUFFERFLAG_EOS)
+            pOutputData->dataLen = 0;
 
-        if(status == MFC_GETOUTBUF_DISPLAY_ONLY) {
+        if ((status == MFC_GETOUTBUF_DISPLAY_ONLY) ||
+            (pSECComponent->getAllDelayBuffer == OMX_TRUE)) {
             ret = OMX_ErrorInputDataDecodeYet;
         }
+        
         if(status == MFC_GETOUTBUF_DECODING_ONLY) {
+            /* ret = OMX_ErrorInputDataDecodeYet; */
             ret = OMX_ErrorNone;
             goto EXIT;
         }
-/*
-        if (status == MFC_GETOUTBUF_DISPLAY_END) {
-            inputData->nFlags |= OMX_BUFFERFLAG_EOS;
-            outputData->nFlags |= OMX_BUFFERFLAG_EOS;
+
+        if ((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pInputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+            pSECComponent->getAllDelayBuffer = OMX_TRUE;
+            ret = OMX_ErrorInputDataDecodeYet;
         }
 
-        if ((inputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)
-        {
-            set_conf_val = 1;
-            SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle,
-                MFC_DEC_SETCONF_IS_LAST_FRAME, &set_conf_val);
+        if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            ret = OMX_ErrorNone;
         }
-*/
     } else {
         /* ret = OMX_ErrorUndefined; */ /* ????? */
         ret = OMX_ErrorNone;
@@ -908,17 +954,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
         goto EXIT;
     }
 
-    if(pInputData->nFlags & OMX_BUFFERFLAG_EOS) {
-        pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
-    } else {
-        pOutputData->nFlags = pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS);
-    }
-
-    if(Check_H264_StartCode(pInputData->dataBuffer, pInputData->dataLen) == OMX_TRUE) {
         ret = SEC_MFC_H264_Decode(pOMXComponent, pInputData, pOutputData);
-    } else {
-        ret = OMX_ErrorNone;
-    }
     if (ret != OMX_ErrorNone) {
         if (ret == OMX_ErrorInputDataDecodeYet) {
             pOutputData->usedDataLen = 0;
@@ -929,6 +965,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
                                                     OMX_EventError, ret, 0, NULL);
         }
     } else {
+        pInputData->previousDataLen = pInputData->dataLen;
         pInputData->usedDataLen += pInputData->dataLen;
         pInputData->remainDataLen = pInputData->dataLen - pInputData->usedDataLen;
         pInputData->dataLen -= pInputData->usedDataLen;

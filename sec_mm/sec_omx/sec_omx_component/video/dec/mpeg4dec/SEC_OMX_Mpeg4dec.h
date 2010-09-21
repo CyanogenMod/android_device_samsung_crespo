@@ -30,8 +30,6 @@
 #include "SEC_OMX_Def.h"
 #include "OMX_Component.h"
 
-#define MAX_TIMESTAMP        16
-
 
 typedef enum _CODEC_TYPE
 {
@@ -62,7 +60,6 @@ typedef struct _SEC_MFC_MPEG4_HANDLE
     OMX_HANDLETYPE hMFCHandle;
     OMX_PTR        pMFCStreamBuffer;
     OMX_PTR        pMFCStreamPhyBuffer;
-    OMX_TICKS      timestamp[MAX_TIMESTAMP];
     OMX_U32        indexTimestamp;
     OMX_BOOL       bConfiguredMFC;
     OMX_BOOL       bThumbnailMode;

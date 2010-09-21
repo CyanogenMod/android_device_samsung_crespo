@@ -159,3 +159,16 @@ int SEC_OSAL_GetElemNum(SEC_QUEUE *queueHandle)
     SEC_OSAL_MutexUnlock(queue->qMutex);
     return ElemNum;
 }
+
+int SEC_OSAL_SetElemNum(SEC_QUEUE *queueHandle, int ElemNum)
+{
+    SEC_QUEUE *queue = (SEC_QUEUE *)queueHandle;
+    if (queue == NULL)
+        return -1;
+
+    SEC_OSAL_MutexLock(queue->qMutex);
+    queue->numElem = ElemNum; 
+    SEC_OSAL_MutexUnlock(queue->qMutex);
+    return ElemNum;
+}
+

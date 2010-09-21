@@ -790,7 +790,8 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YSize = pMpeg4Enc->hMFCMpeg4Handle.inputInfo.YSize;
     pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CSize = pMpeg4Enc->hMFCMpeg4Handle.inputInfo.CSize;
 
-    SEC_OSAL_Memset(pMpeg4Enc->hMFCMpeg4Handle.timestamp, 0, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
     pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp = 0;
 
 EXIT:
@@ -850,6 +851,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pOutputData->dataBuffer = outputInfo.StrmVirAddr;
         pOutputData->allocSize = outputInfo.headerSize;
         pOutputData->dataLen = outputInfo.headerSize;
+        pOutputData->timeStamp = pInputData->timeStamp;
         pOutputData->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
         pOutputData->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
@@ -869,7 +871,8 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
 
-    pMpeg4Enc->hMFCMpeg4Handle.timestamp[pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->timeStamp[pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcEncSetConfig(hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp));
     pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp++;
     if (pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp >= MAX_TIMESTAMP)
@@ -912,10 +915,14 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
 
         returnCodec = SsbSipMfcEncGetOutBuf(hMFCHandle, &outputInfo);
 
-        if (SsbSipMfcEncGetConfig(hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) == MFC_RET_OK)
-            pOutputData->timeStamp = pMpeg4Enc->hMFCMpeg4Handle.timestamp[indexTimestamp];
-        else
+        if ((SsbSipMfcEncGetConfig(hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
+            (((indexTimestamp < 0) || (indexTimestamp > MAX_TIMESTAMP)))) {
             pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
+        } else {
+            pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
+            pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
+        }
 
         if (returnCodec == MFC_RET_OK) {
             /** Fill Output Buffer **/
@@ -959,11 +966,6 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, S
     if (OMX_FALSE == SEC_Check_BufferProcess_State(pSECComponent)) {
         goto EXIT;
     }
-
-    if (pInputData->nFlags & OMX_BUFFERFLAG_EOS)
-        pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
-    else
-        pOutputData->nFlags = pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS);
 
     ret = SEC_MFC_Mpeg4_Encode(pOMXComponent, pInputData, pOutputData);
     if (ret != OMX_ErrorNone) {

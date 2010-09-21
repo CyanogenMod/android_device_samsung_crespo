@@ -31,8 +31,6 @@
 #include "OMX_Component.h"
 #include "SsbSipMfcApi.h"
 
-#define MAX_TIMESTAMP        16
-
 
 typedef enum _CODEC_TYPE
 {
@@ -46,7 +44,6 @@ typedef struct _SEC_MFC_MPEG4ENC_HANDLE
     SSBSIP_MFC_ENC_MPEG4_PARAM mpeg4MFCParam;
     SSBSIP_MFC_ENC_H263_PARAM  h263MFCParam;
     SSBSIP_MFC_ENC_INPUT_INFO  inputInfo;
-    OMX_TICKS                  timestamp[MAX_TIMESTAMP];
     OMX_U32                    indexTimestamp;
     OMX_BOOL                   bConfiguredMFC;
     CODEC_TYPE                 codecType;
