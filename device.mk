@@ -49,8 +49,8 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/init.smdkc110.rc:root/init.smdkc110.rc \
-	device/samsung/crespo/ueventd.smdkc110.rc:root/ueventd.smdkc110.rc
+	device/samsung/crespo/init.herring.rc:root/init.herring.rc \
+	device/samsung/crespo/ueventd.herring.rc:root/ueventd.herring.rc
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \

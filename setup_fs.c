@@ -9,10 +9,23 @@ const char *mkfs = "/system/bin/make_ext4fs";
 
 int setup_fs(const char *blockdev)
 {
-    char buf[128];
+    char buf[256], path[128];
     pid_t child;
-    int status;
+    int status, n;
 
+        /* we might be looking at an indirect reference */
+    n = readlink(blockdev, path, sizeof(path) - 1);
+    if (n > 0) {
+        path[n] = 0;
+        if (!memcmp(path, "/dev/block/", 11))
+            blockdev = path + 11;
+    }
+
+    if (strchr(blockdev,'/')) {
+        fprintf(stderr,"not a block device name: %s\n", blockdev);
+        return 0;
+    }
+    
     sprintf(buf,"/sys/fs/ext4/%s", blockdev);
     if (access(buf, F_OK) == 0) {
         fprintf(stderr,"device %s already has a filesystem\n", blockdev);
@@ -44,8 +57,8 @@ int main(int argc, char **argv)
     int need_reboot = 0;
 
     while (argc > 1) {
-        if (strlen(argv[1]) > 32) continue;
-        need_reboot |= setup_fs(argv[1]);
+        if (strlen(argv[1]) < 128)
+            need_reboot |= setup_fs(argv[1]);
         argv++;
         argc--;
     }
