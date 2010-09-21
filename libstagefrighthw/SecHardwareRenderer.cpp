@@ -42,7 +42,8 @@ SecHardwareRenderer::SecHardwareRenderer(
         const sp<ISurface> &surface,
         size_t displayWidth, size_t displayHeight,
         size_t decodedWidth, size_t decodedHeight,
-        OMX_COLOR_FORMATTYPE colorFormat)
+        OMX_COLOR_FORMATTYPE colorFormat,
+        bool fromHardwareDecoder)
     : mISurface(surface),
       mDisplayWidth(displayWidth),
       mDisplayHeight(displayHeight),
@@ -66,12 +67,17 @@ SecHardwareRenderer::SecHardwareRenderer(
         return;
     }
 
+    sp<OverlayRef> ref;
+
 #if defined (USE_ZERO_COPY)
-    sp<OverlayRef> ref = mISurface->createOverlay(
-            mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP, 0);
-    mCustomFormat = true;
+    if (fromHardwareDecoder) {
+        ref = mISurface->createOverlay(
+                mDecodedWidth, mDecodedHeight,
+                HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP, 0);
+        mCustomFormat = true;
+    } else
 #else
-    sp<OverlayRef> ref = mISurface->createOverlay(
+    ref = mISurface->createOverlay(
             mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_P, 0);
 #endif
 
