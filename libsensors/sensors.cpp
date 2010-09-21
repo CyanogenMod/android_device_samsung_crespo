@@ -67,8 +67,8 @@
 
 /* The SENSORS Module */
 static const struct sensor_t sSensorList[] = {
-        { "AK8973 3-axis Accelerometer",
-          "Asahi Kasei Microdevices",
+        { "KR3DM 3-axis Accelerometer",
+          "STMicroelectronics",
           1, SENSORS_ACCELERATION_HANDLE,
           SENSOR_TYPE_ACCELEROMETER, 4.0f, 1.0f/720.0f, 1.0f, 0, { } },
         { "AK8973 3-axis Magnetic field sensor",
@@ -88,7 +88,7 @@ static const struct sensor_t sSensorList[] = {
           1, SENSORS_PROXIMITY_HANDLE,
           SENSOR_TYPE_PROXIMITY, 1.0, 1, 20, 0, { } },
         { "K3G Gyroscope sensor",
-          "ST Micro",
+          "STMicroelectronics",
           1, SENSORS_GYROSCOPE_HANDLE,
           SENSOR_TYPE_GYROSCOPE, 1.0, 1, 20, 0, { } },
 };
