@@ -100,7 +100,7 @@ on fs
 # Permissions for System Server and daemons.
     chown system system /sys/class/backlight/s5p_bl/brightness
 
-service glgps /system/vendor/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
+service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
     user system
     group system inet
 
