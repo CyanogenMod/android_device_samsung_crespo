@@ -6,6 +6,7 @@
 /dev/pmem_gpu1            0664   system     graphics
 /dev/s3c-mem              0664   system     system
 /dev/s3c_bc               0664   system     system
+/dev/s3c-mfc              0664   system     graphics
 /dev/onedram              0664   radio      radio
 
 # for Sensor HAL
