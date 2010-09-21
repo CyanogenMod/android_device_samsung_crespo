@@ -305,6 +305,14 @@ CameraHardwareSec::~CameraHardwareSec()
 	if(mRecordHeap != NULL)
 		mRecordHeap.clear();
 
+#if defined(BOARD_USES_OVERLAY)
+	if(mUseOverlay) {
+		mOverlay->destroy();
+		mUseOverlay = false;
+		mOverlay = NULL;
+	}
+#endif
+
 	mSecCamera = NULL;
 
 	singleton.clear();
@@ -405,7 +413,10 @@ int CameraHardwareSec::previewThread()
 
 		overlay_buffer_t overlay_buffer;
 		ret = mOverlay->dequeueBuffer(&overlay_buffer);
-		if (ret == -1) {
+
+		if (ret == ALL_BUFFERS_FLUSHED) {
+			goto OverlayEnd;
+		} else if (ret == -1) {
 			LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
 			goto OverlayEnd;
 		}
@@ -673,14 +684,6 @@ void CameraHardwareSec::stopPreview()
 	}
 
 	mPreviewRunning = false;
-
-#if defined(BOARD_USES_OVERLAY)
-	if(mUseOverlay) {
-		mOverlay->destroy();
-		mUseOverlay = false;
-		mOverlay = NULL;
-	}
-#endif
 
 }
 
