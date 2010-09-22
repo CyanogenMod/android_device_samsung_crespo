@@ -30,11 +30,14 @@ VideoRenderer *createRenderer(
         size_t decodedWidth, size_t decodedHeight) {
     using android::SecHardwareRenderer;
 
+    bool fromHardwareDecoder = !strncmp(componentName, "OMX.SEC.", 8);
+
     SecHardwareRenderer *renderer =
         new SecHardwareRenderer(
                 surface, displayWidth, displayHeight,
                 decodedWidth, decodedHeight,
-                colorFormat);
+                colorFormat,
+                fromHardwareDecoder);
 
     if (renderer->initCheck() != android::OK) {
         delete renderer;
