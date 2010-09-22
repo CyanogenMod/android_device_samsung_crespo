@@ -19,9 +19,10 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libs3cjpeg
 LOCAL_SRC_FILES:= \
 	SecCamera.cpp \
 	SecCameraHWInterface.cpp
-	
+
 
 LOCAL_SHARED_LIBRARIES:= libutils libui liblog libbinder libcutils
+LOCAL_SHARED_LIBRARIES+= libs3cjpeg
 LOCAL_SHARED_LIBRARIES+= libcamera_client
 
 #Enable the below code to show the video output (without GUI) on TV

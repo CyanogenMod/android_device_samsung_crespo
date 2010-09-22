@@ -156,6 +156,9 @@ private:
                                                 int *pJpegSize,
                                                 void *pJpegData,
                                                 void *pYuvData);
+            bool        YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth, uint32_t srcHeight);
+            bool        scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
+                                        char *dstBuf, uint32_t dstWidth, uint32_t dstHight);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     static  int         beginObjectTrackingThread(void *cookie);
