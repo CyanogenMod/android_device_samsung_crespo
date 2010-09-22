@@ -100,7 +100,7 @@ on fs
 # Permissions for System Server and daemons.
     chown system system /sys/class/backlight/s5p_bl/brightness
 
-service glgps /system/vendor/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
+service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
     user system
     group system inet
 
@@ -133,6 +133,11 @@ service hciattach /system/bin/brcm_patchram_plus -d --enable_hci \
     oneshot
 
 # sensor service
-    service akmd8973 /system/vendor/bin/akmd8973
+service akmd8973 /system/vendor/bin/akmd8973
     enabled
     oneshot
+
+service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
+    disabled
+    oneshot
+    keycodes 115 139

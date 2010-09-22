@@ -1,0 +1,10 @@
+# mount point	fstype		device
+
+/sdcard		vfat		/dev/block/platform/s3c-sdhci.0/by-name/media
+/system		ext4		/dev/block/platform/s3c-sdhci.0/by-name/system
+/cache		ext4		/dev/block/platform/s3c-sdhci.0/by-name/cache
+/data		ext4		/dev/block/platform/s3c-sdhci.0/by-name/userdata
+/misc 		mtd 		misc
+/boot		mtd		boot
+/recovery	mtd		recovery
+/radio		mtd		radio
