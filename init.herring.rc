@@ -131,7 +131,7 @@ service dhcpcd /system/bin/dhcpcd -ABKL
     oneshot
 
 service hciattach /system/bin/brcm_patchram_plus -d --enable_hci \
-    --baudrate 921600 --patchram /vendor/firmware/bcm4329.hcd /dev/s3c2410_serial0
+    --baudrate 3000000 --patchram /vendor/firmware/bcm4329.hcd /dev/s3c2410_serial0
     user bluetooth
     group bluetooth net_bt_admin
     disabled
