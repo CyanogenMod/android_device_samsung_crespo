@@ -171,21 +171,26 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
     p.set("camera-id", cameraId);
     /* set camera ID & reset camera */
-    if (cameraId == 0)
-        mSecCamera->setCameraId(SecCamera::CAMERA_ID_BACK);
-    else
-        mSecCamera->setCameraId(SecCamera::CAMERA_ID_FRONT);
+    mSecCamera->setCameraId(cameraId);
+    if (cameraId == SecCamera::CAMERA_ID_BACK) {
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
+                "800x480,640x480");
+        p.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
+                "2560x1920,2048x1536,1600x1200,800x480,640x480");
+    }
+    else {
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
+                "640x480,320x240,160x120");
+        p.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
+                "640x480");
+    }
 
-    if (mSecCamera->getPreviewMaxSize(&preview_max_width, &preview_max_height) < 0) {
+    // If these fail, then we are using an invalid cameraId and we'll leave the
+    // sizes at zero to catch the error.
+    if (mSecCamera->getPreviewMaxSize(&preview_max_width, &preview_max_height) < 0)
         LOGE("getPreviewMaxSize fail (%d / %d) \n", preview_max_width, preview_max_height);
-        preview_max_width  = LCD_WIDTH;
-        preview_max_height = LCD_HEIGHT;
-    }
-    if (mSecCamera->getSnapshotMaxSize(&snapshot_max_width, &snapshot_max_height) < 0) {
+    if (mSecCamera->getSnapshotMaxSize(&snapshot_max_width, &snapshot_max_height) < 0)
         LOGE("getSnapshotMaxSize fail (%d / %d) \n", snapshot_max_width, snapshot_max_height);
-        snapshot_max_width  = LCD_WIDTH;
-        snapshot_max_height = LCD_HEIGHT;
-    }
 
 #ifdef PREVIEW_USING_MMAP
     p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP);
@@ -199,13 +204,9 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     p.setPictureSize(snapshot_max_width, snapshot_max_height);
     p.set(CameraParameters::KEY_JPEG_QUALITY, "100"); // maximum quality
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
-            "640x480,800x480");
-    p.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
-            "2560x1920,2048x1536,1600x1200,640x480");
     p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS,
         CameraParameters::PIXEL_FORMAT_YUV420SP);
-    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "15,30");
+    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "30,15");
     p.set(CameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
         CameraParameters::PIXEL_FORMAT_JPEG);
     p.set(CameraParameters::KEY_SUPPORTED_JPEG_THUMBNAIL_SIZES,
@@ -281,12 +282,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     p.set("saturation-max", 4);
     p.set("contrast-min", 0);
     p.set("contrast-max", 4);
-
-#else
-    // List supported picture size values //Kamat
-    p.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
-            "2560x1920,2048x1536,1600x1200,1280x960");
 #endif
+
     // These values must be multiples of 16, so we can't do 427x320, which is the exact size on
     // screen we want to display at. 480x360 doesn't work either since it's a multiple of 8.
     p.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "160");

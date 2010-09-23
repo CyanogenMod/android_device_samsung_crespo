@@ -88,9 +88,6 @@ namespace android {
 #define LOG_TIME(n)
 #endif
 
-#define LCD_WIDTH       480
-#define LCD_HEIGHT      800
-
 #define JOIN(x, y) JOIN_AGAIN(x, y)
 #define JOIN_AGAIN(x, y) x ## y
 
