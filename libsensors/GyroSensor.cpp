@@ -107,7 +107,7 @@ bool GyroSensor::hasPendingEvents() const {
 int GyroSensor::setDelay(int32_t handle, int64_t delay_ns)
 {
     int fd;
-    strcpy(&input_sysfs_path[input_sysfs_path_len], "gyro_delay");
+    strcpy(&input_sysfs_path[input_sysfs_path_len], "poll_delay");
     fd = open(input_sysfs_path, O_RDWR);
     if (fd >= 0) {
         char buf[80];
