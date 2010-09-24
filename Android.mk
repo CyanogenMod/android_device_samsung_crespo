@@ -35,4 +35,6 @@ include $(BUILD_EXECUTABLE)
 
 endif
 
+ifneq ($(TARGET_SIMULATOR),true)
 include $(call all-makefiles-under,$(LOCAL_PATH))
+endif
