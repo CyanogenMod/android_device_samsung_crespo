@@ -233,6 +233,8 @@ private:
     int mDevFd;
     jpg_args mArgs;
 
+    bool available;
+
 };
 };
 #endif /* __JPG_API_H__ */
