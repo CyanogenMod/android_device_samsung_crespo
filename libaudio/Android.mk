@@ -78,6 +78,15 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+ifeq ($(BOARD_USES_LIBSECRIL_STUB),true)
+# A stub to replace libsecril-client at build time
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := secril_stub.c
+LOCAL_MODULE := libsecril-client
+LOCAL_MODULE_TAGS := optional
+include $(BUILD_SHARED_LIBRARY)
+endif
+
 endif
 endif
 endif
