@@ -18,7 +18,9 @@
 #
 
 # Set this up here so that BoardVendorConfig.mk can override it
-BOARD_USES_GENERIC_AUDIO := true
+BOARD_USES_GENERIC_AUDIO := false
+
+BOARD_USES_LIBSECRIL_STUB := true
 
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/BoardConfigVendor.mk
