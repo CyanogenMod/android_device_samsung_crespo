@@ -359,7 +359,7 @@ CameraHardwareSec::~CameraHardwareSec()
         mRecordHeap.clear();
 
 #if defined(BOARD_USES_OVERLAY)
-    if(mUseOverlay) {
+    if (mUseOverlay) {
         mOverlay->destroy();
         mUseOverlay = false;
         mOverlay = NULL;
@@ -1016,6 +1016,70 @@ void CameraHardwareSec::save_postview(const char *fname, uint8_t *buf, uint32_t 
     ::close(fd);
 }
 
+bool CameraHardwareSec::scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_t srcHeight,
+                                        char *dstBuf, uint32_t dstWidth, uint32_t dstHeight)
+{
+    int32_t step_x, step_y;
+    int32_t iXsrc, iXdst;
+    int32_t x, y, src_y_start_pos, dst_pos, src_pos;
+
+    if (dstWidth % 2 != 0 || dstHeight % 2 != 0){
+        LOGE("scale_down_yuv422: invalid width, height for scaling");
+        return false;
+    }
+
+    step_x = srcWidth / dstWidth;
+    step_y = srcHeight / dstHeight;
+
+    dst_pos = 0;
+    for (uint32_t y = 0; y < dstHeight; y++) {
+        src_y_start_pos = (y * step_y * (srcWidth * 2));
+
+        for (uint32_t x = 0; x < dstWidth; x += 2) {
+            src_pos = src_y_start_pos + (x * (step_x * 2));
+
+            dstBuf[dst_pos++] = srcBuf[src_pos    ];
+            dstBuf[dst_pos++] = srcBuf[src_pos + 1];
+            dstBuf[dst_pos++] = srcBuf[src_pos + 2];
+            dstBuf[dst_pos++] = srcBuf[src_pos + 3];
+        }
+    }
+
+    return true;
+}
+
+bool CameraHardwareSec::YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth, uint32_t srcHeight)
+{
+    int32_t	x, y, src_y_start_pos, dst_cbcr_pos, dst_pos, src_pos;
+    unsigned char *srcBufPointer = (unsigned char *)srcBuf;
+    unsigned char *dstBufPointer = (unsigned char *)dstBuf;
+
+    dst_pos = 0;
+    dst_cbcr_pos = srcWidth*srcHeight;
+    for (uint32_t y = 0; y < srcHeight; y++) {
+        src_y_start_pos = (y * (srcWidth * 2));
+
+        for (uint32_t x = 0; x < (srcWidth * 2); x += 2) {
+            src_pos = src_y_start_pos + x;
+
+            dstBufPointer[dst_pos++] = srcBufPointer[src_pos];
+        }
+    }
+    for (uint32_t y = 0; y < srcHeight; y += 2) {
+        src_y_start_pos = (y * (srcWidth * 2));
+
+        for (uint32_t x = 0; x < (srcWidth * 2); x += 4) {
+            src_pos = src_y_start_pos + x;
+
+            dstBufPointer[dst_cbcr_pos++] = srcBufPointer[src_pos + 3];
+            dstBufPointer[dst_cbcr_pos++] = srcBufPointer[src_pos + 1];
+        }
+    }
+
+    return true;
+}
+
+
 int CameraHardwareSec::pictureThread()
 {
     LOGV("%s()", __func__);
@@ -1029,16 +1093,22 @@ int CameraHardwareSec::pictureThread()
     //unsigned int addr;
     unsigned char *addr = NULL;
     int mPostViewWidth, mPostViewHeight, mPostViewSize;
+    int mThumbWidth, mThumbHeight, mThumbSize;
     int cap_width, cap_height, cap_frame_size;
 
     unsigned int output_size = 0;
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    //*size = (BACK_CAMERA_POSTVIEW_WIDTH * BACK_CAMERA_POSTVIEW_HEIGHT * BACK_CAMERA_POSTVIEW_BPP) / 8;
-    int postviewHeapSize = mPostViewWidth * mPostViewHeight * 2;
+    mSecCamera->getThumbnailConfig(&mThumbWidth, &mThumbHeight, &mThumbSize);
+    int postviewHeapSize = mPostViewSize;
     mSecCamera->getSnapshotSize(&cap_width, &cap_height, &cap_frame_size);
-    LOGE("[kidggang]:func(%s):line(%d)&cap_width(%d), &cap_height(%d), &cap_frame_size(%d)\n",
-            __func__,__LINE__,cap_width, cap_height, cap_frame_size);
+    int mJpegHeapSize;
+    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
+        mJpegHeapSize = cap_frame_size * mSecCamera->getJpegRatio();
+    else
+        mJpegHeapSize = cap_frame_size;
+    LOGE("[kidggang]:func(%s):line(%d)&cap_width(%d), &cap_height(%d), &cap_frame_size(%d), mJpegHeapSize(%d)\n",
+            __func__,__LINE__,cap_width, cap_height, cap_frame_size, mJpegHeapSize);
 
 //  sp<MemoryBase> buffer = new MemoryBase(mRawHeap, 0, postviewHeapSize);
 
@@ -1069,6 +1139,10 @@ int CameraHardwareSec::pictureThread()
 #endif
     }//[zzangdol]CAMERA_ID_BACK
 
+    sp<MemoryHeapBase> JpegHeap = new MemoryHeapBase(mJpegHeapSize);
+    sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
+    sp<MemoryHeapBase> ThumbnailHeap = new MemoryHeapBase(mThumbSize);
+
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
         LOG_TIME_DEFINE(1)
         LOG_TIME_START(1)
@@ -1095,20 +1169,22 @@ int CameraHardwareSec::pictureThread()
                 ret = UNKNOWN_ERROR;
             }
         } else {
-            addr = mSecCamera->getSnapshotAndJpeg(&output_size);
-            //LOGV("[zzangdol] getSnapshotAndJpeg\n");
+            if (mSecCamera->getSnapshotAndJpeg((unsigned char*)PostviewHeap->base(),
+                    (unsigned char*)JpegHeap->base(), &output_size) < 0)
+                return UNKNOWN_ERROR;
+            LOGE("snapshotandjpeg done\n");
         }
 #else
         phyAddr = mSecCamera->getSnapshotAndJpeg();
+        if (phyAddr < 0)
+            return UNKNOWN_ERROR;
+
         jpeg_data = mSecCamera->yuv2Jpeg((unsigned char*)phyAddr, 0, &jpeg_size,
-                        picture_width, picture_height, picture_format);
+                                        picture_width, picture_height, picture_format);
 #endif
 
-#ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
-        postview_offset = mSecCamera->getPostViewOffset();
-        if (jpeg_data != NULL)
-            memcpy(mRawHeap->base(), jpeg_data + postview_offset, mPostViewSize);
-#else
+#ifndef DIRECT_DELIVERY_OF_POSTVIEW_DATA
+
         addrs[0].addr_y = phyAddr;
 #endif
 
@@ -1118,17 +1194,61 @@ int CameraHardwareSec::pictureThread()
 
     int JpegImageSize, JpegExifSize;
 
-    sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
-    sp<MemoryHeapBase> JpegHeap = new MemoryHeapBase(4300000);
-    decodeInterleaveData(jpeg_data, 4261248, mPostViewWidth, mPostViewHeight,
-                         &JpegImageSize, JpegHeap->base(), PostviewHeap->base());
+    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
+        decodeInterleaveData(jpeg_data, SecCamera::getInterleaveDataSize(), mPostViewWidth, mPostViewHeight,
+                            &JpegImageSize, JpegHeap->base(), PostviewHeap->base());
 
+        scaleDownYuv422((char *)PostviewHeap->base(), mPostViewWidth, mPostViewHeight,
+                        (char *)ThumbnailHeap->base(), mThumbWidth, mThumbHeight);
+    }
+
+#ifdef POSTVIEW_CALLBACK
     sp<MemoryBase> postview = new MemoryBase(PostviewHeap, 0, postviewHeapSize);
+#endif
     memcpy(mRawHeap->base(),PostviewHeap->base(), postviewHeapSize);
+
+   /* Put postview image to Overlay */
+    unsigned int index = 0;
+    unsigned int offset = ((mPostViewWidth*mPostViewHeight*3/2) + 16) * index;
+    unsigned int overlay_header[4];
+    buf_idx ^= 1;
+    overlay_header[0]= mSecCamera->getPhyAddrY(index);
+    overlay_header[1]= overlay_header[0] + mPostViewWidth*mPostViewHeight;
+    overlay_header[2]= buf_idx;
+
+    YUY2toNV21(mRawHeap->base(), (void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset),
+                mPostViewWidth, mPostViewHeight);
+
+    memcpy(static_cast<unsigned char*>(mPreviewHeap->base()) + offset + (mPostViewWidth*mPostViewHeight * 3 / 2),
+            overlay_header, 16);
+
+    ret = mOverlay->queueBuffer((void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset +
+                                (mPostViewWidth*mPostViewHeight * 3 / 2)));
+
+    if (ret == ALL_BUFFERS_FLUSHED) {
+        LOGE("%s ALL_BUFFERS_FLUSHED",__func__);
+        goto PostviewOverlayEnd;
+    } else if (ret == -1) {
+        LOGE("ERR(%s):overlay queueBuffer fail", __func__);
+        goto PostviewOverlayEnd;
+    }
+
+    overlay_buffer_t overlay_buffer;
+    ret = mOverlay->dequeueBuffer(&overlay_buffer);
+
+    if (ret == ALL_BUFFERS_FLUSHED) {
+        LOGE("%s ALL_BUFFERS_FLUSHED",__func__);
+        goto PostviewOverlayEnd;
+    } else if (ret == -1) {
+        LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
+        goto PostviewOverlayEnd;
+    }
+
+PostviewOverlayEnd:
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
         mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
     }
-#if 0//def SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+#ifdef POSTVIEW_CALLBACK
     if (mMsgEnabled & CAMERA_MSG_POSTVIEW_FRAME) {
         int postviewHeapSize = mPostViewSize;
         sp<MemoryHeapBase> mPostviewHeap = new MemoryHeapBase(postviewHeapSize);
@@ -1141,18 +1261,18 @@ int CameraHardwareSec::pictureThread()
 
         mDataCb(CAMERA_MSG_POSTVIEW_FRAME, postview, mCallbackCookie);
     }
-#endif //#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-
+#endif
     if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
         if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-            const int EXIF_FILE_SIZE = 28800;
-            const int JPG_STREAM_BUF_SIZE = 3145728;
-
             sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
-            JpegExifSize = mSecCamera->getExif ((unsigned char *)ExifHeap->base(),
-                                               (unsigned char *)PostviewHeap->base());
+            JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(),
+                    (unsigned char *)ThumbnailHeap->base());
 
             LOGE("JpegExifSize=%d", JpegExifSize);
+
+            if (JpegExifSize < 0)
+                return UNKNOWN_ERROR;
+
             unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
             unsigned char *ImageStart = ExifStart + JpegExifSize;
 
@@ -1163,12 +1283,8 @@ int CameraHardwareSec::pictureThread()
             mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
         } else {
             LOGV("[zzangdol] COMPRESSED_IMAGE\n");
-            //mSecCamera->getSnapshotSize(&cap_width, &cap_height, &cap_frame_size);
-            //sp<MemoryHeapBase> mHeap = new MemoryHeapBase((int)mSecCamera->getCameraFd(), (size_t)(cap_frame_size * kBufferCount), (uint32_t)0);
-            sp<MemoryHeapBase> mHeap = new MemoryHeapBase(2000000);
-            memcpy(mHeap->base(), addr, cap_frame_size);
-            sp<MemoryBase> mem = new MemoryBase(mHeap , 0, cap_frame_size);
-            //save_postview("/data/front.yuv", (uint8_t *)mHeap->base(), yuv_frame_size2);
+            //memcpy(JpegHeap->base(), addr, output_size);
+            sp<MemoryBase> mem = new MemoryBase(JpegHeap , 0, output_size);
             mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);//[zzangdol]
         }
     }
@@ -1397,8 +1513,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             new_picture_format = V4L2_PIX_FMT_UYVY;
         else if (strcmp(new_str_picture_format, CameraParameters::PIXEL_FORMAT_JPEG) == 0)
 #ifdef JPEG_FROM_SENSOR
-            new_picture_format = V4L2_PIX_FMT_UYVY;
-#else
             new_picture_format = V4L2_PIX_FMT_YUYV;
 #endif
         else if (strcmp(new_str_picture_format, "yuv422p") == 0)
@@ -1477,30 +1591,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_rotation = params.getInt(CameraParameters::KEY_ROTATION);
     int new_exif_rotation = 1;
 
-    if (new_rotation != -1) {
-        if (new_vtmode == SecCamera::VT_MODE_ON ) {
-            LOGE("ERR(%s):VT mode is on. Rotate(%d))", __func__, new_rotation);
-
-            if (mSecCamera->SetRotate(new_rotation) < 0) {
-                LOGE("ERR(%s):Fail on mSecCamera->SetRotate(rotation(%d))", __func__, new_rotation);
-                ret = UNKNOWN_ERROR;
-            }
-        } else {
-            if (mSecCamera->SetRotate(0) < 0) {
-                LOGE("ERR(%s):Fail on mSecCamera->SetRotate(rotation(%d))", __func__, new_rotation);
-                ret = UNKNOWN_ERROR;
-            }
-
-            if (new_rotation == 0)
-                new_exif_rotation = 1;
-            else if (new_rotation == 90)
-                new_exif_rotation = 6;
-            else if (new_rotation == 180)
-                new_exif_rotation = 3;
-            else if (new_rotation == 270)
-                new_exif_rotation = 8;
-            else
-                new_exif_rotation = 1;
+    if (0 <= new_rotation) {
+        LOGE("mingyu:set orientation:%d\n", new_rotation);
+        if (mSecCamera->setExifOrientationInfo(new_rotation) < 0) {
+            LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
+            ret = UNKNOWN_ERROR;
         }
     }
 
@@ -2212,16 +2307,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                 LOGE("%s::mSecCamera->setSlowAE(%d) fail", __func__, new_slow_ae);
                 ret = UNKNOWN_ERROR;
             }
-        }
-    }
-
-    //exif orientation info
-    int new_exif_orientation = params.getInt("exifOrientation");
-
-    if (0 <= new_exif_orientation) {
-        if (mSecCamera->setExifOrientationInfo(new_exif_orientation) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_exif_orientation);
-            ret = UNKNOWN_ERROR;
         }
     }
 
