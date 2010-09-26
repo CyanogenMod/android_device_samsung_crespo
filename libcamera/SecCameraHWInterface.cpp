@@ -30,7 +30,6 @@
 #include <ui/Overlay.h>
 #define CACHEABLE_BUFFERS       0x1
 #define ALL_BUFFERS_FLUSHED     -66
-int buf_idx = 0;
 #endif
 
 #ifdef SEND_YUV_RECORD_DATA
@@ -76,6 +75,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mCurrentPreviewFrame(0),
 #if defined(BOARD_USES_OVERLAY)
           mUseOverlay(false),
+          mOverlayBufferIdx(0),
 #endif
           mRecordRunning(false)
 #ifdef JPEG_FROM_SENSOR
@@ -448,14 +448,9 @@ int CameraHardwareSec::previewThread()
 #if defined(BOARD_USES_OVERLAY)
     if (mUseOverlay) {
         int ret;
-
-        if (buf_idx == 0)
-            buf_idx = 1;
-        else
-            buf_idx = 0;
-
+        mOverlayBufferIdx ^= 1;
         memcpy(static_cast<unsigned char*>(mPreviewHeap->base()) + offset + frame_size + sizeof(phyYAddr) + sizeof(phyCAddr),
-                    &buf_idx, sizeof(buf_idx));
+                    &mOverlayBufferIdx, sizeof(mOverlayBufferIdx));
 
         ret = mOverlay->queueBuffer((void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size)));
 
@@ -1207,14 +1202,15 @@ int CameraHardwareSec::pictureThread()
 #endif
     memcpy(mRawHeap->base(),PostviewHeap->base(), postviewHeapSize);
 
+#if defined(BOARD_USES_OVERLAY)
    /* Put postview image to Overlay */
     unsigned int index = 0;
     unsigned int offset = ((mPostViewWidth*mPostViewHeight*3/2) + 16) * index;
     unsigned int overlay_header[4];
-    buf_idx ^= 1;
+    mOverlayBufferIdx ^= 1;
     overlay_header[0]= mSecCamera->getPhyAddrY(index);
     overlay_header[1]= overlay_header[0] + mPostViewWidth*mPostViewHeight;
-    overlay_header[2]= buf_idx;
+    overlay_header[2]= mOverlayBufferIdx;
 
     YUY2toNV21(mRawHeap->base(), (void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset),
                 mPostViewWidth, mPostViewHeight);
@@ -1226,7 +1222,6 @@ int CameraHardwareSec::pictureThread()
                                 (mPostViewWidth*mPostViewHeight * 3 / 2)));
 
     if (ret == ALL_BUFFERS_FLUSHED) {
-        LOGE("%s ALL_BUFFERS_FLUSHED",__func__);
         goto PostviewOverlayEnd;
     } else if (ret == -1) {
         LOGE("ERR(%s):overlay queueBuffer fail", __func__);
@@ -1237,7 +1232,6 @@ int CameraHardwareSec::pictureThread()
     ret = mOverlay->dequeueBuffer(&overlay_buffer);
 
     if (ret == ALL_BUFFERS_FLUSHED) {
-        LOGE("%s ALL_BUFFERS_FLUSHED",__func__);
         goto PostviewOverlayEnd;
     } else if (ret == -1) {
         LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
@@ -1245,6 +1239,7 @@ int CameraHardwareSec::pictureThread()
     }
 
 PostviewOverlayEnd:
+#endif
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
         mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
     }
