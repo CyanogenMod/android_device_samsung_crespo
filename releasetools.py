@@ -19,31 +19,36 @@ import common
 def FullOTA_InstallEnd(info):
   try:
     bootloader_img = info.input_zip.read("RADIO/bootloader.img")
-    common.ZipWriteStr(info.output_zip, "bootloader.img", bootloader_img)
-    info.script.Print("Writing bootloader...")
-    info.script.WriteRawImage("bootloader", "bootloader.img")
   except KeyError:
     print "no bootloader.img in target_files; skipping install"
+  else:
+    common.ZipWriteStr(info.output_zip, "bootloader.img", bootloader_img)
+    info.script.Print("Writing bootloader...")
+    info.script.WriteRawImage("/bootloader", "bootloader.img")
 
   try:
     radio_img = info.input_zip.read("RADIO/radio.img")
-    common.ZipWriteStr(info.output_zip, "radio.img", radio_img)
-    info.script.Print("Writing radio...")
-    info.script.WriteRawImage("radio", "radio.img")
   except KeyError:
     print "no radio.img in target_files; skipping install"
+  else:
+    common.ZipWriteStr(info.output_zip, "radio.img", radio_img)
+    info.script.Print("Writing radio...")
+    info.script.WriteRawImage("/radio", "radio.img")
 
 def IncrementalOTA_VerifyEnd(info):
   try:
     target_radio_img = info.target_zip.read("RADIO/radio.img")
     source_radio_img = info.source_zip.read("RADIO/radio.img")
-    if source_radio_img != target_radio_img:
-      info.script.CacheFreeSpaceCheck(len(source_radio_img))
-      info.script.PatchCheck("MTD:radio:%d:%s:%d:%s" % (
-          len(source_radio_img), sha.sha(source_radio_img).hexdigest(),
-          len(target_radio_img), sha.sha(target_radio_img).hexdigest()))
   except KeyError:
     pass
+  else:
+    if source_radio_img != target_radio_img:
+      info.script.CacheFreeSpaceCheck(len(source_radio_img))
+      radio_type, radio_device = common.GetTypeAndDevice("/radio", info.info_dict)
+      info.script.PatchCheck("%s:%s:%d:%s:%d:%s" % (
+          radio_type, radio_device,
+          len(source_radio_img), sha.sha(source_radio_img).hexdigest(),
+          len(target_radio_img), sha.sha(target_radio_img).hexdigest()))
 
 def IncrementalOTA_InstallEnd(info):
   try:
@@ -58,7 +63,7 @@ def IncrementalOTA_InstallEnd(info):
     else:
       common.ZipWriteStr(info.output_zip, "bootloader.img", target_bootloader_img)
       info.script.Print("Writing bootloader...")
-      info.script.WriteRawImage("bootloader", "bootloader.img")
+      info.script.WriteRawImage("/bootloader", "bootloader.img")
 
   except KeyError:
     print "no bootloader.img in target target_files; skipping install"
@@ -84,8 +89,10 @@ def IncrementalOTA_InstallEnd(info):
         else:
           common.ZipWriteStr(info.output_zip, "radio.img.p", d)
           info.script.Print("Patching radio...")
+          radio_type, radio_device = common.GetTypeAndDevice("/radio", info.info_dict)
           info.script.ApplyPatch(
-              "MTD:radio:%d:%s:%d:%s" % (sf.size, sf.sha1, tf.size, tf.sha1),
+              "%s:%s:%d:%s:%d:%s" % (radio_type, radio_device,
+                                     sf.size, sf.sha1, tf.size, tf.sha1),
               "-", tf.size, tf.sha1, sf.sha1, "radio.img.p")
 
     except KeyError:
@@ -93,7 +100,7 @@ def IncrementalOTA_InstallEnd(info):
       # radio image.
       tf.AddToZip(info.output_zip)
       info.script.Print("Writing radio...")
-      info.script.WriteRawImage("radio", tf.name)
+      info.script.WriteRawImage("/radio", tf.name)
 
   except KeyError:
     # failed to read TARGET radio image: don't include any radio in update.
