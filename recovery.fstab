@@ -7,4 +7,5 @@
 /misc 		mtd 		misc
 /boot		mtd		boot
 /recovery	mtd		recovery
+/bootloader	mtd		bootloader
 /radio		mtd		radio
