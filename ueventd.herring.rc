@@ -10,6 +10,10 @@
 /dev/s3c-mfc              0664   system     graphics
 /dev/onedram              0664   radio      radio
 
+/dev/modemctl             0660   radio      radio
+/dev/s3c2410_serial3      0660   radio      radio
+/dev/block/mtdblock5      0660   radio      radio
+
 # for Sensor HAL
 /dev/akm8973_dev	0660	system	system
 /dev/akmd8973_aot	0660	system	system
