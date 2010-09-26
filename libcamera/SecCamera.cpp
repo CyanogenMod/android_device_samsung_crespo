@@ -1705,9 +1705,63 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
     return addr;
 }
 
-int SecCamera::getExif (unsigned char *pExifDst, unsigned char *pThumbSrc)
+int SecCamera::getExif(unsigned char *pExifDst, unsigned char *pThumbSrc)
 {
-    return 0;
+    JpegEncoder jpgEnc;
+#if ADD_THUMB_IMG
+    int inFormat = JPG_MODESEL_YCBCR;
+    int outFormat = JPG_422;
+    switch (m_snapshot_v4lformat) {
+    case V4L2_PIX_FMT_NV12:
+    case V4L2_PIX_FMT_NV21:
+    case V4L2_PIX_FMT_NV12T:
+    case V4L2_PIX_FMT_YUV420:
+        outFormat = JPG_420;
+        break;
+    case V4L2_PIX_FMT_YUYV:
+    case V4L2_PIX_FMT_UYVY:
+    case V4L2_PIX_FMT_YUV422P:
+        outFormat = JPG_422;
+        break;
+    }
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_IN_FORMAT, inFormat) != JPG_SUCCESS)
+        return -1;
+
+    if (jpgEnc.setConfig(JPEG_SET_SAMPING_MODE, outFormat) != JPG_SUCCESS)
+        return -1;
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, JPG_QUALITY_LEVEL_2) != JPG_SUCCESS)
+        return -1;
+
+    int thumbWidth, thumbHeight, thumbSrcSize;
+    getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSrcSize);
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_WIDTH, thumbWidth) != JPG_SUCCESS)
+        return -1;
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_HEIGHT, thumbHeight) != JPG_SUCCESS)
+        return -1;
+
+    char *pInBuf = (char *)jpgEnc.getInBuf(thumbSrcSize);
+    if (pInBuf == NULL)
+        return -1;
+    memcpy(pInBuf, pThumbSrc, thumbSrcSize);
+
+    unsigned int thumbSize;
+
+    jpgEnc.encode(&thumbSize, NULL);
+
+    mExifInfo.enableThumb = true;
+#else
+    mExifInfo.enableThumb = false;
+#endif
+
+    unsigned int exifSize;
+
+    setExifChangedAttribute();
+    jpgEnc.makeExif(pExifDst, &mExifInfo, &exifSize, true);
+
+    return exifSize;
 }
 
 void SecCamera::getPostViewConfig(int *width, int *height, int *size)
@@ -1723,6 +1777,13 @@ void SecCamera::getPostViewConfig(int *width, int *height, int *size)
     }
     LOGV("[5B] m_preview_width : %d, mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
             m_preview_width, *width, *height, *size);
+}
+
+void SecCamera::getThumbnailConfig(int *width, int *height, int *size)
+{
+    *width = BACK_CAMERA_THUMBNAIL_WIDTH;
+    *height = BACK_CAMERA_THUMBNAIL_HEIGHT;
+    *size = BACK_CAMERA_THUMBNAIL_WIDTH * BACK_CAMERA_THUMBNAIL_HEIGHT * BACK_CAMERA_THUMBNAIL_BPP / 8;
 }
 
 #ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
@@ -1757,13 +1818,14 @@ int SecCamera::getSnapshot(unsigned char *buffer, unsigned int buffer_size)
 
 #endif
 
-unsigned char* SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
+int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
+                                            unsigned int *output_size)
 {
     LOGV("%s()", __func__);
 
     int index;
     //unsigned int addr;
-    unsigned char* addr;
+    unsigned char *addr;
     int ret = 0;
 
     LOG_TIME_DEFINE(0)
@@ -1777,13 +1839,13 @@ unsigned char* SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
 
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);
-        return 0;
+        return -1;
     }
 
     if (m_flag_camera_start > 0) {
-    LOG_TIME_START(0)
+        LOG_TIME_START(0)
         stopPreview();
-    LOG_TIME_END(0)
+        LOG_TIME_END(0)
     }
 
     memset(&m_events_c, 0, sizeof(m_events_c));
@@ -1817,27 +1879,27 @@ unsigned char* SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
     LOGE("[zzangdol] w %d, h %d\n", m_snapshot_width, m_snapshot_height);
 
     ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
-    CHECK_PTR(ret);
+    CHECK(ret);
     ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height, m_snapshot_v4lformat);
-    CHECK_PTR(ret);
+    CHECK(ret);
     init_yuv_buffers(m_buffers_c, m_snapshot_width, m_snapshot_height, m_snapshot_v4lformat);
 
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK_PTR(ret);
+    CHECK(ret);
     ret = fimc_v4l2_querybuf(m_cam_fd, m_buffers_c, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK_PTR(ret);
+    CHECK(ret);
 
     /* g_parm, s_parm sample */
     ret = fimc_v4l2_g_parm(m_cam_fd);
-    CHECK_PTR(ret);
+    CHECK(ret);
     ret = fimc_v4l2_s_parm(m_cam_fd, 1, m_fps);
-    CHECK_PTR(ret);
+    CHECK(ret);
 
     ret = fimc_v4l2_qbuf(m_cam_fd, 0);
-    CHECK_PTR(ret);
+    CHECK(ret);
 
     ret = fimc_v4l2_streamon(m_cam_fd);
-    CHECK_PTR(ret);
+    CHECK(ret);
     LOG_TIME_END(1)
 
     LOG_TIME_START(2) // capture
@@ -1852,11 +1914,7 @@ unsigned char* SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
 #endif
     LOG_TIME_END(2)
 
-    //addr = getPhyAddrY(index);
-    addr = (unsigned char*)m_buffers_c[index].start;
-    if (addr == 0) {
-        LOGE("%s] Physical address 0");
-    }
+    memcpy(yuv_buf, (unsigned char*)m_buffers_c[index].start, m_snapshot_width * m_snapshot_height * 2);
     LOG_TIME_START(5) // post
     fimc_v4l2_streamoff(m_cam_fd);
 #ifdef DUMP_YUV
@@ -1867,8 +1925,62 @@ unsigned char* SecCamera::getSnapshotAndJpeg(unsigned int* output_size)
     LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu),
                 " capture(%lu), memcpy(%lu), yuv2Jpeg(%lu), post(%lu)  us",
                     LOG_TIME(0), LOG_TIME(1), LOG_TIME(2), LOG_TIME(3), LOG_TIME(4), LOG_TIME(5));
+    /* JPEG encoding */
+    JpegEncoder jpgEnc;
+    int inFormat = JPG_MODESEL_YCBCR;
+    int outFormat = JPG_422;
 
-    return addr;
+    switch (m_snapshot_v4lformat) {
+    case V4L2_PIX_FMT_NV12:
+    case V4L2_PIX_FMT_NV21:
+    case V4L2_PIX_FMT_NV12T:
+    case V4L2_PIX_FMT_YUV420:
+        outFormat = JPG_420;
+        break;
+    case V4L2_PIX_FMT_YUYV:
+    case V4L2_PIX_FMT_UYVY:
+    case V4L2_PIX_FMT_YUV422P:
+    default:
+        outFormat = JPG_422;
+        break;
+    }
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_IN_FORMAT, inFormat) != JPG_SUCCESS)
+        LOGE("[JPEG_SET_ENCODE_IN_FORMAT] Error\n");
+
+    if (jpgEnc.setConfig(JPEG_SET_SAMPING_MODE, outFormat) != JPG_SUCCESS)
+        LOGE("[JPEG_SET_SAMPING_MODE] Error\n");
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, JPG_QUALITY_LEVEL_2) != JPG_SUCCESS)
+        LOGE("[JPEG_SET_ENCODE_QUALITY] Error\n");
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_WIDTH, m_snapshot_width) != JPG_SUCCESS)
+        LOGE("[JPEG_SET_ENCODE_WIDTH] Error\n");
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_HEIGHT, m_snapshot_height) != JPG_SUCCESS)
+        LOGE("[JPEG_SET_ENCODE_HEIGHT] Error\n");
+
+    unsigned int snapshot_size = m_snapshot_width * m_snapshot_height * 2;
+    unsigned char *pInBuf = (unsigned char *)jpgEnc.getInBuf(snapshot_size);
+
+    if (pInBuf == NULL) {
+        LOGE("JPEG input buffer is NULL!!\n");
+        return -1;
+    }
+    memcpy(pInBuf, yuv_buf, snapshot_size);
+
+    jpgEnc.encode(output_size, NULL);
+
+    uint64_t outbuf_size;
+    unsigned char *pOutBuf = (unsigned char *)jpgEnc.getOutBuf(&outbuf_size);
+
+    if (pOutBuf == NULL) {
+        LOGE("JPEG output buffer is NULL!!\n");
+        return -1;
+    }
+
+    memcpy(jpeg_buf, pOutBuf, outbuf_size);
+
+    return 0;
 }
 
 
@@ -3399,12 +3511,236 @@ int SecCamera::getJpegThumbnailSize(int *width, int  *height)
 
 void SecCamera::setExifFixedAttribute()
 {
+    //2 0th IFD TIFF Tags
+    //3 Maker
+    strcpy((char *)mExifInfo.maker, EXIF_DEF_MAKER);
+    //3 Model
+    strcpy((char *)mExifInfo.model, EXIF_DEF_MODEL);
+    //3 Software
+    property_get("ro.build.PDA", (char *)mExifInfo.software, EXIF_DEF_SOFTWARE);
+    //3 YCbCr Positioning
+    mExifInfo.ycbcr_positioning = EXIF_DEF_YCBCR_POSITIONING;
 
+    //2 0th IFD Exif Private Tags
+    //3 F Number
+    mExifInfo.fnumber.num = EXIF_DEF_FNUMBER_NUM;
+    mExifInfo.fnumber.den = EXIF_DEF_FNUMBER_DEN;
+    //3 Exposure Program
+    mExifInfo.exposure_program = EXIF_DEF_EXPOSURE_PROGRAM;
+    //3 Exif Version
+    memcpy(mExifInfo.exif_version, EXIF_DEF_EXIF_VERSION, sizeof(mExifInfo.exif_version));
+    //3 Aperture
+    uint32_t av = APEX_FNUM_TO_APERTURE((double)mExifInfo.fnumber.num/mExifInfo.fnumber.den);
+    mExifInfo.aperture.num = av*EXIF_DEF_APEX_DEN;
+    mExifInfo.aperture.den = EXIF_DEF_APEX_DEN;
+    //3 Maximum lens aperture
+    mExifInfo.max_aperture.num = mExifInfo.aperture.num;
+    mExifInfo.max_aperture.den = mExifInfo.aperture.den;
+    //3 Flash
+    mExifInfo.flash = EXIF_DEF_FLASH;
+    //3 Lens Focal Length
+    mExifInfo.focal_length.num = EXIF_DEF_FOCAL_LEN_NUM;
+    mExifInfo.focal_length.den = EXIF_DEF_FOCAL_LEN_DEN;
+    //3 User Comments
+    strcpy((char *)mExifInfo.user_comment, EXIF_DEF_USERCOMMENTS);
+    //3 Color Space information
+    mExifInfo.color_space = EXIF_DEF_COLOR_SPACE;
+    //3 Exposure Mode
+    mExifInfo.exposure_mode = EXIF_DEF_EXPOSURE_MODE;
+
+    //2 0th IFD GPS Info Tags
+    unsigned char gps_version[4] = { 0x02, 0x02, 0x00, 0x00 };
+    memcpy(mExifInfo.gps_version_id, gps_version, sizeof(gps_version));
+
+    //2 1th IFD TIFF Tags
+    mExifInfo.compression_scheme = EXIF_DEF_COMPRESSION;
+    mExifInfo.x_resolution.num = EXIF_DEF_RESOLUTION_NUM;
+    mExifInfo.x_resolution.den = EXIF_DEF_RESOLUTION_DEN;
+    mExifInfo.y_resolution.num = EXIF_DEF_RESOLUTION_NUM;
+    mExifInfo.y_resolution.den = EXIF_DEF_RESOLUTION_DEN;
+    mExifInfo.resolution_unit = EXIF_DEF_RESOLUTION_UNIT;
 }
 
 void SecCamera::setExifChangedAttribute()
 {
+    //2 0th IFD TIFF Tags
+    //3 Width
+    mExifInfo.width = m_snapshot_width;
+    //3 Height
+    mExifInfo.height = m_snapshot_height;
+    //3 Orientation
+    switch (m_exif_orientation) {
+    case 0:
+        mExifInfo.orientation = EXIF_ORIENTATION_UP;
+        break;
+    case 90:
+        mExifInfo.orientation = EXIF_ORIENTATION_90;
+        break;
+    case 180:
+        mExifInfo.orientation = EXIF_ORIENTATION_180;
+        break;
+    case 270:
+        mExifInfo.orientation = EXIF_ORIENTATION_270;
+        break;
+    default:
+        mExifInfo.orientation = EXIF_ORIENTATION_UP;
+        break;
+    }
+    //3 Date time
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime((char *)mExifInfo.date_time, 20, "%Y:%m:%d %H:%M:%S", timeinfo);
 
+    //2 0th IFD Exif Private Tags
+    //3 Exposure Time
+    int shutterSpeed = fimc_v4l2_s_ctrl(m_cam_fd,
+                                            V4L2_CID_CAMERA_GET_SHT_TIME,
+                                            0);
+    mExifInfo.exposure_time.num = 1;
+    mExifInfo.exposure_time.den = 1000000.0 / shutterSpeed;   /* us -> sec */
+
+    //3 ISO Speed Rating
+    int iso = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO, 0);
+    if (m_iso == ISO_AUTO) {
+        mExifInfo.iso_speed_rating = iso;
+    } else {
+        switch(m_iso) {
+        case ISO_50:
+            mExifInfo.iso_speed_rating = 50;
+            break;
+        case ISO_100:
+            mExifInfo.iso_speed_rating = 100;
+            break;
+        case ISO_200:
+            mExifInfo.iso_speed_rating = 200;
+            break;
+        case ISO_400:
+            mExifInfo.iso_speed_rating = 400;
+            break;
+        case ISO_800:
+            mExifInfo.iso_speed_rating = 800;
+            break;
+        case ISO_1600:
+            mExifInfo.iso_speed_rating = 1600;
+            break;
+        default:
+            mExifInfo.iso_speed_rating = iso;
+            break;
+        }
+    }
+
+    uint32_t av, tv, bv, sv, ev;
+    av = APEX_FNUM_TO_APERTURE((double)mExifInfo.fnumber.num / mExifInfo.fnumber.den);
+    tv = APEX_EXPOSURE_TO_SHUTTER((double)mExifInfo.exposure_time.num / mExifInfo.exposure_time.den);
+    sv = APEX_ISO_TO_FILMSENSITIVITY(iso);
+    bv = av + tv - sv;
+    ev = av + tv;
+    LOGD("Shutter speed=%d us, iso=%d\n", shutterSpeed, iso);
+    LOGD("AV=%d, TV=%d, SV=%d\n", av, tv, sv);
+
+    //3 Shutter Speed
+    mExifInfo.shutter_speed.num = tv*EXIF_DEF_APEX_DEN;
+    mExifInfo.shutter_speed.den = EXIF_DEF_APEX_DEN;
+    //3 Brightness
+    mExifInfo.brightness.num = bv*EXIF_DEF_APEX_DEN;
+    mExifInfo.brightness.den = EXIF_DEF_APEX_DEN;
+    //3 Exposure Bias
+    if (m_scene_mode == SCENE_MODE_BEACH_SNOW) {
+        mExifInfo.exposure_bias.num = EXIF_DEF_APEX_DEN;
+        mExifInfo.exposure_bias.den = EXIF_DEF_APEX_DEN;
+    } else {
+        mExifInfo.exposure_bias.num = 0;
+        mExifInfo.exposure_bias.den = 0;
+    }
+    //3 Metering Mode
+    switch (m_metering) {
+    case METERING_SPOT:
+        mExifInfo.metering_mode = EXIF_METERING_SPOT;
+        break;
+    case METERING_MATRIX:
+        mExifInfo.metering_mode = EXIF_METERING_AVERAGE;
+        break;
+    case METERING_CENTER:
+        mExifInfo.metering_mode = EXIF_METERING_CENTER;
+        break;
+    default :
+        mExifInfo.metering_mode = EXIF_METERING_AVERAGE;
+        break;
+    }
+    //3 White Balance
+    if (m_white_balance == WHITE_BALANCE_AUTO)
+        mExifInfo.white_balance = EXIF_WB_AUTO;
+    else
+        mExifInfo.white_balance = EXIF_WB_MANUAL;
+    //3 Scene Capture Type
+    switch (m_scene_mode) {
+    case SCENE_MODE_PORTRAIT:
+        mExifInfo.scene_capture_type = EXIF_SCENE_PORTRAIT;
+        break;
+    case SCENE_MODE_LANDSCAPE:
+        mExifInfo.scene_capture_type = EXIF_SCENE_LANDSCAPE;
+        break;
+    case SCENE_MODE_NIGHTSHOT:
+        mExifInfo.scene_capture_type = EXIF_SCENE_NIGHT;
+        break;
+    default:
+        mExifInfo.scene_capture_type = EXIF_SCENE_STANDARD;
+        break;
+    }
+
+    //2 0th IFD GPS Info Tags
+    if (m_gps_latitude != 0 && m_gps_longitude != 0) {
+        if (m_gps_latitude > 0)
+            strcpy((char *)mExifInfo.gps_latitude_ref, "N");
+        else
+            strcpy((char *)mExifInfo.gps_latitude_ref, "S");
+
+        if (m_gps_longitude > 0)
+            strcpy((char *)mExifInfo.gps_longitude_ref, "E");
+        else
+            strcpy((char *)mExifInfo.gps_longitude_ref, "W");
+
+        if (m_gps_altitude > 0)
+            mExifInfo.gps_altitude_ref = 0;
+        else
+            mExifInfo.gps_altitude_ref = 1;
+
+        double latitude = fabs(m_gps_latitude / 10000.0);
+        double longitude = fabs(m_gps_longitude / 10000.0);
+        double altitude = fabs(m_gps_altitude / 100.0);
+
+        mExifInfo.gps_latitude[0].num = (uint32_t)latitude;
+        mExifInfo.gps_latitude[0].den = 1;
+        mExifInfo.gps_latitude[1].num = (uint32_t)((latitude - mExifInfo.gps_latitude[0].num) * 60);
+        mExifInfo.gps_latitude[1].den = 1;
+        mExifInfo.gps_latitude[2].num = (uint32_t)((((latitude - mExifInfo.gps_latitude[0].num) * 60)
+                                        - mExifInfo.gps_latitude[1].num) * 60);
+        mExifInfo.gps_latitude[2].den = 1;
+
+        mExifInfo.gps_longitude[0].num = (uint32_t)longitude;
+        mExifInfo.gps_longitude[0].den = 1;
+        mExifInfo.gps_longitude[1].num = (uint32_t)((longitude - mExifInfo.gps_longitude[0].num) * 60);
+        mExifInfo.gps_longitude[1].den = 1;
+        mExifInfo.gps_longitude[2].num = (uint32_t)((((longitude - mExifInfo.gps_longitude[0].num) * 60)
+                                        - mExifInfo.gps_longitude[1].num) * 60);
+        mExifInfo.gps_longitude[2].den = 1;
+
+        mExifInfo.gps_altitude.num = (uint32_t)altitude;
+        mExifInfo.gps_altitude.den = 1;
+
+        mExifInfo.enableGps = true;
+    } else {
+        mExifInfo.enableGps = false;
+    }
+
+    //2 1th IFD TIFF Tags
+    int thumbWidth, thumbHeight, thumbSrcSize;
+
+    getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSrcSize);
+    mExifInfo.widthThumb = thumbWidth;
+    mExifInfo.heightThumb = thumbHeight;
 }
 
 // ======================================================================
@@ -3452,5 +3788,8 @@ status_t SecCamera::dump(int fd, const Vector<String16> &args)
     ::write(fd, result.string(), result.size());
     return NO_ERROR;
 }
+
+double SecCamera::jpeg_ratio = 0.7;
+int SecCamera::interleaveDataSize = 4261248;
 
 }; // namespace android

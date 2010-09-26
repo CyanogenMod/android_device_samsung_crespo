@@ -37,6 +37,8 @@
 #include <videodev2_samsung.h>
 #endif
 
+#include "JpegEncoder.h"
+
 #ifdef ENABLE_HDMI_DISPLAY
 #include "hdmi_lib.h"
 #endif
@@ -88,9 +90,6 @@ namespace android {
 #define LOG_TIME(n)
 #endif
 
-#define LCD_WIDTH       480
-#define LCD_HEIGHT      800
-
 #define JOIN(x, y) JOIN_AGAIN(x, y)
 #define JOIN_AGAIN(x, y) x ## y
 
@@ -111,6 +110,10 @@ namespace android {
 #define ISX006_POSTVIEW_HEIGHT          480
 #define ISX006_POSTVIEW_BPP             16
 
+#define ISX006_THUMBNAIL_WIDTH          320
+#define ISX006_THUMBNAIL_HEIGHT         240
+#define ISX006_THUMBNAIL_BPP            16
+
 #define VGA_PREVIEW_WIDTH               640
 #define VGA_PREVIEW_HEIGHT              480
 #define VGA_SNAPSHOT_WIDTH              640
@@ -124,6 +127,9 @@ namespace android {
 #define BACK_CAMERA_POSTVIEW_WIDE_WIDTH     JOIN(BACK_CAM,_POSTVIEW_WIDE_WIDTH)
 #define BACK_CAMERA_POSTVIEW_HEIGHT         JOIN(BACK_CAM,_POSTVIEW_HEIGHT)
 #define BACK_CAMERA_POSTVIEW_BPP            JOIN(BACK_CAM,_POSTVIEW_BPP)
+#define BACK_CAMERA_THUMBNAIL_WIDTH         JOIN(BACK_CAM,_THUMBNAIL_WIDTH)
+#define BACK_CAMERA_THUMBNAIL_HEIGHT        JOIN(BACK_CAM,_THUMBNAIL_HEIGHT)
+#define BACK_CAMERA_THUMBNAIL_BPP           JOIN(BACK_CAM,_THUMBNAIL_BPP)
 
 #define MAX_FRONT_CAMERA_PREVIEW_WIDTH      JOIN(FRONT_CAM,_PREVIEW_WIDTH)
 #define MAX_FRONT_CAMERA_PREVIEW_HEIGHT     JOIN(FRONT_CAM,_PREVIEW_HEIGHT)
@@ -718,12 +724,14 @@ public:
     void setFrameRate(int frame_rate);
 //  void setJpegQuality(int quality);
     unsigned char*  getJpeg(int*, unsigned int*);
-    unsigned char*  getSnapshotAndJpeg(unsigned int *output_size);
+    int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
+                                        unsigned int *output_size);
     int             getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);
 
 #ifdef JPEG_FROM_SENSOR
     void            getPostViewConfig(int*, int*, int*);
 #endif
+    void            getThumbnailConfig(int *width, int *height, int *size);
 
 #ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
     int             getPostViewOffset(void);
@@ -739,6 +747,28 @@ public:
     void            pausePreview();
     int             initCamera(int index);
     void            DeinitCamera();
+    static void     setJpegRatio(double ratio)
+    {
+        if((ratio < 0) || (ratio > 1))
+            return;
+
+        jpeg_ratio = ratio;
+    }
+
+    static double   getJpegRatio()
+    {
+        return jpeg_ratio;
+    }
+
+    static void     setInterleaveDataSize(int x)
+    {
+        interleaveDataSize = x;
+    }
+
+    static int      getInterleaveDataSize()
+    {
+        return interleaveDataSize;
+    }
 
 private:
     int             m_flag_init;
@@ -822,6 +852,8 @@ private:
 
     int             m_postview_offset;
 
+    exif_attribute_t mExifInfo;
+
     struct fimc_buffer m_buffers_c[MAX_BUFFERS];
     struct pollfd   m_events_c;
 
@@ -830,6 +862,9 @@ private:
     void            setExifChangedAttribute();
     void            setExifFixedAttribute();
     void            resetCamera();
+
+    static double   jpeg_ratio;
+    static int      interleaveDataSize;
 };
 
 extern unsigned long measure_time(struct timeval *start, struct timeval *stop);

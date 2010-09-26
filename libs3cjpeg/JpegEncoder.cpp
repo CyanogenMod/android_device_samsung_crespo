@@ -30,8 +30,12 @@
 #include "JpegEncoder.h"
 
 namespace android {
-JpegEncoder::JpegEncoder()
+JpegEncoder::JpegEncoder() : available(false)
 {
+    mArgs.mmapped_addr = (char *)MAP_FAILED;
+    mArgs.enc_param       = NULL;
+    mArgs.thumb_enc_param = NULL;
+
     mDevFd = open(JPG_DRIVER_NAME, O_RDWR);
     if (mDevFd < 0) {
         LOGE("Failed to open the device");
@@ -69,11 +73,13 @@ JpegEncoder::JpegEncoder()
     mArgs.enc_param->enc_type = JPG_MAIN;
     mArgs.thumb_enc_param->sample_mode = JPG_420;
     mArgs.thumb_enc_param->enc_type = JPG_THUMBNAIL;
+
+    available = true;
 }
 
 JpegEncoder::~JpegEncoder()
 {
-    if (mArgs.mmapped_addr != MAP_FAILED)
+    if (mArgs.mmapped_addr != (char*)MAP_FAILED)
         munmap(mArgs.mmapped_addr, JPG_TOTAL_BUF_SIZE);
 
     delete mArgs.enc_param;
@@ -86,10 +92,10 @@ JpegEncoder::~JpegEncoder()
 
 jpg_return_status JpegEncoder::setConfig(jpeg_conf type, int32_t value)
 {
-    jpg_return_status ret = JPG_SUCCESS;
+    if (!available)
+        return JPG_FAIL;
 
-    if (!mArgs.enc_param || !mArgs.thumb_enc_param)
-    return JPG_FAIL;
+    jpg_return_status ret = JPG_SUCCESS;
 
     switch (type) {
     case JPEG_SET_ENCODE_WIDTH:
@@ -158,6 +164,9 @@ jpg_return_status JpegEncoder::setConfig(jpeg_conf type, int32_t value)
 
 void* JpegEncoder::getInBuf(uint64_t size)
 {
+    if (!available)
+        return NULL;
+
     if (size > JPG_FRAME_BUF_SIZE) {
         LOGE("The buffer size requested is too large");
         return NULL;
@@ -168,6 +177,9 @@ void* JpegEncoder::getInBuf(uint64_t size)
 
 void* JpegEncoder::getOutBuf(uint64_t *size)
 {
+    if (!available)
+        return NULL;
+
     if (mArgs.enc_param->file_size <= 0) {
         LOGE("The buffer requested doesn't have data");
         return NULL;
@@ -179,6 +191,9 @@ void* JpegEncoder::getOutBuf(uint64_t *size)
 
 void* JpegEncoder::getThumbInBuf(uint64_t size)
 {
+    if (!available)
+        return NULL;
+
     if (size > JPG_FRAME_THUMB_BUF_SIZE) {
         LOGE("The buffer size requested is too large");
         return NULL;
@@ -189,6 +204,9 @@ void* JpegEncoder::getThumbInBuf(uint64_t size)
 
 void* JpegEncoder::getThumbOutBuf(uint64_t *size)
 {
+    if (!available)
+        return NULL;
+
     if (mArgs.thumb_enc_param->file_size <= 0) {
         LOGE("The buffer requested doesn't have data");
         return NULL;
@@ -200,6 +218,9 @@ void* JpegEncoder::getThumbOutBuf(uint64_t *size)
 
 jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exifInfo)
 {
+    if (!available)
+        return JPG_FAIL;
+
     LOGD("encode E");
 
     jpg_return_status ret = JPG_FAIL;
@@ -279,6 +300,9 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
 
 jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
 {
+    if (!available)
+        return JPG_FAIL;
+
     LOGD("encodeThumbImg E");
 
     jpg_return_status ret = JPG_FAIL;
@@ -334,6 +358,9 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
                                         unsigned int *size,
                                         bool useMainbufForThumb)
 {
+    if (!available)
+        return JPG_FAIL;
+
     LOGD("makeExif E");
 
     unsigned char *pCur, *pApp1Start, *pIfdStart, *pGpsIfdPtr, *pNextIfdOffset;
@@ -554,6 +581,9 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
 jpg_return_status JpegEncoder::checkMcu(sample_mode_t sampleMode,
                                         uint32_t width, uint32_t height, bool isThumb)
 {
+    if (!available)
+        return JPG_FAIL;
+
     uint32_t expectedWidth = width;
     uint32_t expectedHeight = height;
 
@@ -606,6 +636,9 @@ jpg_return_status JpegEncoder::checkMcu(sample_mode_t sampleMode,
 bool JpegEncoder::pad(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
                         char *dstBuf, uint32_t dstWidth, uint32_t dstHight)
 {
+    if (!available)
+        return false;
+
     if (srcBuf == NULL || dstBuf == NULL) {
         LOGE("srcBuf or dstBuf is NULL");
         return false;
@@ -630,6 +663,9 @@ bool JpegEncoder::pad(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
 bool JpegEncoder::scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
                                   char *dstBuf, uint32_t dstWidth, uint32_t dstHight)
 {
+    if (!available)
+        return false;
+
     int32_t step_x, step_y;
     int32_t iXsrc, iXdst;
     int32_t x, y, src_y_start_pos, dst_pos, src_pos;

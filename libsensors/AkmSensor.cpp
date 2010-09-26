@@ -194,7 +194,7 @@ int AkmSensor::update_delay()
                 wanted = wanted < ns ? wanted : ns;
             }
         }
-        int64_t delay = int64_t(wanted) / 1000000;
+        int64_t delay = int64_t(wanted);
         if (ioctl(dev_fd, ECS_IOCTL_APP_SET_DELAY, &delay)) {
             return -errno;
         }

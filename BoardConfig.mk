@@ -18,7 +18,9 @@
 #
 
 # Set this up here so that BoardVendorConfig.mk can override it
-BOARD_USES_GENERIC_AUDIO := true
+BOARD_USES_GENERIC_AUDIO := false
+
+BOARD_USES_LIBSECRIL_STUB := true
 
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/BoardConfigVendor.mk
@@ -72,3 +74,14 @@ TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 536870912
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1073741824
 BOARD_FLASH_BLOCK_SIZE := 4096
+
+# Connectivity - Wi-Fi
+WPA_SUPPLICANT_VERSION := VER_0_6_X
+BOARD_WPA_SUPPLICANT_DRIVER := WEXT
+BOARD_WLAN_DEVICE := bcm4329
+WIFI_DRIVER_MODULE_PATH     := "/system/modules/bcm4329.ko"
+WIFI_DRIVER_FW_STA_PATH     := "/vendor/firmware/fw_bcm4329.bin"
+WIFI_DRIVER_FW_AP_PATH      := "/vendor/firmware/fw_bcm4329_apsta.bin"
+WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
+WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
+
