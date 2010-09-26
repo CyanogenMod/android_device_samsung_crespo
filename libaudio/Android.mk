@@ -53,7 +53,11 @@ ifeq ($(BOARD_HAVE_BLUETOOTH),true)
 endif
 
 ifneq ($(NO_IPC_ALSA_RILD),true)
+ifeq ($(BOARD_USES_LIBSECRIL_STUB),true)
+  LOCAL_SHARED_LIBRARIES += libsecril-client-stub
+else
   LOCAL_SHARED_LIBRARIES += libsecril-client
+endif
   LOCAL_CFLAGS  +=  -DIPC_ALSA_RILD
 endif
   include $(BUILD_SHARED_LIBRARY)
@@ -82,7 +86,7 @@ ifeq ($(BOARD_USES_LIBSECRIL_STUB),true)
 # A stub to replace libsecril-client at build time
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := secril_stub.c
-LOCAL_MODULE := libsecril-client
+LOCAL_MODULE := libsecril-client-stub
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
 endif
