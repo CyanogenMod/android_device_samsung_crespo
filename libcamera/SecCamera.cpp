@@ -1102,7 +1102,7 @@ int SecCamera::startPreview(void)
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_iso);
         CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, m_fps);
         CHECK(ret);
@@ -1176,13 +1176,13 @@ int SecCamera::startPreview(void)
             ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_scene_mode);
             CHECK(ret);
         }
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_sharpness);
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
     }
 #endif
@@ -1876,8 +1876,6 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     LOG_TIME_START(1) // prepare
     int nframe = 1;
 
-    LOGE("[zzangdol] w %d, h %d\n", m_snapshot_width, m_snapshot_height);
-
     ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
     CHECK(ret);
     ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height, m_snapshot_v4lformat);
@@ -2340,6 +2338,8 @@ int SecCamera::setBrightness(int brightness)
 {
     LOGV("%s(brightness(%d))", __func__, brightness);
 
+    brightness += BRIGHTNESS_NORMAL;
+
     if (brightness < BRIGHTNESS_MINUS_4 || BRIGHTNESS_PLUS_4 < brightness) {
         LOGE("ERR(%s):Invalid brightness(%d)", __func__, brightness);
         return -1;
@@ -2349,7 +2349,7 @@ int SecCamera::setBrightness(int brightness)
         m_brightness = brightness;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (m_flag_camera_start) {
-            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, brightness + BRIGHTNESS_NORMAL) < 0) {
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, brightness) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_BRIGHTNESS", __func__);
                 return -1;
             }
@@ -3595,14 +3595,13 @@ void SecCamera::setExifChangedAttribute()
 
     //2 0th IFD Exif Private Tags
     //3 Exposure Time
-    int shutterSpeed = fimc_v4l2_s_ctrl(m_cam_fd,
-                                            V4L2_CID_CAMERA_GET_SHT_TIME,
-                                            0);
+    int shutterSpeed = fimc_v4l2_g_ctrl(m_cam_fd,
+                                            V4L2_CID_CAMERA_GET_SHT_TIME);
     mExifInfo.exposure_time.num = 1;
-    mExifInfo.exposure_time.den = 1000000.0 / shutterSpeed;   /* us -> sec */
+    mExifInfo.exposure_time.den = 1000.0 / shutterSpeed;   /* ms -> sec */
 
     //3 ISO Speed Rating
-    int iso = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO, 0);
+    int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
     if (m_iso == ISO_AUTO) {
         mExifInfo.iso_speed_rating = iso;
     } else {
