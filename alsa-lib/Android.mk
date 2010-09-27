@@ -9,41 +9,6 @@ ifeq ($(strip $(BOARD_USES_ALSA_AUDIO)),true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-##
-## Copy ALSA configuration files to rootfs
-##
-TARGET_ALSA_CONF_DIR := $(TARGET_OUT)/usr/share/alsa
-LOCAL_ALSA_CONF_DIR  := $(LOCAL_PATH)/src/conf
-
-copy_from := \
-	alsa.conf \
-	pcm/dsnoop.conf \
-	pcm/modem.conf \
-	pcm/dpl.conf \
-	pcm/default.conf \
-	pcm/surround51.conf \
-	pcm/surround41.conf \
-	pcm/surround50.conf \
-	pcm/dmix.conf \
-	pcm/center_lfe.conf \
-	pcm/surround40.conf \
-	pcm/side.conf \
-	pcm/iec958.conf \
-	pcm/rear.conf \
-	pcm/surround71.conf \
-	pcm/front.conf \
-	cards/aliases.conf
-
-copy_to   := $(addprefix $(TARGET_ALSA_CONF_DIR)/,$(copy_from))
-copy_from := $(addprefix $(LOCAL_ALSA_CONF_DIR)/,$(copy_from))
-
-$(copy_to) : $(TARGET_ALSA_CONF_DIR)/% : $(LOCAL_ALSA_CONF_DIR)/% | $(ACP)
-	$(transform-prebuilt-to-target)
-
-ALL_PREBUILT += $(copy_to)
-
-include $(CLEAR_VARS)
-
 LOCAL_MODULE := libasound
 
 LOCAL_ARM_MODE := arm

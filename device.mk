@@ -60,11 +60,35 @@ PRODUCT_COPY_FILES += \
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
-	melfas-touchkey.kcm \
+	melfas-touchkey.kcm
+
+# Filesystem management tools
+PRODUCT_PACKAGES += \
 	make_ext4fs \
 	setup_fs
 
-# These is the OpenMAX IL configuration files
+
+# ALSA configuration files
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/alsa-lib/src/conf/alsa.conf:system/usr/share/alsa/alsa.conf \
+	device/samsung/crespo/alsa-lib/src/conf/cards/aliases.conf:system/usr/share/alsa/cards/aliases.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/center_lfe.conf:system/usr/share/alsa/pcm/center_lfe.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/default.conf:system/usr/share/alsa/pcm/default.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/dmix.conf:system/usr/share/alsa/pcm/dmix.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/dpl.conf:system/usr/share/alsa/pcm/dpl.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/dsnoop.conf:system/usr/share/alsa/pcm/dsnoop.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/front.conf:system/usr/share/alsa/pcm/front.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/iec958.conf:system/usr/share/alsa/pcm/iec958.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/modem.conf:system/usr/share/alsa/pcm/modem.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/rear.conf:system/usr/share/alsa/pcm/rear.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/side.conf:system/usr/share/alsa/pcm/side.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/surround40.conf:system/usr/share/alsa/pcm/surround40.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/surround41.conf:system/usr/share/alsa/pcm/surround41.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/surround50.conf:system/usr/share/alsa/pcm/surround50.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/surround51.conf:system/usr/share/alsa/pcm/surround51.conf \
+	device/samsung/crespo/alsa-lib/src/conf/pcm/surround71.conf:system/usr/share/alsa/pcm/surround71.conf
+
+# These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry
 

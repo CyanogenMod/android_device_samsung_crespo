@@ -21,12 +21,6 @@ on boot
     mkdir /data/misc/dhcp 0770 dhcp dhcp
 
 # phone
-    chown radio radio /sys/class/modemctl/xmm/control
-    chmod 660 /sys/class/modemctl/xmm/control
-    chown radio radio /dev/s3c2410_serial3
-    chmod 660 /dev/s3c2410_serial3
-    chown radio radio /dev/block/mtdblock5
-    chmod 640 /dev/block/mtdblock5
     setprop ro.telephony.call_ring.multiple 0
 
 # create data/gps for GPS demon
