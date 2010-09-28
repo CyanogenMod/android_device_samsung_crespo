@@ -186,6 +186,7 @@ private:
 #if defined(BOARD_USES_OVERLAY)
             sp<Overlay> mOverlay;
             bool        mUseOverlay;
+            int         mOverlayBufferIdx;
 #endif
 
     // protected by mLock
