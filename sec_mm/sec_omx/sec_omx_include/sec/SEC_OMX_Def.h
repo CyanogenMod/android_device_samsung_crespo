@@ -43,6 +43,9 @@
 #define MAX_OMX_COMPONENT_LIBNAME_SIZE     OMX_MAX_STRINGNAME_SIZE * 2
 #define MAX_OMX_MIMETYPE_SIZE              OMX_MAX_STRINGNAME_SIZE
 
+#define MAX_TIMESTAMP        16
+#define MAX_FLAGS            16
+
 
 typedef enum _SEC_CODEC_TYPE
 {

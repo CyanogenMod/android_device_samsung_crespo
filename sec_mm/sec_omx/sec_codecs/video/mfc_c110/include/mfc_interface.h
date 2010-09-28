@@ -211,6 +211,11 @@ typedef struct {
     int out_buf_height;                  /* [OUT] height of YUV420 frame                                 */
     int out_dpb_cnt;                     /* [OUT] the number of buffers which is nessary during decoding */
 
+    int out_crop_top_offset;             /* [OUT] crop information, top offset                           */
+    int out_crop_bottom_offset;          /* [OUT] crop information, bottom offset                        */
+    int out_crop_left_offset;            /* [OUT] crop information, left offset                          */
+    int out_crop_right_offset;           /* [OUT] crop information, right offset                         */
+
     mfc_frame_buf_arg_t in_frm_buf;      /* [IN] the address of dpb FRAME_BUF                            */
     mfc_frame_buf_arg_t in_frm_size;     /* [IN] size of dpb FRAME_BUF                                   */
     unsigned int in_mapped_addr;

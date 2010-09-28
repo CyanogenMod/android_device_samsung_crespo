@@ -72,6 +72,7 @@ typedef enum {
     MFC_DEC_SETCONF_FRAME_TAG,
     MFC_DEC_GETCONF_CRC_DATA,
     MFC_DEC_GETCONF_BUF_WIDTH_HEIGHT,
+    MFC_DEC_GETCONF_CROP_INFO,
     MFC_DEC_GETCONF_FRAME_TAG
 } SSBSIP_MFC_DEC_CONF;
 
@@ -271,6 +272,13 @@ typedef struct {
     int buf_width;
     int buf_height;
 } SSBSIP_MFC_IMG_RESOLUTION;
+
+typedef struct {
+    int crop_top_offset;
+    int crop_bottom_offset;
+    int crop_left_offset;
+    int crop_right_offset;
+} SSBSIP_MFC_CROP_INFORMATION;
 
 #ifdef __cplusplus
 extern "C" {

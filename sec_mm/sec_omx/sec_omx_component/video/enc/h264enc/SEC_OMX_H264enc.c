@@ -242,9 +242,7 @@ void Set_H264ENC_Param(SSBSIP_MFC_ENC_H264_PARAM *pH264Arg, SEC_OMX_BASECOMPONEN
         break;
     }
 
-
     H264PrintParams(*pH264Arg);
-
 }
 
 OMX_ERRORTYPE SEC_MFC_H264Enc_GetParameter(
@@ -603,7 +601,6 @@ EXIT:
     return ret;
 }
 
-
 /* MFC Init */
 OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
 {
@@ -653,11 +650,11 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YSize = pH264Enc->hMFCH264Handle.inputInfo.YSize;
     pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CSize = pH264Enc->hMFCH264Handle.inputInfo.CSize;
 
-    SEC_OSAL_Memset(pH264Enc->hMFCH264Handle.timeStamp, 0, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
     pH264Enc->hMFCH264Handle.indexTimestamp = 0;
 
 EXIT:
-
     FunctionOut();
 
     return ret;
@@ -728,6 +725,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pOutputData->dataBuffer = outputInfo.StrmVirAddr;
         pOutputData->allocSize = outputInfo.headerSize;
         pOutputData->dataLen = outputInfo.headerSize;
+        pOutputData->timeStamp = pInputData->timeStamp;
         pOutputData->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
         pOutputData->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
@@ -737,7 +735,8 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         goto EXIT;
     }
 
-    pH264Enc->hMFCH264Handle.timeStamp[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->timeStamp[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcEncSetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pH264Enc->hMFCH264Handle.indexTimestamp));
     pH264Enc->hMFCH264Handle.indexTimestamp++;
     if (pH264Enc->hMFCH264Handle.indexTimestamp >= MAX_TIMESTAMP)
@@ -778,10 +777,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         OMX_S32 indexTimestamp = 0;
 
         returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
-        if (SsbSipMfcEncGetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) {
+        if ((SsbSipMfcEncGetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
+            (((indexTimestamp < 0) || (indexTimestamp > MAX_TIMESTAMP)))){
             pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
         } else {
-            pOutputData->timeStamp = pH264Enc->hMFCH264Handle.timeStamp[indexTimestamp];
+            pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
+            pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
         }
 
         if (returnCodec == MFC_RET_OK) {
@@ -834,11 +836,6 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
         ret = OMX_ErrorNone;
         goto EXIT;
     }
-
-    if (pInputData->nFlags & OMX_BUFFERFLAG_EOS)
-        pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
-    else
-        pOutputData->nFlags = pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS);
 
     ret = SEC_MFC_H264_Encode(pOMXComponent, pInputData, pOutputData);
     if (ret != OMX_ErrorNone) {

@@ -3,8 +3,6 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-SEC_OMX_CFLAGS := -Wall -fpic -pipe -DSTATIC_TABLE -O0
-
 SEC_OMX_TOP := $(LOCAL_PATH)
 SEC_CODECS := $(SEC_OMX_TOP)/sec_codecs/
 

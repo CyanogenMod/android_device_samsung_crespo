@@ -112,8 +112,9 @@ OMX_ERRORTYPE SEC_OMX_FlushPort(OMX_COMPONENTTYPE *pOMXComponent, OMX_S32 portIn
         while (SEC_OSAL_GetElemNum(&pSECPort->bufferQ) < pSECPort->assignedBufferNum) {
             SEC_OSAL_SemaphoreWait(pSECComponent->pSECPort[portIndex].bufferSemID);
         }
-    }
-
+        if (SEC_OSAL_GetElemNum(&pSECPort->bufferQ) != pSECPort->assignedBufferNum)
+            SEC_OSAL_SetElemNum(&pSECPort->bufferQ, pSECPort->assignedBufferNum);
+    } else {
     while(1) {
         int cnt;
         SEC_OSAL_Get_SemaphoreCount(pSECComponent->pSECPort[portIndex].bufferSemID, &cnt);
@@ -121,12 +122,14 @@ OMX_ERRORTYPE SEC_OMX_FlushPort(OMX_COMPONENTTYPE *pOMXComponent, OMX_S32 portIn
             break;
         SEC_OSAL_SemaphoreWait(pSECComponent->pSECPort[portIndex].bufferSemID);
     }
+        SEC_OSAL_SetElemNum(&pSECPort->bufferQ, 0);
+    }
 
-/*    pSECComponent->processData[portIndex].dataLen       = 0; */
+    pSECComponent->processData[portIndex].dataLen       = 0; 
     pSECComponent->processData[portIndex].nFlags        = 0;
-/*    pSECComponent->processData[portIndex].remainDataLen = 0; */
-/*    pSECComponent->processData[portIndex].timeStamp     = 0; */
-/*    pSECComponent->processData[portIndex].usedDataLen   = 0; */
+    pSECComponent->processData[portIndex].remainDataLen = 0; 
+    pSECComponent->processData[portIndex].timeStamp     = 0; 
+    pSECComponent->processData[portIndex].usedDataLen   = 0; 
 
 EXIT:
     FunctionOut();
@@ -186,6 +189,16 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
                             pSECComponent->callbackData,
                             OMX_EventCmdComplete,
                             OMX_CommandFlush, portIndex, NULL);
+        }
+
+        if (portIndex == INPUT_PORT_INDEX) {
+            pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+            SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pSECComponent->reInputData = OMX_FALSE;
+        } else if (portIndex == OUTPUT_PORT_INDEX) {
+            pSECComponent->remainOutputData = OMX_FALSE;
         }
     }
 
@@ -247,6 +260,15 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcessNoEvent(OMX_COMPONENTTYPE *pOMXComponent
         SEC_OSAL_MutexUnlock(flushBuffer->bufferMutex);
 
         pSECComponent->pSECPort[portIndex].bIsPortFlushed = OMX_FALSE;
+
+        if (portIndex == INPUT_PORT_INDEX) {
+            pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+            SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pSECComponent->remainOutputData = OMX_FALSE;
+            pSECComponent->reInputData = OMX_FALSE;
+        }
     }
 
 EXIT:
@@ -897,6 +919,11 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECOutputPort->markType.hMarkTargetComponent = NULL;
     pSECOutputPort->markType.pMarkData = NULL;
 
+    pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+    pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;
+    pSECComponent->checkTimeStamp.startTimeStamp = 0;
+    pSECComponent->checkTimeStamp.nStartFlags = 0x0;
+
     pOMXComponent->EmptyThisBuffer = &SEC_OMX_EmptyThisBuffer;
     pOMXComponent->FillThisBuffer  = &SEC_OMX_FillThisBuffer;
 
@@ -913,10 +940,7 @@ OMX_ERRORTYPE SEC_OMX_Port_Destructor(OMX_HANDLETYPE hComponent)
     OMX_COMPONENTTYPE     *pOMXComponent = NULL;
     SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
     SEC_OMX_BASEPORT      *pSECPort = NULL;
-/*
-    SEC_OMX_BASEPORT      *pSECInputPort = NULL;
-    SEC_OMX_BASEPORT      *pSECOutputPort = NULL;
-*/
+
     FunctionIn();
 
     int i = 0;
