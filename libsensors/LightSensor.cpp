@@ -131,10 +131,7 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
         int type = event->type;
         if (type == EV_ABS) {
             if (event->code == EVENT_TYPE_LIGHT) {
-                if (event->value != -1) {
-                    // FIXME: not sure why we're getting -1 sometimes
-                    mPendingEvent.light = indexToValue(event->value);
-                }
+                mPendingEvent.light = indexToValue(event->value);
             }
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
@@ -155,8 +152,25 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
 
 float LightSensor::indexToValue(size_t index) const
 {
-#warning Return lux levels
-    /* for now we return just raw ADC levels.  need to convert
-       to lux levels.  tbd. */
-    return index;
+    /* Driver gives a rolling average adc value.  We convert it lux levels. */
+    static const struct adcToLux {
+        size_t adc_value;
+        float  lux_value;
+    } adcToLux[] = {
+        {  150,   10.0 },  /* from    0 -  150 adc, we map to    10.0 lux */
+        {  800,  160.0 },  /* from  151 -  800 adc, we map to   160.0 lux */
+        {  900,  225.0 },  /* from  801 -  900 adc, we map to   225.0 lux */
+        { 1000,  320.0 },  /* from  901 - 1000 adc, we map to   320.0 lux */
+        { 1200,  640.0 },  /* from 1001 - 1200 adc, we map to   640.0 lux */
+        { 1400, 1280.0 },  /* from 1201 - 1400 adc, we map to  1280.0 lux */
+        { 1600, 2600.0 },  /* from 1401 - 1600 adc, we map to  2600.0 lux */
+        { 4095, 10240.0 }, /* from 1601 - 4095 adc, we map to 10240.0 lux */
+    };
+    size_t i;
+    for (i = 0; i < ARRAY_SIZE(adcToLux); i++) {
+        if (index < adcToLux[i].adc_value) {
+            return adcToLux[i].lux_value;
+        }
+    }
+    return adcToLux[ARRAY_SIZE(adcToLux)-1].lux_value;
 }
