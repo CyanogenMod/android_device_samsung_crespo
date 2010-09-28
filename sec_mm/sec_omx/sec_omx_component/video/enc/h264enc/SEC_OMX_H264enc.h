@@ -32,7 +32,6 @@
 #include "OMX_Video.h"
 #include "SsbSipMfcApi.h"
 
-#define MAX_TIMESTAMP        16
 
 typedef struct _EXTRA_DATA
 {
@@ -48,7 +47,6 @@ typedef struct _SEC_MFC_H264ENC_HANDLE
     SSBSIP_MFC_ENC_H264_PARAM mfcVideoAvc;
     SSBSIP_MFC_ENC_INPUT_INFO inputInfo;
 /*    SSBSIP_MFC_ENC_OUTPUT_INFO outputInfo; */
-    OMX_TICKS timeStamp[MAX_TIMESTAMP];
     OMX_U32    indexTimestamp;
     OMX_BOOL bConfiguredMFC;
     EXTRA_DATA headerData;

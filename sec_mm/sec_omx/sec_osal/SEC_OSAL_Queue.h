@@ -58,6 +58,7 @@ OMX_ERRORTYPE SEC_OSAL_QueueTerminate(SEC_QUEUE *queueHandle);
 int           SEC_OSAL_Queue(SEC_QUEUE *queueHandle, void *data);
 void         *SEC_OSAL_Dequeue(SEC_QUEUE *queueHandle);
 int           SEC_OSAL_GetElemNum(SEC_QUEUE *queueHandle);
+int           SEC_OSAL_SetElemNum(SEC_QUEUE *queueHandle, int ElemNum);
 
 #ifdef __cplusplus
 }

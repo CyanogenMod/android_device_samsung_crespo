@@ -32,14 +32,11 @@
 #include "OMX_Video.h"
 
 
-#define MAX_TIMESTAMP        16
-
 typedef struct _SEC_MFC_H264DEC_HANDLE
 {
     OMX_HANDLETYPE hMFCHandle;
     OMX_PTR pMFCStreamBuffer;
     OMX_PTR pMFCStreamPhyBuffer;
-    OMX_TICKS timeStamp[MAX_TIMESTAMP];
     OMX_U32    indexTimestamp;
     OMX_BOOL bConfiguredMFC;
     OMX_BOOL bThumbnailMode;

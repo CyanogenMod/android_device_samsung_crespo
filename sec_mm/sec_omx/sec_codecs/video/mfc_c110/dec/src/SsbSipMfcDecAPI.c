@@ -178,6 +178,12 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecInit(void *openHandle, SSBSIP_MFC_CODEC_TYPE c
     pCTX->decOutInfo.buf_width = DecArg.args.dec_init.out_buf_width;
     pCTX->decOutInfo.buf_height = DecArg.args.dec_init.out_buf_height;
 
+    /* by RainAde : crop information */
+    pCTX->decOutInfo.crop_top_offset = DecArg.args.dec_init.out_crop_top_offset;
+    pCTX->decOutInfo.crop_bottom_offset = DecArg.args.dec_init.out_crop_bottom_offset;
+    pCTX->decOutInfo.crop_left_offset = DecArg.args.dec_init.out_crop_left_offset;
+    pCTX->decOutInfo.crop_right_offset = DecArg.args.dec_init.out_crop_right_offset;
+
     pCTX->virFrmBuf.luma = DecArg.args.dec_init.out_u_addr.luma;
     pCTX->virFrmBuf.chroma = DecArg.args.dec_init.out_u_addr.chroma;
 
@@ -358,6 +364,12 @@ SSBSIP_MFC_DEC_OUTBUF_STATUS SsbSipMfcDecGetOutBuf(void *openHandle, SSBSIP_MFC_
     output_info->buf_width = pCTX->decOutInfo.buf_width;
     output_info->buf_height= pCTX->decOutInfo.buf_height;
 
+    /* by RainAde : for crop information */
+    output_info->crop_top_offset = pCTX->decOutInfo.crop_top_offset;
+    output_info->crop_bottom_offset= pCTX->decOutInfo.crop_bottom_offset;
+    output_info->crop_left_offset = pCTX->decOutInfo.crop_left_offset;
+    output_info->crop_right_offset= pCTX->decOutInfo.crop_right_offset;
+
     if (pCTX->displayStatus == 0)
         return MFC_GETOUTBUF_DISPLAY_END;
     else if (pCTX->displayStatus == 1)
@@ -432,6 +444,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecGetConfig(void *openHandle, SSBSIP_MFC_DEC_CON
     mfc_common_args DecArg;
 
     SSBSIP_MFC_IMG_RESOLUTION *img_resolution;
+    SSBSIP_MFC_CROP_INFORMATION *crop_information;
     MFC_CRC_DATA *crc_data;
 
     if (openHandle == NULL) {
@@ -454,6 +467,15 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecGetConfig(void *openHandle, SSBSIP_MFC_DEC_CON
         img_resolution->height = pCTX->decOutInfo.img_height;
         img_resolution->buf_width = pCTX->decOutInfo.buf_width;
         img_resolution->buf_height = pCTX->decOutInfo.buf_height;
+        break;
+
+    /* Added by RainAde */
+    case MFC_DEC_GETCONF_CROP_INFO:
+        crop_information = (SSBSIP_MFC_CROP_INFORMATION*)value;
+        crop_information->crop_top_offset = pCTX->decOutInfo.crop_top_offset;
+        crop_information->crop_bottom_offset= pCTX->decOutInfo.crop_bottom_offset;
+        crop_information->crop_left_offset = pCTX->decOutInfo.crop_left_offset;
+        crop_information->crop_right_offset= pCTX->decOutInfo.crop_right_offset;
         break;
 
     case MFC_DEC_GETCONF_CRC_DATA:

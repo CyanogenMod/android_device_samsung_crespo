@@ -13,7 +13,7 @@ LOCAL_MODULE := libsecbasecomponent
 
 LOCAL_CFLAGS :=
 
-LOCAL_STATIC_LIBRARIES :=
+LOCAL_STATIC_LIBRARIES := libsecosal
 LOCAL_SHARED_LIBRARIES := libcutils libutils
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \

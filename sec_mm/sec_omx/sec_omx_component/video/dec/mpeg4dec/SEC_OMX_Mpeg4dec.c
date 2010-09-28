@@ -24,7 +24,6 @@
  *   2010.7.15 : Create
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -328,6 +327,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_GetParameter(
     {
         OMX_S32 codecType;
         OMX_PARAM_COMPONENTROLETYPE *pComponentRole = (OMX_PARAM_COMPONENTROLETYPE *)pComponentParameterStructure;
+
         ret = SEC_OMX_Check_SizeVersion(pComponentRole, sizeof(OMX_PARAM_COMPONENTROLETYPE));
         if (ret != OMX_ErrorNone) {
             goto EXIT;
@@ -858,8 +858,10 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pStreamBuffer;
     pSECComponent->processData[INPUT_PORT_INDEX].allocSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
 
-    SEC_OSAL_Memset(pMpeg4Dec->hMFCMpeg4Handle.timestamp, 0, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+    SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
     pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp = 0;
+    pSECComponent->getAllDelayBuffer = OMX_FALSE;
 
 EXIT:
     FunctionOut();
@@ -922,6 +924,13 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             MFCCodecType = H263_DEC;
         }
 
+        if ((oneFrameSize <= 0) && (pInputData->nFlags & OMX_BUFFERFLAG_EOS)) {
+            pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
+            ret = OMX_ErrorNone;
+            goto EXIT;
+        }
+
         /* Set the number of extra buffer to prevent tearing */
         configValue = 5;
         SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_EXTRA_BUFFER_NUM, &configValue);
@@ -973,6 +982,8 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
 
             pMpeg4Dec->hMFCMpeg4Handle.bConfiguredMFC = OMX_TRUE;
             if (pMpeg4Dec->hMFCMpeg4Handle.codecType == CODEC_TYPE_MPEG4) {
+                pOutputData->timeStamp = pInputData->timeStamp;
+                pOutputData->nFlags = pInputData->nFlags;
                 ret = OMX_ErrorNone;
             } else {
                 pOutputData->dataLen = 0;
@@ -991,31 +1002,35 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
 
-    pMpeg4Dec->hMFCMpeg4Handle.timestamp[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->timeStamp[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp));
     pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp++;
     if (pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp >= MAX_TIMESTAMP)
         pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp = 0;
 
-    if (oneFrameSize <= 0) {
-        ret = OMX_ErrorNone;
-        goto EXIT;
+    if (Check_Stream_PrefixCode(pInputData->dataBuffer, pInputData->dataLen, pMpeg4Dec->hMFCMpeg4Handle.codecType) == OMX_TRUE) {
+        returnCodec = SsbSipMfcDecExe(hMFCHandle, oneFrameSize);
+    } else {
+        returnCodec = MFC_RET_OK;
     }
 
-    returnCodec = SsbSipMfcDecExe(hMFCHandle, oneFrameSize);
     if (returnCodec == MFC_RET_OK) {
         SSBSIP_MFC_DEC_OUTBUF_STATUS status;
         OMX_S32 indexTimestamp = 0;
 
         status = SsbSipMfcDecGetOutBuf(hMFCHandle, &outputInfo);
-
         bufWidth =  (outputInfo.img_width + 15) & (~15);
         bufHeight =  (outputInfo.img_height + 15) & (~15);
 
-        if (SsbSipMfcDecGetConfig(hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) == MFC_RET_OK)
-            pOutputData->timeStamp = pMpeg4Dec->hMFCMpeg4Handle.timestamp[indexTimestamp];
-        else
+        if ((SsbSipMfcDecGetConfig(hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
+            (((indexTimestamp < 0) || (indexTimestamp > MAX_TIMESTAMP)))) {
             pOutputData->timeStamp = pInputData->timeStamp;
+            pOutputData->nFlags = pInputData->nFlags;
+        } else {
+            pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
+            pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
+        }
 
         if ((status == MFC_GETOUTBUF_DISPLAY_DECODING) ||
             (status == MFC_GETOUTBUF_DISPLAY_ONLY)) {
@@ -1029,15 +1044,32 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
                 break;
             }
         }
+        if (pOutputData->nFlags & OMX_BUFFERFLAG_EOS)
+            pOutputData->dataLen = 0;
 
-        if (status == MFC_GETOUTBUF_DISPLAY_ONLY) {
+        if ((status == MFC_GETOUTBUF_DISPLAY_ONLY) ||
+            (pSECComponent->getAllDelayBuffer == OMX_TRUE)) {
             ret = OMX_ErrorInputDataDecodeYet;
         }
+        
         if (status == MFC_GETOUTBUF_DECODING_ONLY) {
+            /* ret = OMX_ErrorInputDataDecodeYet; */
             ret = OMX_ErrorNone;
             goto EXIT;
         }
+
+        if ((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pInputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+            pSECComponent->getAllDelayBuffer = OMX_TRUE;
+            ret = OMX_ErrorInputDataDecodeYet;
+        }
+
+        if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            ret = OMX_ErrorNone;
+        }
     } else {
+        /* ret = OMX_ErrorUndefined; */ /* ????? */
         ret = OMX_ErrorNone;
         goto EXIT;
     }
@@ -1091,25 +1123,15 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, S
 
     if ((!CHECK_PORT_ENABLED(pInputPort)) || (!CHECK_PORT_ENABLED(pOutputPort)) ||
             (!CHECK_PORT_POPULATED(pInputPort)) || (!CHECK_PORT_POPULATED(pOutputPort))) {
+        ret = OMX_ErrorNone;
         goto EXIT;
     }
     if (OMX_FALSE == SEC_Check_BufferProcess_State(pSECComponent)) {
+        ret = OMX_ErrorNone;
         goto EXIT;
     }
 
-    if (pInputData->nFlags & OMX_BUFFERFLAG_EOS) {
-        pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
-    } else {
-        pOutputData->nFlags = pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS);
-    }
-
-    bCheckPrefix = Check_Stream_PrefixCode(pInputData->dataBuffer, pInputData->dataLen, pMpeg4Dec->hMFCMpeg4Handle.codecType);
-
-    if (bCheckPrefix == OMX_TRUE) {
-        ret = SEC_MFC_Mpeg4_Decode(pOMXComponent, pInputData, pOutputData);
-    } else {
-        ret = OMX_ErrorNone;
-    }
+    ret = SEC_MFC_Mpeg4_Decode(pOMXComponent, pInputData, pOutputData);
     if (ret != OMX_ErrorNone) {
         if (ret == OMX_ErrorInputDataDecodeYet) {
             pOutputData->usedDataLen = 0;
@@ -1120,6 +1142,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, S
                                                     OMX_EventError, ret, 0, NULL);
         }
     } else {
+        pInputData->previousDataLen = pInputData->dataLen;
         pInputData->usedDataLen += pInputData->dataLen;
         pInputData->remainDataLen = pInputData->dataLen - pInputData->usedDataLen;
         pInputData->dataLen -= pInputData->usedDataLen;

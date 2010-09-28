@@ -90,7 +90,8 @@ PRODUCT_COPY_FILES += \
 
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry
+	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
+	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/media_profiles.xml:system/etc/media_profiles.xml
 
 # These are the OpenMAX IL modules
 PRODUCT_PACKAGES += \
@@ -110,6 +111,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw
+
+# NFC
+PRODUCT_PACKAGES += \
+	libnfc
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \

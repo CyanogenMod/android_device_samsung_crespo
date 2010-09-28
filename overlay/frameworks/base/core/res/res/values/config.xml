@@ -147,4 +147,7 @@
     <integer-array name="config_keyboardTapVibePattern">
         <item>30</item>
     </integer-array>
+
+    <!-- crespo doesn't handle this blur effect very quickly. -->
+    <bool name="config_sf_slowBlur">true</bool>
 </resources>

@@ -70,10 +70,20 @@ typedef struct _SEC_OMX_DATA
     OMX_U32   dataLen;
     OMX_U32   usedDataLen;
     OMX_U32   remainDataLen;
+    OMX_U32   previousDataLen;
     OMX_U32   nFlags;
     OMX_TICKS timeStamp;
     SEC_BUFFER_HEADER specificBufferHeader;
 } SEC_OMX_DATA;
+
+/* for Check TimeStamp after Seek */
+typedef struct _SEC_OMX_TIMESTAPM
+{
+    OMX_BOOL  needSetStartTimeStamp;
+    OMX_BOOL  needCheckStartTimeStamp;
+    OMX_TICKS startTimeStamp;
+    OMX_U32   nStartFlags;
+} SEC_OMX_TIMESTAMP;
 
 typedef struct _SEC_OMX_BASECOMPONENT
 {
@@ -116,6 +126,17 @@ typedef struct _SEC_OMX_BASECOMPONENT
     /* Callback function */
     OMX_CALLBACKTYPE        *pCallbacks;
     OMX_PTR                  callbackData;
+
+    /* Save Timestamp */
+    OMX_TICKS                timeStamp[MAX_TIMESTAMP];
+    SEC_OMX_TIMESTAMP        checkTimeStamp;
+
+    /* Save Flags */
+    OMX_U32                  nFlags[MAX_FLAGS];
+
+    OMX_BOOL                 getAllDelayBuffer;
+    OMX_BOOL                 remainOutputData;
+    OMX_BOOL                 reInputData;
 
     /* Android CapabilityFlags */
     OMXComponentCapabilityFlagsType capabilityFlags;
