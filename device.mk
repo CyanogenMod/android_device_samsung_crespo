@@ -112,6 +112,10 @@ PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw
 
+# NFC
+PRODUCT_PACKAGES += \
+	libnfc
+
 # Input device calibration files
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/qt602240_ts_input.idc:system/usr/idc/qt602240_ts_input.idc
