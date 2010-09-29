@@ -66,13 +66,14 @@ endif
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:=               \
-    AudioPolicyManager.cpp	\
-    AudioPolicyManagerBase.cpp
+    AudioPolicyManager.cpp
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libmedia
+
+LOCAL_STATIC_LIBRARIES := libaudiopolicybase
 
 LOCAL_MODULE:= libaudiopolicy
 
