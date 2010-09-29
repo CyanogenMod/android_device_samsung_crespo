@@ -25,6 +25,7 @@ char* MENU_HEADERS[] = { "Volume up/down to move highlight;",
                          NULL };
 
 char* MENU_ITEMS[] = { "reboot system now",
+                       "apply update from /sdcard",
                        "wipe data/factory reset",
                        "wipe cache partition",
                        NULL };
@@ -72,12 +73,7 @@ int device_handle_key(int key_code, int visible) {
 }
 
 int device_perform_action(int which) {
-    switch (which) {
-        case 0: return ITEM_REBOOT;
-        case 1: return ITEM_WIPE_DATA;
-        case 2: return ITEM_WIPE_CACHE;
-    }
-    return NO_ACTION;
+    return which;
 }
 
 int device_wipe_data() {
