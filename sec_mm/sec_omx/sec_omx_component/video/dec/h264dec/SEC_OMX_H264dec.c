@@ -42,6 +42,7 @@
 #include "SEC_OSAL_Log.h"
 
 //#define ADD_SPS_PPS_I_FRAME
+//#define FULL_FRAME_SEARCH
 
 /* H.264 Decoder Supported Levels & profiles */
 SEC_OMX_VIDEO_PROFILELEVEL supportedAVCProfileLevels[] ={
@@ -821,10 +822,12 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         }
     }
 
+#ifndef FULL_FRAME_SEARCH
     if ((pInputData->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
         (pSECComponent->bUseFlagEOF == OMX_FALSE)) {
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
+#endif
 
     pSECComponent->timeStamp[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
     pSECComponent->nFlags[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
@@ -875,24 +878,51 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             (pSECComponent->getAllDelayBuffer == OMX_TRUE)) {
             ret = OMX_ErrorInputDataDecodeYet;
         }
-        
+
         if(status == MFC_GETOUTBUF_DECODING_ONLY) {
             /* ret = OMX_ErrorInputDataDecodeYet; */
             ret = OMX_ErrorNone;
             goto EXIT;
         }
 
+#ifdef FULL_FRAME_SEARCH
+        if (((pInputData->nFlags & OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS) &&
+            (pSECComponent->bSaveFlagEOS == OMX_TRUE)) {
+            pInputData->nFlags |= OMX_BUFFERFLAG_EOS;
+            pSECComponent->getAllDelayBuffer = OMX_TRUE;
+            ret = OMX_ErrorInputDataDecodeYet;
+        } else
+#endif
+
         if ((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
             pInputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
             pSECComponent->getAllDelayBuffer = OMX_TRUE;
             ret = OMX_ErrorInputDataDecodeYet;
-        }
-
-        if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+        } else if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
             ret = OMX_ErrorNone;
         }
     } else {
+        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->nFlags = pInputData->nFlags;
+        switch(pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eColorFormat) {
+        case OMX_COLOR_FormatYUV420Planar:
+        case OMX_COLOR_FormatYUV420SemiPlanar:
+            pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
+            break;
+        default:
+            pOutputData->dataLen = bufWidth * bufHeight * 2;
+            break;
+        }
+
+        if ((pSECComponent->bSaveFlagEOS == OMX_TRUE) ||
+            (pSECComponent->getAllDelayBuffer == OMX_TRUE) ||
+            (pInputData->nFlags & OMX_BUFFERFLAG_EOS)) {
+                pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
+                pSECComponent->getAllDelayBuffer = OMX_FALSE;
+                pOutputData->dataLen = 0;
+        }
+
         /* ret = OMX_ErrorUndefined; */ /* ????? */
         ret = OMX_ErrorNone;
         goto EXIT;
@@ -914,6 +944,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         if (pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_FALSE)
 #endif
         {
+            /* if use Post copy address structure */
             SEC_OSAL_Memcpy(pOutBuf, &frameSize, sizeof(frameSize));
             SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
             SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
@@ -954,7 +985,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
         goto EXIT;
     }
 
-        ret = SEC_MFC_H264_Decode(pOMXComponent, pInputData, pOutputData);
+    ret = SEC_MFC_H264_Decode(pOMXComponent, pInputData, pOutputData);
     if (ret != OMX_ErrorNone) {
         if (ret == OMX_ErrorInputDataDecodeYet) {
             pOutputData->usedDataLen = 0;

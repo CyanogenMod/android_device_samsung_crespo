@@ -41,6 +41,8 @@
 #define SEC_LOG_OFF
 #include "SEC_OSAL_Log.h"
 
+//#define FULL_FRAME_SEARCH
+
 /* MPEG4 Decoder Supported Levels & profiles */
 SEC_OMX_VIDEO_PROFILELEVEL supportedMPEG4ProfileLevels[] ={
     {OMX_VIDEO_MPEG4ProfileSimple, OMX_VIDEO_MPEG4Level0},
@@ -997,10 +999,12 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         }
     }
 
+#ifndef FULL_FRAME_SEARCH
     if ((pInputData->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
         (pSECComponent->bUseFlagEOF == OMX_FALSE)) {
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
+#endif
 
     pSECComponent->timeStamp[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
     pSECComponent->nFlags[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
@@ -1051,24 +1055,51 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             (pSECComponent->getAllDelayBuffer == OMX_TRUE)) {
             ret = OMX_ErrorInputDataDecodeYet;
         }
-        
+
         if (status == MFC_GETOUTBUF_DECODING_ONLY) {
             /* ret = OMX_ErrorInputDataDecodeYet; */
             ret = OMX_ErrorNone;
             goto EXIT;
         }
 
+#ifdef FULL_FRAME_SEARCH
+        if (((pInputData->nFlags & OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS) &&
+            (pSECComponent->bSaveFlagEOS == OMX_TRUE)) {
+            pInputData->nFlags |= OMX_BUFFERFLAG_EOS;
+            pSECComponent->getAllDelayBuffer = OMX_TRUE;
+            ret = OMX_ErrorInputDataDecodeYet;
+        } else
+#endif
+
         if ((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
             pInputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
             pSECComponent->getAllDelayBuffer = OMX_TRUE;
             ret = OMX_ErrorInputDataDecodeYet;
-        }
-
-        if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+        } else if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
             ret = OMX_ErrorNone;
         }
     } else {
+        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->nFlags = pInputData->nFlags;
+        switch(pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eColorFormat) {
+        case OMX_COLOR_FormatYUV420Planar:
+        case OMX_COLOR_FormatYUV420SemiPlanar:
+            pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
+            break;
+        default:
+            pOutputData->dataLen = bufWidth * bufHeight * 2;
+            break;
+        }
+
+        if ((pSECComponent->bSaveFlagEOS == OMX_TRUE) ||
+            (pSECComponent->getAllDelayBuffer == OMX_TRUE) ||
+            (pInputData->nFlags & OMX_BUFFERFLAG_EOS)) {
+                pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
+                pSECComponent->getAllDelayBuffer = OMX_FALSE;
+                pOutputData->dataLen = 0;
+        }
+
         /* ret = OMX_ErrorUndefined; */ /* ????? */
         ret = OMX_ErrorNone;
         goto EXIT;

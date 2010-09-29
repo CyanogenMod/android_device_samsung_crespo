@@ -848,7 +848,7 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
         pInputData->dataLen -= pInputData->usedDataLen;
         pInputData->usedDataLen = 0;
 
-        /*pOutputData->usedDataLen = 0;*/
+        /* pOutputData->usedDataLen = 0; */
         pOutputData->remainDataLen = pOutputData->dataLen - pOutputData->usedDataLen;
     }
 

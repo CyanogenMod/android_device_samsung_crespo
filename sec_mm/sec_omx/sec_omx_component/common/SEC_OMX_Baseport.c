@@ -115,21 +115,21 @@ OMX_ERRORTYPE SEC_OMX_FlushPort(OMX_COMPONENTTYPE *pOMXComponent, OMX_S32 portIn
         if (SEC_OSAL_GetElemNum(&pSECPort->bufferQ) != pSECPort->assignedBufferNum)
             SEC_OSAL_SetElemNum(&pSECPort->bufferQ, pSECPort->assignedBufferNum);
     } else {
-    while(1) {
-        int cnt;
-        SEC_OSAL_Get_SemaphoreCount(pSECComponent->pSECPort[portIndex].bufferSemID, &cnt);
-        if (cnt == 0)
-            break;
-        SEC_OSAL_SemaphoreWait(pSECComponent->pSECPort[portIndex].bufferSemID);
-    }
+        while(1) {
+            int cnt;
+            SEC_OSAL_Get_SemaphoreCount(pSECComponent->pSECPort[portIndex].bufferSemID, &cnt);
+            if (cnt == 0)
+                break;
+            SEC_OSAL_SemaphoreWait(pSECComponent->pSECPort[portIndex].bufferSemID);
+        }
         SEC_OSAL_SetElemNum(&pSECPort->bufferQ, 0);
     }
 
-    pSECComponent->processData[portIndex].dataLen       = 0; 
+    pSECComponent->processData[portIndex].dataLen       = 0;
     pSECComponent->processData[portIndex].nFlags        = 0;
-    pSECComponent->processData[portIndex].remainDataLen = 0; 
-    pSECComponent->processData[portIndex].timeStamp     = 0; 
-    pSECComponent->processData[portIndex].usedDataLen   = 0; 
+    pSECComponent->processData[portIndex].remainDataLen = 0;
+    pSECComponent->processData[portIndex].timeStamp     = 0;
+    pSECComponent->processData[portIndex].usedDataLen   = 0;
 
 EXIT:
     FunctionOut();
@@ -196,6 +196,7 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
             SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
             SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pSECComponent->bSaveFlagEOS = OMX_FALSE;
             pSECComponent->reInputData = OMX_FALSE;
         } else if (portIndex == OUTPUT_PORT_INDEX) {
             pSECComponent->remainOutputData = OMX_FALSE;
@@ -266,6 +267,7 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcessNoEvent(OMX_COMPONENTTYPE *pOMXComponent
             SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
             SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pSECComponent->bSaveFlagEOS = OMX_FALSE;
             pSECComponent->remainOutputData = OMX_FALSE;
             pSECComponent->reInputData = OMX_FALSE;
         }
