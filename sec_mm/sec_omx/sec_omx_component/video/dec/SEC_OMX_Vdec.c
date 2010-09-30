@@ -414,22 +414,31 @@ static OMX_ERRORTYPE SEC_InputBufferReturn(OMX_COMPONENTTYPE *pOMXComponent)
 
     FunctionIn();
 
-    if (secOMXInputPort->markType.hMarkTargetComponent != NULL ) {
-        bufferHeader->hMarkTargetComponent      = secOMXInputPort->markType.hMarkTargetComponent;
-        bufferHeader->pMarkData                 = secOMXInputPort->markType.pMarkData;
-        secOMXInputPort->markType.hMarkTargetComponent = NULL;
-        secOMXInputPort->markType.pMarkData = NULL;
-    }
+    if (bufferHeader != NULL) {
+        if (secOMXInputPort->markType.hMarkTargetComponent != NULL ) {
+            bufferHeader->hMarkTargetComponent      = secOMXInputPort->markType.hMarkTargetComponent;
+            bufferHeader->pMarkData                 = secOMXInputPort->markType.pMarkData;
+            secOMXInputPort->markType.hMarkTargetComponent = NULL;
+            secOMXInputPort->markType.pMarkData = NULL;
+        }
 
-    if (bufferHeader->hMarkTargetComponent != NULL) {
-        if (bufferHeader->hMarkTargetComponent == pOMXComponent) {
-            pSECComponent->pCallbacks->EventHandler(pOMXComponent,
-                            pSECComponent->callbackData,
-                            OMX_EventMark,
-                            0, 0, bufferHeader->pMarkData);
+        if (bufferHeader->hMarkTargetComponent != NULL) {
+            if (bufferHeader->hMarkTargetComponent == pOMXComponent) {
+                pSECComponent->pCallbacks->EventHandler(pOMXComponent,
+                                pSECComponent->callbackData,
+                                OMX_EventMark,
+                                0, 0, bufferHeader->pMarkData);
+            } else {
+                pSECComponent->propagateMarkType.hMarkTargetComponent = bufferHeader->hMarkTargetComponent;
+                pSECComponent->propagateMarkType.pMarkData = bufferHeader->pMarkData;
+            }
+        }
+
+        if (CHECK_PORT_TUNNELED(secOMXInputPort)) {
+            OMX_FillThisBuffer(secOMXInputPort->tunneledComponent, bufferHeader);
         } else {
-            pSECComponent->propagateMarkType.hMarkTargetComponent = bufferHeader->hMarkTargetComponent;
-            pSECComponent->propagateMarkType.pMarkData = bufferHeader->pMarkData;
+            bufferHeader->nFilledLen = 0;
+            pSECComponent->pCallbacks->EmptyBufferDone(pOMXComponent, pSECComponent->callbackData, bufferHeader);
         }
     }
 
@@ -439,14 +448,6 @@ static OMX_ERRORTYPE SEC_InputBufferReturn(OMX_COMPONENTTYPE *pOMXComponent)
         SEC_OSAL_SignalWait(pSECComponent->pauseEvent, DEF_MAX_WAIT_TIME);
     }
 
-    if (bufferHeader != NULL) {
-        if (CHECK_PORT_TUNNELED(secOMXInputPort)) {
-            OMX_FillThisBuffer(secOMXInputPort->tunneledComponent, bufferHeader);
-        } else {
-            bufferHeader->nFilledLen = 0;
-            pSECComponent->pCallbacks->EmptyBufferDone(pOMXComponent, pSECComponent->callbackData, bufferHeader);
-        }
-    }
     dataBuffer->dataValid     = OMX_FALSE;
     dataBuffer->dataLen       = 0;
     dataBuffer->remainDataLen = 0;
@@ -518,24 +519,32 @@ static OMX_ERRORTYPE SEC_OutputBufferReturn(OMX_COMPONENTTYPE *pOMXComponent)
 
     FunctionIn();
 
-    bufferHeader->nFilledLen = dataBuffer->remainDataLen;
-    bufferHeader->nOffset    = 0;
-    bufferHeader->nFlags     = dataBuffer->nFlags;
-    bufferHeader->nTimeStamp = dataBuffer->timeStamp;
+    if (bufferHeader != NULL) {
+        bufferHeader->nFilledLen = dataBuffer->remainDataLen;
+        bufferHeader->nOffset    = 0;
+        bufferHeader->nFlags     = dataBuffer->nFlags;
+        bufferHeader->nTimeStamp = dataBuffer->timeStamp;
 
-    if (pSECComponent->propagateMarkType.hMarkTargetComponent != NULL) {
-        bufferHeader->hMarkTargetComponent = pSECComponent->propagateMarkType.hMarkTargetComponent;
-        bufferHeader->pMarkData = pSECComponent->propagateMarkType.pMarkData;
-        pSECComponent->propagateMarkType.hMarkTargetComponent = NULL;
-        pSECComponent->propagateMarkType.pMarkData = NULL;
-    }
+        if (pSECComponent->propagateMarkType.hMarkTargetComponent != NULL) {
+            bufferHeader->hMarkTargetComponent = pSECComponent->propagateMarkType.hMarkTargetComponent;
+            bufferHeader->pMarkData = pSECComponent->propagateMarkType.pMarkData;
+            pSECComponent->propagateMarkType.hMarkTargetComponent = NULL;
+            pSECComponent->propagateMarkType.pMarkData = NULL;
+        }
 
-    if (bufferHeader->nFlags & OMX_BUFFERFLAG_EOS) {
-        pSECComponent->pCallbacks->EventHandler(pOMXComponent,
-                        pSECComponent->callbackData,
-                        OMX_EventBufferFlag,
-                        OUTPUT_PORT_INDEX,
-                        bufferHeader->nFlags, NULL);
+        if (bufferHeader->nFlags & OMX_BUFFERFLAG_EOS) {
+            pSECComponent->pCallbacks->EventHandler(pOMXComponent,
+                            pSECComponent->callbackData,
+                            OMX_EventBufferFlag,
+                            OUTPUT_PORT_INDEX,
+                            bufferHeader->nFlags, NULL);
+        }
+
+        if (CHECK_PORT_TUNNELED(secOMXOutputPort)) {
+            OMX_EmptyThisBuffer(secOMXOutputPort->tunneledComponent, bufferHeader);
+        } else {
+            pSECComponent->pCallbacks->FillBufferDone(pOMXComponent, pSECComponent->callbackData, bufferHeader);
+        }
     }
 
     if ((pSECComponent->currentState == OMX_StatePause) &&
@@ -544,13 +553,6 @@ static OMX_ERRORTYPE SEC_OutputBufferReturn(OMX_COMPONENTTYPE *pOMXComponent)
         SEC_OSAL_SignalWait(pSECComponent->pauseEvent, DEF_MAX_WAIT_TIME);
     }
 
-    if (bufferHeader != NULL) {
-        if (CHECK_PORT_TUNNELED(secOMXOutputPort)) {
-            OMX_EmptyThisBuffer(secOMXOutputPort->tunneledComponent, bufferHeader);
-        } else {
-            pSECComponent->pCallbacks->FillBufferDone(pOMXComponent, pSECComponent->callbackData, bufferHeader);
-        }
-    }
     /* reset dataBuffer */
     dataBuffer->dataValid     = OMX_FALSE;
     dataBuffer->dataLen       = 0;
@@ -720,9 +722,19 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
                 }
             } else {
                 if ((checkedSize == checkInputStreamLen) && (pSECComponent->bSaveFlagEOS == OMX_TRUE)) {
+                    if ((inputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS) &&
+                        ((inputData->nFlags & OMX_BUFFERFLAG_CODECCONFIG) ||
+                        (inputData->dataLen == 0))) {
                     inputData->nFlags |= OMX_BUFFERFLAG_EOS;
                     flagEOF = OMX_TRUE;
                     pSECComponent->bSaveFlagEOS = OMX_FALSE;
+                    } else if ((inputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS) &&
+                               (!(inputData->nFlags & OMX_BUFFERFLAG_CODECCONFIG)) &&
+                               (inputData->dataLen != 0)) {
+                        inputData->nFlags = (inputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+                        flagEOF = OMX_TRUE;
+                        pSECComponent->bSaveFlagEOS = OMX_TRUE;
+                    }
                 } else {
                     inputData->nFlags = (inputUseBuffer->nFlags & (~OMX_BUFFERFLAG_EOS));
                 }
@@ -730,8 +742,8 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
 
             if(((inputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) &&
                (inputData->dataLen <= 0) && (flagEOF == OMX_TRUE)) {
-                inputData->dataLen += inputData->previousDataLen;
-                inputData->remainDataLen += inputData->previousDataLen;
+                inputData->dataLen = inputData->previousDataLen;
+                inputData->remainDataLen = inputData->previousDataLen;
             }
         } else {
             /*????????????????????????????????? Error ?????????????????????????????????*/
@@ -912,7 +924,9 @@ OMX_ERRORTYPE SEC_OMX_BufferProcess(OMX_HANDLETYPE hComponent)
                 }
 
                 SEC_OSAL_MutexLock(inputUseBuffer->bufferMutex);
+                SEC_OSAL_MutexLock(outputUseBuffer->bufferMutex);
                 ret = pSECComponent->sec_mfc_bufferProcess(pOMXComponent, inputData, outputData);
+                SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
                 SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
 
                 if (ret == OMX_ErrorInputDataDecodeYet)
