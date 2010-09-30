@@ -93,6 +93,11 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
 	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/media_profiles.xml:system/etc/media_profiles.xml
 
+# media profiles
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/media_profiles.xml:system/etc/media_profiles.xml
+
+
 # These are the OpenMAX IL modules
 PRODUCT_PACKAGES += \
 	libSEC_OMX_Core \
@@ -150,9 +155,7 @@ PRODUCT_LOCALES := hdpi
 
 
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko \
-	device/samsung/crespo/pvrsrvkm.ko:root/modules/pvrsrvkm.ko \
-	device/samsung/crespo/s3c_lcd.ko:root/modules/s3c_lcd.ko
+	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
