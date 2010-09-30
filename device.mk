@@ -150,9 +150,7 @@ PRODUCT_LOCALES := hdpi
 
 
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko \
-	device/samsung/crespo/pvrsrvkm.ko:root/modules/pvrsrvkm.ko \
-	device/samsung/crespo/s3c_lcd.ko:root/modules/s3c_lcd.ko
+	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
