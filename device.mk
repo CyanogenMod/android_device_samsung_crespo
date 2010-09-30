@@ -55,7 +55,8 @@ PRODUCT_COPY_FILES += \
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
-	device/samsung/crespo/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl
+	device/samsung/crespo/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl \
+	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
