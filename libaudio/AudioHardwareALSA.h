@@ -90,8 +90,28 @@
 #define OEM_SOUND_TYPE_HEADSET       0x31 // Headset (0x30) + Voice(0x01)
 #define OEM_SOUND_TYPE_BTVOICE        0x41 // BT(0x40) + Voice(0x01)
 #endif
+
+#ifndef ALSA_DEFAULT_SAMPLE_RATE
+#define ALSA_DEFAULT_SAMPLE_RATE 44100 // in Hz
+#endif
+
+#define DEFAULT_SAMPLE_RATE ALSA_DEFAULT_SAMPLE_RATE
+
+#define PLAYBACK    0
+#define PERIOD_SZ_PLAYBACK   1024
+#define PERIODS_PLAYBACK     4
+#define BUFFER_SZ_PLAYBACK   (PERIODS_PLAYBACK * PERIOD_SZ_PLAYBACK)
+#define LATENCY_PLAYBACK_MS  ((BUFFER_SZ_PLAYBACK * 1000 / DEFAULT_SAMPLE_RATE) * 1000)
+
+#define CAPTURE     1
+#define PERIOD_SZ_CAPTURE   2048
+#define PERIODS_CAPTURE     2
+#define BUFFER_SZ_CAPTURE   (PERIODS_CAPTURE * PERIOD_SZ_CAPTURE)
+#define LATENCY_CAPTURE_MS  ((BUFFER_SZ_CAPTURE * 1000 / DEFAULT_SAMPLE_RATE) * 1000)
+
 namespace android
 {
+
 
     class AudioHardwareALSA;
 
@@ -143,10 +163,12 @@ namespace android
                 const char *        devicePrefix;
                 snd_pcm_stream_t    direction;       // playback or capture
                 snd_pcm_format_t    format;
-                int                 channels;
+                int                 channelCount;
                 uint32_t            sampleRate;
+                uint32_t            smpRateShift;
                 unsigned int        latency;         // Delay in usec
                 unsigned int        bufferSize;      // Size of sample buffer
+                unsigned int        periodSize;      // Size of sample buffer
             };
 
                                     ALSAStreamOps();
@@ -159,11 +181,12 @@ namespace android
             status_t                sampleRate(uint32_t rate);
             virtual size_t          bufferSize() const;
             virtual int             format() const;
-	    int 		    getAndroidFormat(snd_pcm_format_t format);
+                    int 		    getAndroidFormat(snd_pcm_format_t format);
 
-            virtual int             channelCount() const;
-            status_t                channelCount(int channels);
-	    uint32_t		    getAndroidChannels(int channels);
+            virtual uint32_t        channels() const;
+                    int             channelCount() const;
+                    status_t        channelCount(int channelCount);
+                    uint32_t        getAndroidChannels(int channelCount) const;
                   
             status_t                open(int mode, uint32_t device);
             void                    close();
@@ -201,14 +224,13 @@ namespace android
             virtual                ~AudioStreamOutALSA();
 
 
-	    status_t		     set(int *format,
-					 uint32_t *channelCount,
-					 uint32_t *sampleRate){
-		return ALSAStreamOps::set(format, channelCount, sampleRate);
-	    }
+            status_t		     set(int *format,
+                         uint32_t *channelCount,
+                         uint32_t *sampleRate){
+                return ALSAStreamOps::set(format, channelCount, sampleRate);
+            }
 
-            virtual uint32_t        sampleRate() const
-            {
+            virtual uint32_t        sampleRate() const {
                 return ALSAStreamOps::sampleRate();
             }
 
@@ -217,8 +239,10 @@ namespace android
                 return ALSAStreamOps::bufferSize();
             }
 
-            //virtual int             channelCount() const;
-            virtual uint32_t             channels() const;
+            virtual uint32_t             channels() const
+            {
+                return ALSAStreamOps::channels();
+            }
 
             virtual int             format() const
             {
@@ -236,6 +260,7 @@ namespace android
 
             status_t                standby();
             bool                    isStandby();
+            void                    setWakeLock();
 
 			virtual status_t    setParameters(const String8& keyValuePairs);
 			virtual String8     getParameters(const String8& keys);
@@ -254,13 +279,12 @@ namespace android
                                     AudioStreamInALSA(AudioHardwareALSA *parent);
             virtual                ~AudioStreamInALSA();
 
-	    status_t		     set(int *format,
-					 uint32_t *channelCount,
-					 uint32_t *sampleRate){
-		return ALSAStreamOps::set(format, channelCount, sampleRate);
-	    }
+            status_t		     set(int *format,
+                         uint32_t *channelCount,
+                         uint32_t *sampleRate){
+                return ALSAStreamOps::set(format, channelCount, sampleRate);
+            }
 
-            //virtual uint32_t        sampleRate() {
             virtual uint32_t        sampleRate() const {
                 return ALSAStreamOps::sampleRate();
             }
@@ -270,10 +294,9 @@ namespace android
                 return ALSAStreamOps::bufferSize();
             }
 
-            //virtual int             channelCount() const
             virtual uint32_t             channels() const
             {
-                return ALSAStreamOps::channelCount();
+                return ALSAStreamOps::channels();
             }
 
             virtual int             format() const
@@ -288,6 +311,8 @@ namespace android
             virtual status_t        setGain(float gain);
 
             virtual status_t        standby();
+                    status_t        standby_l();
+                    void            setWakeLock();
 
 	    virtual status_t    setParameters(const String8& keyValuePairs);
 	    virtual String8     getParameters(const String8& keys);
@@ -297,6 +322,7 @@ namespace android
         private:
             AudioHardwareALSA *mParent;
             bool               mPowerLock;
+            int16_t            mBuffer[2 * PERIOD_SZ_CAPTURE];
     };
 
 #if defined SEC_IPC
@@ -373,7 +399,8 @@ namespace android
                                 AudioSystem::audio_in_acoustics acoustics);
 	    virtual    void        closeInputStream(AudioStreamIn* in);
 
-
+	    static      uint32_t    checkInputSampleRate(uint32_t sampleRate);
+        static const uint32_t inputSamplingRates[];
 
         protected:
             /**
