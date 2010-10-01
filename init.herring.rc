@@ -138,4 +138,4 @@ service akmd8973 /system/vendor/bin/akmd8973
 service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
     disabled
     oneshot
-    keycodes 115 139
+    keycodes 114 115
