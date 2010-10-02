@@ -22,7 +22,7 @@ LOCAL_MODULE_TAGS := optional
 include $(BUILD_KEY_CHAR_MAP)
 
 include $(CLEAR_VARS)
-LOCAL_SRC_FILES := melfas-touchkey.kcm
+LOCAL_SRC_FILES := cypress-touchkey.kcm
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_KEY_CHAR_MAP)
 
