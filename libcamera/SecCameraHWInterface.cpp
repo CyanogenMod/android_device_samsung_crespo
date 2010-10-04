@@ -176,7 +176,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
                 "800x480,640x480");
         p.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
-                "2560x1920,2048x1536,1600x1200,800x480,640x480");
+                "2560x1920,2048x1536,1600x1200,1280x960,640x480");
     }
     else {
         p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
@@ -239,8 +239,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     parameterString.append(CameraParameters::EFFECT_SEPIA);
     p.set(CameraParameters::KEY_SUPPORTED_EFFECTS, parameterString.string());
 
-    p.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES,
-            CameraParameters::FLASH_MODE_OFF);
+    parameterString = CameraParameters::FLASH_MODE_ON;
+    parameterString.append(",");
+    parameterString.append(CameraParameters::FLASH_MODE_OFF);
+    parameterString.append(",");
+    parameterString.append(CameraParameters::FLASH_MODE_AUTO);
+    p.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, parameterString.string());
 
     parameterString = CameraParameters::SCENE_MODE_AUTO;
     parameterString.append(",");
