@@ -55,13 +55,13 @@ PRODUCT_COPY_FILES += \
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
-	device/samsung/crespo/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl \
+	device/samsung/crespo/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
 	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
-	melfas-touchkey.kcm
+	cypress-touchkey.kcm
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
@@ -137,6 +137,11 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
 	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.distinct.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.distinct.xml \
 	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
+
+# The OpenGL ES API level that is natively supported by this device.
+# This is a 16.16 fixed point number
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.opengles.version=131072
 
 # These are the hardware-specific settings that are stored in system properties.
 # Note that the only such settings should be the ones that are too low-level to
