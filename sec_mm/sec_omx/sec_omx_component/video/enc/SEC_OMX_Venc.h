@@ -34,7 +34,7 @@
 #include "SEC_OMX_Baseport.h"
 
 #define MAX_VIDEO_INPUTBUFFER_NUM    5
-#define MAX_VIDEO_OUTPUTBUFFER_NUM   2
+#define MAX_VIDEO_OUTPUTBUFFER_NUM   4
 
 #define DEFAULT_FRAME_WIDTH          176
 #define DEFAULT_FRAME_HEIGHT         144

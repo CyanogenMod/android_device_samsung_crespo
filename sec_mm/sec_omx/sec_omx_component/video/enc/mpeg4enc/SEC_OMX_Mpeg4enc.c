@@ -1115,8 +1115,8 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
         for(i = 0; i < ALL_PORT_NUM; i++) {
             INIT_SET_SIZE_VERSION(&pMpeg4Enc->mpeg4Component[i], OMX_VIDEO_PARAM_MPEG4TYPE);
             pMpeg4Enc->mpeg4Component[i].nPortIndex = i;
-            pMpeg4Enc->mpeg4Component[i].eProfile   = OMX_VIDEO_MPEG4ProfileCore;
-            pMpeg4Enc->mpeg4Component[i].eLevel     = OMX_VIDEO_MPEG4Level2;
+            pMpeg4Enc->mpeg4Component[i].eProfile   = OMX_VIDEO_MPEG4ProfileSimple;
+            pMpeg4Enc->mpeg4Component[i].eLevel     = OMX_VIDEO_MPEG4Level4;
 
             pMpeg4Enc->mpeg4Component[i].nPFrames = 10;
             pMpeg4Enc->mpeg4Component[i].nBFrames = 0;          /* No support for B frames */
