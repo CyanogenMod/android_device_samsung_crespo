@@ -130,11 +130,6 @@ service hciattach /system/bin/brcm_patchram_plus -d --enable_hci \
     disabled
     oneshot
 
-# sensor service
-service akmd8973 /system/vendor/bin/akmd8973
-    enabled
-    oneshot
-
 service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
     disabled
     oneshot
