@@ -719,6 +719,9 @@ public:
     int             setDataLineCheckStop(void);
     int             setDefultIMEI(int imei);
     int             getDefultIMEI(void);
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    int             getCameraSensorESDStatus(void);
+#endif // ENABLE_ESD_PREVIEW_CHECK
 #endif
 
     void setFrameRate(int frame_rate);
@@ -851,6 +854,10 @@ private:
     int             m_jpeg_quality;
 
     int             m_postview_offset;
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    int             m_esd_check_count;
+#endif // ENABLE_ESD_PREVIEW_CHECK
 
     exif_attribute_t mExifInfo;
 

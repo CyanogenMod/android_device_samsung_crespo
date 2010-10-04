@@ -706,6 +706,10 @@ SecCamera::SecCamera() :
             m_camera_af_flag(-1),
             m_shot_mode(0),
             m_flag_init(0)
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+            ,
+            m_esd_check_count(0)
+#endif // ENABLE_ESD_PREVIEW_CHECK
 {
     LOGV("%s()", __func__);
 #ifdef BOARD_USES_SDTV
@@ -1405,6 +1409,15 @@ int SecCamera::getPreview()
     int ret;
 #endif
 
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    int status = 0;
+
+    if (!(++m_esd_check_count % 60)) {
+        status = getCameraSensorESDStatus();
+        m_esd_check_count = 0;
+    }
+#endif // ENABLE_ESD_PREVIEW_CHECK
+
 #ifdef PERFORMANCE
 
     LOG_TIME_DEFINE(0)
@@ -1422,7 +1435,12 @@ int SecCamera::getPreview()
 
 #else
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    if (m_flag_camera_start == 0 || fimc_esd_poll(&m_events_c) == 0 || status) {
+#else
     if (m_flag_camera_start == 0 || fimc_esd_poll(&m_events_c) == 0) {
+#endif
         LOGE("ERR(%s):Start Camera Device Reset \n", __func__);
         /* GAUDI Project([arun.c@samsung.com]) 2010.05.20. [Implemented ESD code] */
         /*
@@ -1441,6 +1459,10 @@ int SecCamera::getPreview()
         CHECK(ret);
         //setCameraSensorReset();
         ret = startPreview();
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+        m_esd_check_count = 0;
+#endif // ENABLE_ESD_PREVIEW_CHECK
 
         if (ret < 0) {
             LOGE("ERR(%s): startPreview() return %d\n", __func__, ret);
@@ -3304,6 +3326,18 @@ int SecCamera::setDataLineCheckStop(void)
 }
 
 #endif
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+int SecCamera::getCameraSensorESDStatus(void)
+{
+    LOGV("%s", __func__);
+
+    // 0 : normal operation, 1 : abnormal operation
+    int status = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_ESD_INT);
+
+    return status;
+}
+#endif // ENABLE_ESD_PREVIEW_CHECK
 
 // ======================================================================
 // Jpeg
