@@ -743,6 +743,9 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pH264Enc->hMFCH264Handle.indexTimestamp = 0;
 
     if (oneFrameSize <= 0) {
+        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->nFlags = pInputData->nFlags;
+
         ret = OMX_ErrorNone;
         goto EXIT;
     }
