@@ -706,6 +706,10 @@ SecCamera::SecCamera() :
             m_camera_af_flag(-1),
             m_shot_mode(0),
             m_flag_init(0)
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+            ,
+            m_esd_check_count(0)
+#endif // ENABLE_ESD_PREVIEW_CHECK
 {
     LOGV("%s()", __func__);
 #ifdef BOARD_USES_SDTV
@@ -1102,7 +1106,7 @@ int SecCamera::startPreview(void)
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_iso);
         CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, m_fps);
         CHECK(ret);
@@ -1176,13 +1180,13 @@ int SecCamera::startPreview(void)
             ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_scene_mode);
             CHECK(ret);
         }
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_sharpness);
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness + BRIGHTNESS_NORMAL);
+        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
         CHECK(ret);
     }
 #endif
@@ -1405,6 +1409,15 @@ int SecCamera::getPreview()
     int ret;
 #endif
 
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    int status = 0;
+
+    if (!(++m_esd_check_count % 60)) {
+        status = getCameraSensorESDStatus();
+        m_esd_check_count = 0;
+    }
+#endif // ENABLE_ESD_PREVIEW_CHECK
+
 #ifdef PERFORMANCE
 
     LOG_TIME_DEFINE(0)
@@ -1422,7 +1435,12 @@ int SecCamera::getPreview()
 
 #else
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+    if (m_flag_camera_start == 0 || fimc_esd_poll(&m_events_c) == 0 || status) {
+#else
     if (m_flag_camera_start == 0 || fimc_esd_poll(&m_events_c) == 0) {
+#endif
         LOGE("ERR(%s):Start Camera Device Reset \n", __func__);
         /* GAUDI Project([arun.c@samsung.com]) 2010.05.20. [Implemented ESD code] */
         /*
@@ -1441,6 +1459,10 @@ int SecCamera::getPreview()
         CHECK(ret);
         //setCameraSensorReset();
         ret = startPreview();
+
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+        m_esd_check_count = 0;
+#endif // ENABLE_ESD_PREVIEW_CHECK
 
         if (ret < 0) {
             LOGE("ERR(%s): startPreview() return %d\n", __func__, ret);
@@ -1875,8 +1897,6 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
 
     LOG_TIME_START(1) // prepare
     int nframe = 1;
-
-    LOGE("[zzangdol] w %d, h %d\n", m_snapshot_width, m_snapshot_height);
 
     ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
     CHECK(ret);
@@ -2340,6 +2360,8 @@ int SecCamera::setBrightness(int brightness)
 {
     LOGV("%s(brightness(%d))", __func__, brightness);
 
+    brightness += BRIGHTNESS_NORMAL;
+
     if (brightness < BRIGHTNESS_MINUS_4 || BRIGHTNESS_PLUS_4 < brightness) {
         LOGE("ERR(%s):Invalid brightness(%d)", __func__, brightness);
         return -1;
@@ -2349,7 +2371,7 @@ int SecCamera::setBrightness(int brightness)
         m_brightness = brightness;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (m_flag_camera_start) {
-            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, brightness + BRIGHTNESS_NORMAL) < 0) {
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, brightness) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_BRIGHTNESS", __func__);
                 return -1;
             }
@@ -3305,6 +3327,18 @@ int SecCamera::setDataLineCheckStop(void)
 
 #endif
 
+#ifdef ENABLE_ESD_PREVIEW_CHECK
+int SecCamera::getCameraSensorESDStatus(void)
+{
+    LOGV("%s", __func__);
+
+    // 0 : normal operation, 1 : abnormal operation
+    int status = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_ESD_INT);
+
+    return status;
+}
+#endif // ENABLE_ESD_PREVIEW_CHECK
+
 // ======================================================================
 // Jpeg
 
@@ -3595,14 +3629,13 @@ void SecCamera::setExifChangedAttribute()
 
     //2 0th IFD Exif Private Tags
     //3 Exposure Time
-    int shutterSpeed = fimc_v4l2_s_ctrl(m_cam_fd,
-                                            V4L2_CID_CAMERA_GET_SHT_TIME,
-                                            0);
+    int shutterSpeed = fimc_v4l2_g_ctrl(m_cam_fd,
+                                            V4L2_CID_CAMERA_GET_SHT_TIME);
     mExifInfo.exposure_time.num = 1;
-    mExifInfo.exposure_time.den = 1000000.0 / shutterSpeed;   /* us -> sec */
+    mExifInfo.exposure_time.den = 1000.0 / shutterSpeed;   /* ms -> sec */
 
     //3 ISO Speed Rating
-    int iso = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO, 0);
+    int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
     if (m_iso == ISO_AUTO) {
         mExifInfo.iso_speed_rating = iso;
     } else {
