@@ -49,12 +49,6 @@ public:
     virtual void        stopPreview();
     virtual bool        previewEnabled();
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    virtual status_t    startSmartautoscene();
-    virtual void        stopSmartautoscene();
-    virtual bool        smartautosceneEnabled();
-#endif
-
     virtual status_t    startRecording();
     virtual void        stopRecording();
     virtual bool        recordingEnabled();
@@ -107,39 +101,10 @@ private:
         }
     };
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    class SmartautosceneThread : public Thread {
-        CameraHardwareSec *mHardware;
-    public:
-        SmartautosceneThread(CameraHardwareSec *hw):
-#ifdef SINGLE_PROCESS
-        // In single process mode this thread needs to be a java thread,
-        // since we won't be calling through the binder.
-        Thread(true),
-#else
-        Thread(false),
-#endif
-        mHardware(hw) { }
-        virtual void onFirstRef() {
-            run("CameraSmartautosceneThread", PRIORITY_URGENT_DISPLAY);
-        }
-        virtual bool threadLoop() {
-            int ret = mHardware->smartautosceneThread();
-            // loop until we need to quit
-            if(ret == NO_ERROR)
-                return true;
-            else
-                return false;
-        }
-    };
-#endif
             void        initDefaultParameters(int cameraId);
             void        initHeapLocked();
 
             int         previewThread();
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-            int         smartautosceneThread();
-#endif
 
             static int  beginAutoFocusThread(void *cookie);
             int         autoFocusThread();
@@ -157,14 +122,19 @@ private:
                                                 void *pJpegData,
                                                 void *pYuvData);
             bool        YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth, uint32_t srcHeight);
-            bool        scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
-                                        char *dstBuf, uint32_t dstWidth, uint32_t dstHight);
+            bool        scaleDownYuv422(char *srcBuf, uint32_t srcWidth,
+                                        uint32_t srcHight, char *dstBuf,
+                                        uint32_t dstWidth, uint32_t dstHight);
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    static  int         beginObjectTrackingThread(void *cookie);
-            int         objectTrackingThread();
-            status_t    objectTracking(int onoff);
-#endif
+            bool        CheckVideoStartMarker(unsigned char *pBuf);
+            bool        CheckEOIMarker(unsigned char *pBuf);
+            bool        FindEOIMarkerInJPEG(unsigned char *pBuf,
+                                            int dwBufSize, int *pnJPEGsize);
+            bool        SplitFrame(unsigned char *pFrame, int dwSize,
+                                   int dwJPEGLineLength, int dwVideoLineLength,
+                                   int dwVideoHeight, void *pJPEG,
+                                   int *pdwJPEGSize, void *pVideo,
+                                   int *pdwVideoSize);
 
     mutable Mutex       mLock;
 
@@ -182,6 +152,7 @@ private:
             int         mPreviewFrameSize;
             int         mRawFrameSize;
             int         mPreviewFrameRateMicrosec;
+            const __u8  *mCameraSensorName;
 
 #if defined(BOARD_USES_OVERLAY)
             sp<Overlay> mOverlay;
@@ -191,9 +162,6 @@ private:
 
     // protected by mLock
     sp<PreviewThread>   mPreviewThread;
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    sp<SmartautosceneThread>   mSmartautosceneThread;
-#endif
     notify_callback     mNotifyCb;
     data_callback       mDataCb;
     data_callback_timestamp mDataCbTimestamp;
@@ -216,53 +184,6 @@ private:
     struct timeval      mTimeStart;
     struct timeval      mTimeStop;
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    enum COMMAND_DEFINE {
-        COMMAND_AE_AWB_LOCK_UNLOCK          = 1101,
-        COMMAND_FACE_DETECT_LOCK_UNLOCK     = 1102,
-        COMMAND_OBJECT_POSITION             = 1103,
-        COMMAND_OBJECT_TRACKING_STARTSTOP   = 1104,
-        COMMAND_TOUCH_AF_STARTSTOP          = 1105,
-        COMMAND_CHECK_DATALINE              = 1106,
-        CONTINUOUS_SHOT_START_CAPTURE       = 1023,
-        CONTINUOUS_SHOT_STOP_AND_ENCODING   = 1024,
-        COMMAND_DEFAULT_IMEI                = 1107,
-    };
-
-    class ObjectTrackingThread : public Thread {
-        CameraHardwareSec *mHardware;
-    public:
-        ObjectTrackingThread(CameraHardwareSec *hw):
-    #ifdef SINGLE_PROCESS
-        // In single process mode this thread needs to be a java thread,
-        // since we won't be calling through the binder.
-        Thread(true),
-    #else
-        Thread(false),
-    #endif
-        mHardware(hw) { }
-        virtual void onFirstRef() {
-            run("CameraObjectTrackingThread", PRIORITY_URGENT_DISPLAY);
-        }
-        virtual bool threadLoop() {
-            int ret = mHardware->objectTrackingThread();
-            // loop until we need to quit
-            if(ret == NO_ERROR)
-                return true;
-            else
-                return false;
-        }
-    };
-
-            bool        mObjectTrackingRunning;
-    sp<ObjectTrackingThread>   mObjectTrackingThread;
-            int         mObjectTrackingStatus;
-
-            bool        mSmartautosceneRunning;
-            int         mSmartautoscene_current_status;
-            int         mSmartautoscene_previous_status;
-            int         af_thread_status;
-#endif
 };
 
 }; // namespace android
