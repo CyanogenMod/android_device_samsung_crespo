@@ -879,6 +879,9 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp = 0;
 
     if (oneFrameSize <= 0) {
+        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->nFlags = pInputData->nFlags;
+
         ret = OMX_ErrorNone;
         goto EXIT;
     }
