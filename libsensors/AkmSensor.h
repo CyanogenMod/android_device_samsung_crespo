@@ -50,6 +50,8 @@ public:
 
 private:
     int update_delay();
+    int loadAKMLibrary();
+    void *mLibAKM;
     uint32_t mEnabled;
     uint32_t mPendingMask;
     InputEventCircularReader mInputReader;
