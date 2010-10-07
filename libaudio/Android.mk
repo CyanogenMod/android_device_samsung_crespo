@@ -19,20 +19,6 @@ ifeq ($(BOARD_USES_GENERIC_AUDIO),false)
     LOCAL_CFLAGS += -DALSA_DEFAULT_SAMPLE_RATE=$(ALSA_DEFAULT_SAMPLE_RATE)
   endif
 
-# Samsung Feature
-ifeq ($(TARGET_BOARD_PLATFORM),s5pc110)
-  LOCAL_CFLAGS += -DSLSI_S5PC110
-
-# Samsung Driver Feature
-#   LOCAL_CFLAGS += -DSEC_SWP_SOUND -DSEC_IPC -DPOWER_GATING -DSYNCHRONIZE_CP -DBT_NR_EC_ONOFF
-   LOCAL_CFLAGS += -DSEC_SWP_SOUND -DSEC_IPC 
-   LOCAL_CFLAGS += -DTURN_ON_DEVICE_ONLY_USE  
-endif
-
-ifeq ($(TARGET_BOARD_PLATFORM),s5pc100)
-  LOCAL_CFLAGS += -DSLSI_S5PC100
-endif
-
   LOCAL_C_INCLUDES += device/samsung/crespo/alsa-lib/include
   LOCAL_SRC_FILES := AudioHardwareALSA.cpp
 
@@ -52,14 +38,6 @@ ifeq ($(BOARD_HAVE_BLUETOOTH),true)
   LOCAL_SHARED_LIBRARIES += liba2dp
 endif
 
-ifneq ($(NO_IPC_ALSA_RILD),true)
-ifeq ($(BOARD_USES_LIBSECRIL_STUB),true)
-  LOCAL_SHARED_LIBRARIES += libsecril-client-stub
-else
-  LOCAL_SHARED_LIBRARIES += libsecril-client
-endif
-  LOCAL_CFLAGS  +=  -DIPC_ALSA_RILD
-endif
   include $(BUILD_SHARED_LIBRARY)
 
 # To build audiopolicy library 
@@ -82,15 +60,6 @@ ifeq ($(BOARD_HAVE_BLUETOOTH),true)
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
-ifeq ($(BOARD_USES_LIBSECRIL_STUB),true)
-# A stub to replace libsecril-client at build time
-include $(CLEAR_VARS)
-LOCAL_SRC_FILES := secril_stub.c
-LOCAL_MODULE := libsecril-client-stub
-LOCAL_MODULE_TAGS := optional
-include $(BUILD_SHARED_LIBRARY)
-endif
 
 endif
 endif

@@ -46,7 +46,7 @@
 /* #undef BUILD_PCM_PLUGIN_MULAW */
 
 /* Build PCM rate plugin */
-/* #undef BUILD_PCM_PLUGIN_RATE */
+#define BUILD_PCM_PLUGIN_RATE "1"
 
 /* Build PCM route plugin */
 /* #undef BUILD_PCM_PLUGIN_ROUTE */

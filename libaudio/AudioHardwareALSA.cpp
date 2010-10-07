@@ -34,13 +34,10 @@
 
 #include <alsa/asoundlib.h>
 #include "AudioHardwareALSA.h"
-#define READ_FRAME_SIZE 2080
-#define READ_FRAME_SIZE_STANDARD 4160
+// #define READ_FRAME_SIZE 2080
+// #define READ_FRAME_SIZE_STANDARD 4160
 
-#if defined SEC_IPC
-// sangsu fix : headers for IPC
-#include <telephony/ril.h>
-#endif
+#include <dlfcn.h>
 
 #define SND_MIXER_VOL_RANGE_MIN  (0)
 #define SND_MIXER_VOL_RANGE_MAX  (100)
@@ -50,21 +47,6 @@
 #define ALSA_STRCAT(x,y) \
     if (strlen(x) + strlen(y) < ALSA_NAME_MAX) \
         strcat(x, y);
-
-
-// If you want to dump PCM data, activate this feature
-//#define PCM_INPUT_DUMP
-//#define PCM_OUTPUT_DUMP
-
-#ifdef PCM_INPUT_DUMP
-#define PCM_INPUT_DUMP_PATH	"/data/Read_PCM_Dump.dat"
-FILE *fpInput = NULL ;
-#endif
-
-#ifdef PCM_OUTPUT_DUMP
-#define PCM_OUTPUT_DUMP_PATH	"/data/Write_PCM_Dump.dat"
-FILE *fpOutput = NULL ;
-#endif
 
 extern "C"
 {
@@ -90,20 +72,11 @@ extern "C"
 namespace android
 {
 
-#if 0
-typedef AudioSystem::audio_routes audio_routes;
-#define ROUTE_ALL            AudioSystem::ROUTE_ALL
-#define ROUTE_EARPIECE       AudioSystem::ROUTE_EARPIECE
-#define ROUTE_SPEAKER        AudioSystem::ROUTE_SPEAKER
-#define ROUTE_BLUETOOTH_SCO  AudioSystem::ROUTE_BLUETOOTH_SCO
-#define ROUTE_HEADSET        AudioSystem::ROUTE_HEADSET
-#define ROUTE_BLUETOOTH_A2DP AudioSystem::ROUTE_BLUETOOTH_A2DP
-#elif defined SEC_SWP_SOUND
 typedef AudioSystem::audio_devices audio_routes;
 #define ROUTE_ALL            AudioSystem::DEVICE_OUT_ALL
 #define ROUTE_EARPIECE       AudioSystem::DEVICE_OUT_EARPIECE
 #define ROUTE_HEADSET        AudioSystem::DEVICE_OUT_WIRED_HEADSET
-#define ROUTE_HEADPHONE	AudioSystem::DEVICE_OUT_WIRED_HEADPHONE
+#define ROUTE_HEADPHONE      AudioSystem::DEVICE_OUT_WIRED_HEADPHONE
 #define ROUTE_SPEAKER        AudioSystem::DEVICE_OUT_SPEAKER
 #define ROUTE_BLUETOOTH_SCO  AudioSystem::DEVICE_OUT_BLUETOOTH_SCO
 #define ROUTE_BLUETOOTH_SCO_HEADSET  AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET
@@ -111,15 +84,7 @@ typedef AudioSystem::audio_devices audio_routes;
 #define ROUTE_BLUETOOTH_A2DP AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP
 #define ROUTE_BLUETOOTH_A2DP_HEADPHONES AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES
 #define ROUTE_BLUETOOTH_A2DP_SPEAKER AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER
-#else
-typedef AudioSystem::audio_devices audio_routes;
-#define ROUTE_ALL            AudioSystem::DEVICE_OUT_ALL
-#define ROUTE_EARPIECE       AudioSystem::DEVICE_OUT_EARPIECE
-#define ROUTE_SPEAKER        AudioSystem::DEVICE_OUT_SPEAKER
-#define ROUTE_BLUETOOTH_SCO  AudioSystem::DEVICE_OUT_BLUETOOTH_SCO
-#define ROUTE_HEADSET        AudioSystem::DEVICE_OUT_WIRED_HEADSET
-#define ROUTE_BLUETOOTH_A2DP AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP
-#endif
+
 // ----------------------------------------------------------------------------
 
 
@@ -148,46 +113,36 @@ static void ALSAErrorHandler(const char *file,
 
 /* The following table(s) need to match in order of the route bits
  */
-#if defined SEC_SWP_SOUND
 static const char *deviceSuffix[] = {
-	// output devices
-	/* ROUTE_EARPIECE       */ "_Earpiece",
-	/* ROUTE_SPEAKER        */ "_Speaker",
-	/* ROUTE_HEADSET        */ "_Headset",
-	/* ROUTE_HEADPHONE  */ "_Headset",
-	/* ROUTE_BLUETOOTH_SCO	*/ "_Bluetooth",
-	/* ROUTE_BLUETOOTH_SCO_HEADSET	*/ "_Bluetooth",
-	/* ROUTE_BLUETOOTH_SCO_CARKIT  */ "_Bluetooth", //"_Bluetooth_Carkit"
-	/* ROUTE_BLUETOOTH_A2DP */ "_Bluetooth", //"_Bluetooth-A2DP"
-	/* ROUTE_BLUETOOTH_A2DP_HEADPHONES */ "_Bluetooth", //"_Bluetooth-A2DP_HeadPhone"
-	/* ROUTE_BLUETOOTH_A2DP_SPEAKER */ "_Bluetooth", 	// "_Bluetooth-A2DP_Speaker"
-	/* ROUTE_AUX_DIGITAL */ "_AuxDigital",
-	/* ROUTE_TV_OUT */ "_TvOut",
-	/* ROUTE_AUX_DIGITAL */ "_ExtraDockSpeaker",
-	/* ROUTE_NULL */ "_Null",
-	/* ROUTE_NULL */ "_Null",
-	/* ROUTE_DEFAULT */ "_OutDefault",
-
-	// input devices
-	/* ROUTE_COMMUNICATION		 */ "_Communication",
-	/* ROUTE_AMBIENT		*/ "_Ambient",
-	/* ROUTE_BUILTIN_MIC		*/ "_Speaker",
-	/* ROUTE_BLUETOOTH_SCO_HEADSET		  */ "_Bluetooth",
-	/* ROUTE_WIRED_HEADSET	*/ "_Headset",
-	/* ROUTE_AUX_DIGITAL  */ "_AuxDigital",
-	/* ROUTE_VOICE_CALL  */ "_VoiceCall",
-	/* ROUTE_BACK_MIC */ "_BackMic",
-	/* ROUTE_IN_DEFAULT  */ "_InDefault",
-};
-#else
-static const char *deviceSuffix[] = {
+    // output devices
     /* ROUTE_EARPIECE       */ "_Earpiece",
     /* ROUTE_SPEAKER        */ "_Speaker",
-    /* ROUTE_BLUETOOTH_SCO  */ "_Bluetooth",
     /* ROUTE_HEADSET        */ "_Headset",
-    /* ROUTE_BLUETOOTH_A2DP */ "_Bluetooth-A2DP",
+    /* ROUTE_HEADPHONE      */ "_Headset",
+    /* ROUTE_BLUETOOTH_SCO  */ "_Bluetooth",
+    /* ROUTE_BLUETOOTH_SCO_HEADSET */ "_Bluetooth",
+    /* ROUTE_BLUETOOTH_SCO_CARKIT  */ "_Bluetooth", //"_Bluetooth_Carkit"
+    /* ROUTE_BLUETOOTH_A2DP        */ "_Bluetooth", //"_Bluetooth-A2DP"
+    /* ROUTE_BLUETOOTH_A2DP_HEADPHONES */ "_Bluetooth", //"_Bluetooth-A2DP_HeadPhone"
+    /* ROUTE_BLUETOOTH_A2DP_SPEAKER    */ "_Bluetooth",     // "_Bluetooth-A2DP_Speaker"
+    /* ROUTE_AUX_DIGITAL */ "_AuxDigital",
+    /* ROUTE_TV_OUT */ "_TvOut",
+    /* ROUTE_AUX_DIGITAL */ "_ExtraDockSpeaker",
+    /* ROUTE_NULL */ "_Null",
+    /* ROUTE_NULL */ "_Null",
+    /* ROUTE_DEFAULT */ "_OutDefault",
+
+    // input devices
+    /* ROUTE_COMMUNICATION         */ "_Communication",
+    /* ROUTE_AMBIENT               */ "_Ambient",
+    /* ROUTE_BUILTIN_MIC           */ "_Speaker",
+    /* ROUTE_BLUETOOTH_SCO_HEADSET */ "_Bluetooth",
+    /* ROUTE_WIRED_HEADSET         */ "_Headset",
+    /* ROUTE_AUX_DIGITAL           */ "_AuxDigital",
+    /* ROUTE_VOICE_CALL            */ "_VoiceCall",
+    /* ROUTE_BACK_MIC              */ "_BackMic",
+    /* ROUTE_IN_DEFAULT            */ "_InDefault",
 };
-#endif
 
 static const int deviceSuffixLen = (sizeof(deviceSuffix) / sizeof(char *));
 
@@ -251,23 +206,14 @@ const uint32_t AudioHardwareALSA::inputSamplingRates[] = {
 
 AudioHardwareALSA::AudioHardwareALSA() :
     mOutput(0),
-    mInput(0)
-#if defined SEC_IPC
-    ,mIPC(0) //for IPC
-#endif
-#if defined TURN_ON_DEVICE_ONLY_USE
-    ,mActivatedInputDevice(false)
-#endif
-#if defined SYNCHRONIZE_CP
-	,mActivatedCP(false)
-#endif
-
+    mInput(0),
+    mSecRilLibHandle(NULL),
+    mRilClient(0)
 {
     snd_lib_error_set_handler(&ALSAErrorHandler);
     mMixer = new ALSAMixer;
-#if defined SEC_IPC
-    mIPC = new AudioHardwareIPC; //  IPC init
-#endif
+
+    loadRILD();
 }
 
 AudioHardwareALSA::~AudioHardwareALSA()
@@ -275,10 +221,65 @@ AudioHardwareALSA::~AudioHardwareALSA()
     if (mOutput) delete mOutput;
     if (mInput) delete mInput;
     if (mMixer) delete mMixer;
-#if defined SEC_IPC
-    if (mIPC) delete mIPC; //  for IPC
-#endif
+
+    if (mSecRilLibHandle) {
+        if (disconnectRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS)
+            LOGE("Disconnect_RILD() error");
+
+        if (closeClientRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS)
+            LOGE("CloseClient_RILD() error");
+
+        mRilClient = 0;
+
+        dlclose(mSecRilLibHandle);
+        mSecRilLibHandle = NULL;
+    }
 }
+
+
+void AudioHardwareALSA::loadRILD(void)
+{
+    mSecRilLibHandle = dlopen("libsecril-client.so", RTLD_NOW);
+
+    if (mSecRilLibHandle) {
+        LOGV("libsecril-client.so is loaded");
+
+        openClientRILD   = (HRilClient (*)(void))
+                              dlsym(mSecRilLibHandle, "OpenClient_RILD");
+        disconnectRILD   = (int (*)(HRilClient))
+                              dlsym(mSecRilLibHandle, "Disconnect_RILD");
+        closeClientRILD  = (int (*)(HRilClient))
+                              dlsym(mSecRilLibHandle, "CloseClient_RILD");
+        isConnectedRILD  = (int (*)(HRilClient))
+                              dlsym(mSecRilLibHandle, "isConnected_RILD");
+        connectRILD      = (int (*)(HRilClient))
+                              dlsym(mSecRilLibHandle, "Connect_RILD");
+        setCallVolume    = (int (*)(HRilClient, SoundType, int))
+                              dlsym(mSecRilLibHandle, "SetCallVolume");
+        setCallAudioPath = (int (*)(HRilClient, AudioPath))
+                              dlsym(mSecRilLibHandle, "SetCallAudioPath");
+
+        if (!openClientRILD  || !disconnectRILD   || !closeClientRILD ||
+            !isConnectedRILD || !connectRILD      ||
+            !setCallVolume   || !setCallAudioPath) {
+            LOGE("Can't load all functions from libsecril-client.so");
+
+            dlclose(mSecRilLibHandle);
+            mSecRilLibHandle = NULL;
+        } else {
+            mRilClient = openClientRILD();
+            if (!mRilClient) {
+                LOGE("OpenClient_RILD() error");
+
+                dlclose(mSecRilLibHandle);
+                mSecRilLibHandle = NULL;
+            }
+        }
+    } else {
+        LOGE("Can't load libsecril-client.so");
+    }
+}
+
 
 status_t AudioHardwareALSA::initCheck()
 {
@@ -296,48 +297,70 @@ status_t AudioHardwareALSA::standby()
     return NO_ERROR;
 }
 
+
+status_t AudioHardwareALSA::connectRILDIfRequired(void)
+{
+    if (!mSecRilLibHandle) {
+        LOGE("connectIfRequired() lib is not loaded");
+        return INVALID_OPERATION;
+    }
+
+    if (isConnectedRILD(mRilClient) == 0) {
+        return OK;
+    }
+
+    if (connectRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS) {
+        LOGE("Connect_RILD() error");
+        return INVALID_OPERATION;
+    }
+
+    return OK;
+}
+
+
 status_t AudioHardwareALSA::setVoiceVolume(float volume)
 {
-	LOGI("### setVoiceVolume");
-#if defined SEC_IPC
+    LOGI("### setVoiceVolume");
+
     // sangsu fix : transmic volume level IPC to modem
-	if (AudioSystem::MODE_IN_CALL == mMode)
-	{
-	        uint32_t routes = mRoutes[mMode];
+    if ( (AudioSystem::MODE_IN_CALL == mMode) && (mSecRilLibHandle) &&
+         (connectRILDIfRequired() == OK) ) {
 
-			LOGI("### route(%d) call volume(%f)", routes, volume);
-	        switch (routes){
-			case AudioSystem::ROUTE_EARPIECE:
-			case AudioSystem::ROUTE_HEADPHONE:	// Use receive path with 3 pole headset.
-				LOGI("### earpiece call volume");
-				mIPC->transmitVolumeIPC(OEM_SOUND_TYPE_VOICE, volume);
-				break;
+        uint32_t routes = mRoutes[mMode];
+        int int_volume = (int)(volume * 5);
 
-			case AudioSystem::ROUTE_SPEAKER:
-				LOGI("### speaker call volume");
-				mIPC->transmitVolumeIPC(OEM_SOUND_TYPE_SPEAKER, volume);
-				break;
+        LOGI("### route(%d) call volume(%f)", routes, volume);
+        switch (routes) {
+            case AudioSystem::ROUTE_EARPIECE:
+            case AudioSystem::ROUTE_HEADPHONE: // Use receive path with 3 pole headset.
+                LOGI("### earpiece call volume");
+                setCallVolume(mRilClient, SOUND_TYPE_VOICE, int_volume);
+                break;
 
-			case AudioSystem::ROUTE_BLUETOOTH_SCO:
-			case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
-			case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
-			case AudioSystem::ROUTE_BLUETOOTH_A2DP:
-				LOGI("### bluetooth call volume");
-				mIPC->transmitVolumeIPC(OEM_SOUND_TYPE_BTVOICE, volume);
-				break;
+            case AudioSystem::ROUTE_SPEAKER:
+                LOGI("### speaker call volume");
+                setCallVolume(mRilClient, SOUND_TYPE_SPEAKER, int_volume);
+                break;
 
-			case AudioSystem::ROUTE_HEADSET:
-				LOGI("### headset call volume");
-				mIPC->transmitVolumeIPC(OEM_SOUND_TYPE_HEADSET, volume);
-				break;
+            case AudioSystem::ROUTE_BLUETOOTH_SCO:
+            case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
+            case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
+            case AudioSystem::ROUTE_BLUETOOTH_A2DP:
+                LOGI("### bluetooth call volume");
+                setCallVolume(mRilClient, SOUND_TYPE_BTVOICE, int_volume);
+                break;
 
-			default:
-				LOGE("### Call volume setting error!!!0x%08x \n", routes);
-				break;
-	        }
-    	}
-        // sangsu fix end
-#endif
+            case AudioSystem::ROUTE_HEADSET:
+                LOGI("### headset call volume");
+                setCallVolume(mRilClient, SOUND_TYPE_HEADSET, int_volume);
+                break;
+
+            default:
+                LOGE("### Call volume setting error!!!0x%08x \n", routes);
+                break;
+        }
+    }
+    // sangsu fix end
 
     // The voice volume is used by the VOICE_CALL audio stream.
     if (mMixer)
@@ -354,34 +377,23 @@ status_t AudioHardwareALSA::setMasterVolume(float volume)
         return INVALID_OPERATION;
 }
 
-#if defined TURN_ON_DEVICE_ONLY_USE
 int AudioHardwareALSA::setMicStatus(int on)
 {
-        LOGI("[%s], on=%d", __func__, on);
-        ALSAControl *mALSAControl = new ALSAControl();
-        status_t ret =  mALSAControl->set("Mic Status", on);
-        delete mALSAControl;
-        return NO_ERROR;
+    LOGI("[%s], on=%d", __func__, on);
+    ALSAControl *mALSAControl = new ALSAControl();
+    status_t ret =  mALSAControl->set("Mic Status", on);
+    delete mALSAControl;
+    return NO_ERROR;
 }
-#endif
 
 
-#if 0
-AudioStreamOut *
-AudioHardwareALSA::AudioStreamOut* openOutputStream(
-                int format=0,
-                int channelCount=0,
-                uint32_t sampleRate=0,
-                status_t *status=0)
-#else
 AudioStreamOut *
 AudioHardwareALSA::openOutputStream(
-                                uint32_t devices,
-                                int *format,
-                                uint32_t *channels,
-                                uint32_t *sampleRate,
-                                status_t *status)
-#endif
+                        uint32_t devices,
+                        int *format,
+                        uint32_t *channels,
+                        uint32_t *sampleRate,
+                        status_t *status)
 {
     AutoMutex lock(mLock);
 
@@ -397,25 +409,13 @@ AudioHardwareALSA::openOutputStream(
 
     *status = out->set(format, channels, sampleRate);
 
-#ifdef PCM_OUTPUT_DUMP
-		if(fpOutput == NULL)
-		{
-			fpOutput = fopen(PCM_OUTPUT_DUMP_PATH, "w");
-			if (fpOutput == NULL)
-				LOGE("fpOutput File Open Error!!");
-		}
-#endif
-
     if (*status == NO_ERROR) {
         mOutput = out;
         // Some information is expected to be available immediately after
         // the device is open.
         /* Tushar - Sets the current device output here - we may set device here */
-        //uint32_t routes = mRoutes[mMode];
-        //mOutput->setDevice(mMode, routes);
-    	LOGI("%s] Setting ALSA device.", __func__);
+        LOGI("%s] Setting ALSA device.", __func__);
         mOutput->setDevice(mMode, devices, PLAYBACK); /* tushar - Enable all devices as of now */
-        mOutput->setWakeLock();
     }
     else {
         delete out;
@@ -427,14 +427,9 @@ AudioHardwareALSA::openOutputStream(
 void
 AudioHardwareALSA::closeOutputStream(AudioStreamOut* out)
 {
-	/* TODO:Tushar: May lead to segmentation fault - check*/
-	//delete out;
+    /* TODO:Tushar: May lead to segmentation fault - check*/
+    //delete out;
     AutoMutex lock(mLock);
-
-#ifdef PCM_OUTPUT_DUMP
-		fclose(fpOutput);
-		fpOutput = NULL;
-#endif
 
     if (mOutput == 0 || mOutput != out) {
         LOGW("Attempt to close invalid output stream");
@@ -446,14 +441,7 @@ AudioHardwareALSA::closeOutputStream(AudioStreamOut* out)
 
 }
 
-#if 0
-AudioStreamIn *
-AudioHardwareALSA::openInputStream(int      format,
-                                   int      channelCount,
-                                   uint32_t sampleRate,
-                                   status_t *status,
-                                   AudioSystem::audio_in_acoustics acoustics)
-#else
+
 AudioStreamIn*
 AudioHardwareALSA::openInputStream(
                                 uint32_t devices,
@@ -462,7 +450,6 @@ AudioHardwareALSA::openInputStream(
                                 uint32_t *sampleRate,
                                 status_t *status,
                                 AudioSystem::audio_in_acoustics acoustics)
-#endif
 {
     AutoMutex lock(mLock);
 
@@ -479,23 +466,8 @@ AudioHardwareALSA::openInputStream(
         mInput = in;
         // Some information is expected to be available immediately after
         // the device is open.
-        //uint32_t routes = mRoutes[mMode];
-        //mInput->setDevice(mMode, routes);
         mInput->setDevice(mMode, devices, CAPTURE);  /* Tushar - as per modified arch */
-        mInput->setWakeLock();
-#if defined TURN_ON_DEVICE_ONLY_USE
-        mActivatedInputDevice = true;
         setMicStatus(1);
-#endif
-#ifdef PCM_INPUT_DUMP
-        if(fpInput == NULL)
-        {
-            fpInput = fopen(PCM_INPUT_DUMP_PATH, "w");
-            if (fpInput == NULL)
-                LOGE("fpInput File Open Error!!");
-        }
-#endif
-
         return mInput;
     }
     else {
@@ -507,147 +479,81 @@ AudioHardwareALSA::openInputStream(
 void
 AudioHardwareALSA::closeInputStream(AudioStreamIn* in)
 {
-	/* TODO:Tushar: May lead to segmentation fault - check*/
-	//delete in;
-	AutoMutex lock(mLock);
+    /* TODO:Tushar: May lead to segmentation fault - check*/
+    //delete in;
+    AutoMutex lock(mLock);
 
     if (mInput == 0 || mInput != in) {
         LOGW("Attempt to close invalid input stream");
-    }
-    else {
+    } else {
         delete mInput;
         mInput = 0;
-#ifdef PCM_INPUT_DUMP
-	fclose(fpInput);
-	fpInput = NULL;
-#endif
-#if defined TURN_ON_DEVICE_ONLY_USE
-        mActivatedInputDevice = false;
         setMicStatus(0);
-#endif
-
     }
 }
 
-#if defined SEC_SWP_SOUND
+
 status_t AudioHardwareALSA::doRouting(uint32_t device)
 {
-	uint32_t routes;
-	status_t ret;
+    status_t ret;
 
-	AutoMutex lock(mLock);
-	int mode = mMode;		// Prevent to changing mode on setup sequence.
-
-	if (mOutput) {
-		routes = device;
-		//routes = 0; /* Tushar - temp implementation */
-
-		// Setup sound path for CP clocking
-
-#if defined SEC_IPC
-
-		if (AudioSystem::MODE_IN_CALL == mode)
-		{
-
-					LOGI("### incall mode route (%d)", routes);
-			switch(routes){
-				case AudioSystem::ROUTE_EARPIECE:
-					LOGI("### incall mode earpiece route");
-					mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_HANDSET);
-					break;
-
-				case AudioSystem::ROUTE_SPEAKER:
-					LOGI("### incall mode speaker route");
-					mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_SPEAKER);
-					break;
-
-				case AudioSystem::ROUTE_BLUETOOTH_SCO:
-				case AudioSystem::ROUTE_BLUETOOTH_SCO_HEADSET:
-				case AudioSystem::ROUTE_BLUETOOTH_SCO_CARKIT:
-#if defined BT_NR_EC_ONOFF
-					if(mBluetoothECOff)
-					{
-						LOGI("### incall mode bluetooth EC OFF route");
-						mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_BT_NSEC_OFF);
-					}
-					else
-					{
-#endif
-						LOGI("### incall mode bluetooth route");
-						mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_BLUETOOTH);
-#if defined BT_NR_EC_ONOFF
-					}
-#endif
-					break;
-
-				case AudioSystem::ROUTE_HEADSET :
-				case AudioSystem::ROUTE_HEADPHONE :
-					LOGI("### incall mode headset route");
-					mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_HEADSET);
-					break;
-
-				case AudioSystem::ROUTE_BLUETOOTH_A2DP:
-					LOGI("### incall mode bluetooth route");
-					mIPC->transmitAudioPathIPC(OEM_SOUND_AUDIO_PATH_BLUETOOTH);
-					break;
-
-				default:
-					LOGE("### incall mode Error!! route = [%d]", routes);
-					break;
-			}
-		}
-#endif// end of #if defined SEC_IPC
-
-	ret = mOutput->setDevice(mode, routes, PLAYBACK);
-
-#if defined SEC_IPC
-		if (AudioSystem::MODE_IN_CALL == mode)
-		{
-#if defined SYNCHRONIZE_CP
-			if(!mActivatedCP)
-			{
-				mIPC->transmitClock_IPC(OEM_SOUND_CLOCK_START);
-				mActivatedCP = true;
-			}
-#endif
-	        }
-
-		if (AudioSystem::MODE_NORMAL== mode)		// Call stop.
-		{
-#if defined SYNCHRONIZE_CP
-			if(mActivatedCP)
-				mActivatedCP = false;
-#endif
-
-		}
-#endif	// end of #if defined SEC_IPC
-
-#ifndef SYNCHRONIZE_CP
-//		ret = mOutput->setDevice(mode, routes, PLAYBACK);
-#endif
-		return ret;
-	}
-
-	return NO_INIT;
-}
-
-#else
-/** This function is no more used */
-status_t AudioHardwareALSA::doRouting()
-{
-    uint32_t routes;
     AutoMutex lock(mLock);
+    int mode = mMode;        // Prevent to changing mode on setup sequence.
 
-    LOGD("Inside AudioHardwareALSA::doRouting \n");
+    LOGV("doRouting (%d)", device);
+
     if (mOutput) {
-        //routes = mRoutes[mMode];
-        routes = 0; /* Tushar - temp implementation */
-        return mOutput->setDevice(mMode, routes, PLAYBACK);
-    }
-    return NO_INIT;
+        //device = 0; /* Tushar - temp implementation */
 
+        // Setup sound path for CP clocking
+        if ( (AudioSystem::MODE_IN_CALL == mode) && (mSecRilLibHandle) &&
+             (connectRILDIfRequired() == OK) ) {
+
+            LOGI("### incall mode route (%d)", device);
+
+            switch(device){
+                case AudioSystem::ROUTE_EARPIECE:
+                    LOGI("### incall mode earpiece route");
+                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_HANDSET);
+                    break;
+
+                case AudioSystem::ROUTE_SPEAKER:
+                    LOGI("### incall mode speaker route");
+                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_SPEAKER);
+                    break;
+
+                case AudioSystem::ROUTE_BLUETOOTH_SCO:
+                case AudioSystem::ROUTE_BLUETOOTH_SCO_HEADSET:
+                case AudioSystem::ROUTE_BLUETOOTH_SCO_CARKIT:
+                    LOGI("### incall mode bluetooth route");
+                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH);
+                    break;
+
+                case AudioSystem::ROUTE_HEADSET :
+                case AudioSystem::ROUTE_HEADPHONE :
+                    LOGI("### incall mode headset route");
+                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_HEADSET);
+                    break;
+
+                case AudioSystem::ROUTE_BLUETOOTH_A2DP:
+                    LOGI("### incall mode bluetooth route");
+                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH);
+                    break;
+
+                default:
+                    LOGE("### incall mode Error!! route = [%d]", device);
+                    break;
+            }
+        }
+
+        ret = mOutput->setDevice(mode, device, PLAYBACK);
+
+        return ret;
+    }
+
+    return NO_INIT;
 }
-#endif
+
 
 status_t AudioHardwareALSA::setMicMute(bool state)
 {
@@ -721,7 +627,6 @@ ALSAStreamOps::ALSAStreamOps() :
     mHandle(0),
     mHardwareParams(0),
     mSoftwareParams(0),
-    mMode(-1),
     mDevice(0)
 {
     if (snd_pcm_hw_params_malloc(&mHardwareParams) < 0) {
@@ -751,44 +656,44 @@ status_t ALSAStreamOps::set(int      *pformat,
                             uint32_t *pchannels,
                             uint32_t *prate)
 {
-	int lformat = pformat ? *pformat : 0;
-	unsigned int lchannels = pchannels ? *pchannels : 0;
-	unsigned int lrate = prate ? *prate : 0;
+    int lformat = pformat ? *pformat : 0;
+    unsigned int lchannels = pchannels ? *pchannels : 0;
+    unsigned int lrate = prate ? *prate : 0;
 
 
-    	LOGD("ALSAStreamOps - input   - format = %d, channels = %d, rate = %d\n", lformat, lchannels, lrate);
-    	LOGD("ALSAStreamOps - default - format = %d, channelCount = %d, rate = %d\n", mDefaults->format, mDefaults->channelCount, mDefaults->sampleRate);
+    LOGD("ALSAStreamOps - input   - format = %d, channels = %d, rate = %d\n", lformat, lchannels, lrate);
+    LOGD("ALSAStreamOps - default - format = %d, channelCount = %d, rate = %d\n", mDefaults->format, mDefaults->channelCount, mDefaults->sampleRate);
 
-	if(lformat == 0) lformat = getAndroidFormat(mDefaults->format);//format();
-	if(lchannels == 0) lchannels = getAndroidChannels(mDefaults->channelCount);// channelCount();
-	if(lrate == 0) lrate = mDefaults->sampleRate;
+    if (lformat == 0) lformat = getAndroidFormat(mDefaults->format);//format();
+    if (lchannels == 0) lchannels = getAndroidChannels(mDefaults->channelCount);// channelCount();
+    if (lrate == 0) lrate = mDefaults->sampleRate;
 
-	if((lformat != getAndroidFormat(mDefaults->format)) ||
-	 	(lchannels != getAndroidChannels(mDefaults->channelCount))) {
-		if(pformat)     *pformat = getAndroidFormat(mDefaults->format);
-		if(pchannels)   *pchannels = getAndroidChannels(mDefaults->channelCount);
-		return BAD_VALUE;
-	}
-	if (mDefaults->direction == SND_PCM_STREAM_PLAYBACK) {
-	    if (lrate != mDefaults->sampleRate) {
-            if(prate) *prate = mDefaults->sampleRate;
+    if ( (lformat != getAndroidFormat(mDefaults->format)) ||
+          (lchannels != getAndroidChannels(mDefaults->channelCount)) ) {
+        if (pformat)   *pformat = getAndroidFormat(mDefaults->format);
+        if (pchannels) *pchannels = getAndroidChannels(mDefaults->channelCount);
+        return BAD_VALUE;
+    }
+    if (mDefaults->direction == SND_PCM_STREAM_PLAYBACK) {
+        if (lrate != mDefaults->sampleRate) {
+            if (prate) *prate = mDefaults->sampleRate;
             return BAD_VALUE;
-	    }
-	} else {
-	    mDefaults->smpRateShift = AudioHardwareALSA::checkInputSampleRate(lrate);
-	    // audioFlinger will reopen the input stream with correct smp rate
-	    if (AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift] != lrate) {
-	        if(prate) *prate = AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift];
+        }
+    } else {
+        mDefaults->smpRateShift = AudioHardwareALSA::checkInputSampleRate(lrate);
+        // audioFlinger will reopen the input stream with correct smp rate
+        if (AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift] != lrate) {
+            if(prate) *prate = AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift];
             return BAD_VALUE;
-	    }
-	}
+        }
+    }
     mDefaults->sampleRate = lrate;
 
-	if(pformat)     *pformat = getAndroidFormat(mDefaults->format);
-	if(pchannels)   *pchannels = getAndroidChannels(mDefaults->channelCount);
-	if(prate)       *prate = mDefaults->sampleRate;
+    if(pformat)     *pformat = getAndroidFormat(mDefaults->format);
+    if(pchannels)   *pchannels = getAndroidChannels(mDefaults->channelCount);
+    if(prate)       *prate = mDefaults->sampleRate;
 
-	return NO_ERROR;
+    return NO_ERROR;
 }
 
 
@@ -985,7 +890,7 @@ status_t ALSAStreamOps::open(int mode, uint32_t device)
 
     int         err;
 
-	LOGI("Try to open ALSA %s device %s", stream, devName);
+    LOGI("Try to open ALSA %s device %s", stream, devName);
 
     for(;;) {
         // The PCM stream is opened in blocking mode, per ALSA defaults.  The
@@ -1003,7 +908,7 @@ status_t ALSAStreamOps::open(int mode, uint32_t device)
 
     if (err < 0) {
         // None of the Android defined audio devices exist. Open a generic one.
-		devName = "hw:00,1";	// 090507 SMDKC110 Froyo
+        devName = "hw:00,1";    // 090507 SMDKC110 Froyo
 
         err = snd_pcm_open(&mHandle, devName, mDefaults->direction, 0);
         if (err < 0) {
@@ -1013,7 +918,6 @@ status_t ALSAStreamOps::open(int mode, uint32_t device)
         }
     }
 
-    mMode   = mode;
     mDevice = device;
 
     LOGI("Initialized ALSA %s device %s", stream, devName);
@@ -1026,9 +930,8 @@ void ALSAStreamOps::close()
     mHandle = NULL;
 
     if (handle) {
+        snd_pcm_drain(handle);
         snd_pcm_close(handle);
-        mMode   = -1;
-        mDevice = 0;
     }
 }
 
@@ -1052,7 +955,7 @@ status_t ALSAStreamOps::setSoftwareParams()
 
     // Configure ALSA to start the transfer when the buffer is almost full.
     snd_pcm_get_params(mHandle, &bufferSize, &periodSize);
-    LOGE("bufferSize %d, periodSize %d\n", bufferSize, periodSize);
+    LOGE("bufferSize %d, periodSize %d\n", (int)bufferSize, (int)periodSize);
 
     if (mDefaults->direction == SND_PCM_STREAM_PLAYBACK) {
         // For playback, configure ALSA to start the transfer when the
@@ -1221,11 +1124,6 @@ status_t ALSAStreamOps::setDevice(int mode, uint32_t device, uint audio_mode)
     // FIXME:: always use default sampling rate
     sampleRate(DEFAULT_SAMPLE_RATE);
 
-    // Disable hardware resampling.
-    status = setHardwareResample(false);
-    if (status != NO_ERROR)
-        return status;
-
     snd_pcm_uframes_t bufferSize = mDefaults->bufferSize;
     snd_pcm_uframes_t periodSize = mDefaults->periodSize;
     period_val = bufferSize/periodSize;
@@ -1265,12 +1163,12 @@ status_t ALSAStreamOps::setDevice(int mode, uint32_t device, uint audio_mode)
 //    err = snd_pcm_hw_params_set_buffer_time_near (mHandle, mHardwareParams,
 //                                                  &latency, NULL);
 //    if(audio_mode == PLAYBACK) {
-//		period_val = PERIODS_PLAYBACK;
-//		if(snd_pcm_hw_params_set_periods(mHandle, mHardwareParams, period_val, 0) < 0)
-//	    	LOGE("Fail to set period size %d for playback", period_val);
+//        period_val = PERIODS_PLAYBACK;
+//        if(snd_pcm_hw_params_set_periods(mHandle, mHardwareParams, period_val, 0) < 0)
+//            LOGE("Fail to set period size %d for playback", period_val);
 //    }
 //    else
-//		period_val = PERIODS_CAPTURE;
+//        period_val = PERIODS_CAPTURE;
 //
 //    if (err < 0) {
 //        LOGD("snd_pcm_hw_params_set_buffer_time_near() failed: %s", snd_strerror(err));
@@ -1413,8 +1311,8 @@ status_t AudioStreamOutALSA::setVolume(float left, float right)
     if (! mParent->mMixer || ! mDevice)
         return NO_INIT;
 
-	/** Tushar - Need to decide on the volume value
-	 * that we pass onto the mixer. */
+    /** Tushar - Need to decide on the volume value
+     * that we pass onto the mixer. */
     return mParent->mMixer->setVolume (mDevice, (left + right)/2);
 }
 
@@ -1429,7 +1327,6 @@ status_t AudioStreamOutALSA::setVolume(float volume)
 /* New Arch */
 status_t    AudioStreamOutALSA::setParameters(const String8& keyValuePairs)
 {
-#if defined SLSI_S5PC110
     AudioParameter param = AudioParameter(keyValuePairs);
     status_t status = NO_ERROR;
     int device;
@@ -1438,11 +1335,7 @@ status_t    AudioStreamOutALSA::setParameters(const String8& keyValuePairs)
 
     if (param.getInt(String8(AudioParameter::keyRouting), device) == NO_ERROR)
     {
-        mDevice = device;
-
-//        if (mParent->mInput) mParent->mInput->mDevice = device;
-        mParent->mRoutes[mParent->mMode] = mDevice;
-        mParent->doRouting(mDevice);
+        mParent->doRouting(device);
 
         param.remove(String8(AudioParameter::keyRouting));
     }
@@ -1457,23 +1350,11 @@ status_t    AudioStreamOutALSA::setParameters(const String8& keyValuePairs)
         status = BAD_VALUE;
     }
     return status;
-#else
-	/* TODO: Implement as per new arch */
-
-        LOGD("AudioStreamOutAlsa::setParameters... %s \n\n",keyValuePairs.string());
-    if (! mParent->mOutput )//|| ! mMode)
-	return NO_INIT;
-
-
-	int device = keyValuePairs.string()[keyValuePairs.length()-1] - 48 -1 ; //easy conversion frm ascii to int and then to required number
-        LOGV("\n\n-------->> ALSA SET PARAMS  device %d \n\n",(1<<device));
-	mParent->mOutput->setDevice(mMode, 1<<device, PLAYBACK);
-	return NO_ERROR;
-#endif
 }
+
+
 String8  AudioStreamOutALSA::getParameters(const String8& keys)
 {
-#if defined SLSI_S5PC110
     AudioParameter param = AudioParameter(keys);
     String8 value;
     String8 key = String8(AudioParameter::keyRouting);
@@ -1484,20 +1365,17 @@ String8  AudioStreamOutALSA::getParameters(const String8& keys)
 
     LOGD("AudioStreamOutALSA::getParameters() %s", param.toString().string());
     return param.toString();
-#else
-	/* TODO: Implement as per new arch */
-	return keys;
-#endif
 }
+
 
 status_t  AudioStreamOutALSA::getRenderPosition(uint32_t *dspFrames)
 {
 
-	//TODO: enable when supported by driver
-	return INVALID_OPERATION;
+    //TODO: enable when supported by driver
+    return INVALID_OPERATION;
 }
 
-#if 1 // Fix for underrun error
+
 ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
 {
     snd_pcm_sframes_t n;
@@ -1508,17 +1386,11 @@ ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
 
     if (!mPowerLock) {
         LOGD("Calling setDevice from write @..%d.\n",__LINE__);
-        ALSAStreamOps::setDevice(mMode, mDevice, PLAYBACK);
+        ALSAStreamOps::setDevice(mParent->mode(), mDevice, PLAYBACK);
         acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioOutLock");
         mPowerLock = true;
     }
-   // if (isStandby())
-   //     return 0;
 
-#ifdef PCM_OUTPUT_DUMP
-	fwrite(buffer, bytes, 1, fpOutput);
-	LOGD("Output PCM dumped!!");
-#endif
     do {
         // write correct number of bytes per attempt
         n = snd_pcm_writei(mHandle, (char *) buffer + sent, snd_pcm_bytes_to_frames(mHandle, bytes
@@ -1527,7 +1399,7 @@ ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
             LOGD("Calling setDevice.. pcm_write returned error @..%d.\n",__LINE__);
             // Somehow the stream is in a bad state. The driver probably
             // has a bug and snd_pcm_recover() doesn't seem to handle this.
-            ALSAStreamOps::setDevice(mMode, mDevice, PLAYBACK);
+            ALSAStreamOps::setDevice(mParent->mode(), mDevice, PLAYBACK);
         } else if (n < 0) {
             if (mHandle) {
                 // snd_pcm_recover() will return 0 if successful in recovering from
@@ -1543,41 +1415,6 @@ ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
     //LOGI("Request Bytes=%d, Actual Written=%d",bytes,sent);
     return snd_pcm_frames_to_bytes(mHandle, sent);
 }
-#else
-ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
-{
-    snd_pcm_sframes_t n;
-    status_t          err;
-
-    AutoMutex lock(mLock);
-#if 0
-    if (isStandby())
-        return 0;
-#endif
-    if (!mPowerLock) {
-        acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioLock");
-        ALSAStreamOps::setDevice(mMode, mDevice,PLAYBACK);
-        mPowerLock = true;
-    }
-    if (!mHandle) {
-        return -1;
-    }
-    n = snd_pcm_writei(mHandle,
-                       buffer,
-                       snd_pcm_bytes_to_frames(mHandle, bytes));
-    if (n < 0 && mHandle) {
-        // snd_pcm_recover() will return 0 if successful in recovering from
-        // an error, or -errno if the error was unrecoverable.
-	//device driver sometimes does not recover -vladi
-        n = snd_pcm_recover(mHandle, n, 0);
-	if(n < 0)  //if recover fails
-	ALSAStreamOps::setDevice(mMode, mDevice, PLAYBACK);
-    }
-
-    return static_cast<ssize_t>(n);
-}
-#endif
-
 
 
 status_t AudioStreamOutALSA::dump(int fd, const Vector<String16>& args)
@@ -1589,41 +1426,28 @@ status_t AudioStreamOutALSA::setDevice(int mode, uint32_t newDevice, uint32_t au
 {
     AutoMutex lock(mLock);
 
-    return ALSAStreamOps::setDevice(mode, newDevice, audio_mode);
+    LOGV("AudioStreamOutALSA::setDevice(mode %d, newDevice %x, audio_mode %d), mDevice %x",
+         mode, newDevice, audio_mode, mDevice);
+    if (newDevice != mDevice) {
+        mParent->mRoutes[mParent->mMode] = newDevice;
+        return ALSAStreamOps::setDevice(mode, newDevice, audio_mode);
+    }
+    return NO_ERROR;
 }
 
 status_t AudioStreamOutALSA::standby() {
     AutoMutex lock(mLock);
     LOGD("Inside AudioStreamOutALSA::standby\n");
-    if (mHandle)
-        snd_pcm_drain ( mHandle);
+
+    ALSAStreamOps::close();
 
     if (mPowerLock) {
-        if (!mParent->mActivatedInputDevice) { // Let PCM device alive on activating input stream.
-            snd_pcm_close( mHandle);
-            mHandle = NULL;
-#if 1 // Fix for underrun error
-            release_wake_lock("AudioOutLock");
-#else
-            release_wake_lock ("AudioLock");
-#endif
-            mPowerLock = false;
-        }
+        release_wake_lock("AudioOutLock");
+        mPowerLock = false;
     }
-    //	close(); //Don't call this as this function will reset the mode also
     return NO_ERROR;
 }
 
-bool AudioStreamOutALSA::isStandby()
-{
-    return (!mPowerLock);
-}
-
-void AudioStreamOutALSA::setWakeLock()
-{
-    acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioOutLock");
-    mPowerLock = true;
-}
 
 #define USEC_TO_MSEC(x) ((x + 999) / 1000)
 
@@ -1656,7 +1480,7 @@ AudioStreamInALSA::AudioStreamInALSA(AudioHardwareALSA *parent) :
 
 AudioStreamInALSA::~AudioStreamInALSA()
 {
-    standby_l();
+    standby();
     mParent->mInput = NULL;
 }
 
@@ -1678,17 +1502,10 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     if (!mPowerLock) {
         acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioInLock");
 
-#ifdef PCM_INPUT_DUMP
-		fwrite(buffer, readBytes, 1, fpInput);
-		LOGD("Input PCM dumped!!");
-#endif
-#if defined TURN_ON_DEVICE_ONLY_USE
-		mParent->mActivatedInputDevice = true;
 //        setMicStatus(1);
-#endif
 
-		LOGD("Calling setDevice from read@..%d.\n",__LINE__);
-        ALSAStreamOps::setDevice(mMode, mDevice,CAPTURE);
+        LOGD("Calling setDevice from read@..%d.\n",__LINE__);
+        ALSAStreamOps::setDevice(mParent->mode(), mDevice,CAPTURE);
         mPowerLock = true;
     }
     if (!mHandle) {
@@ -1696,8 +1513,8 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     }
 
     // FIXME: only support reads of exactly bufferSize() for now
-    if (bytes != bufferSize()) {
-        LOGW("AudioStreamInALSA::read bad read size %d expected %d", bytes, bufferSize());
+    if (bytes != (ssize_t)bufferSize()) {
+        LOGW("AudioStreamInALSA::read bad read size %d expected %d", (int)bytes, bufferSize());
         return -1;
     }
 
@@ -1708,9 +1525,9 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
                           (uint8_t *)mBuffer,
                           frames << shift);
         if (n < 0) {
-            LOGD("AudioStreamInALSA::read error %d", n);
+            LOGD("AudioStreamInALSA::read error %d", (int)n);
             n = snd_pcm_recover(mHandle, n, 0);
-            LOGD("AudioStreamInALSA::snd_pcm_recover error %d", n);
+            LOGD("AudioStreamInALSA::snd_pcm_recover error %d", (int)n);
             if (n)
                 return static_cast<ssize_t> (n);
         } else {
@@ -1725,19 +1542,15 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     // downsampler in AudioFlinger (SR in < 2 * SR out)
     int16_t *out = (int16_t *)buffer;
     if (mDefaults->channelCount == 1) {
-        for (size_t i = 0; i < n; i++) {
+        for (ssize_t i = 0; i < n; i++) {
             out[i] = mBuffer[i << shift];
         }
     } else {
-        for (size_t i = 0; i < n; i++) {
+        for (ssize_t i = 0; i < n; i++) {
             out[i] = mBuffer[i << shift];
             out[i + 1] = mBuffer[(i << shift) + 1];
         }
     }
-#ifdef PCM_INPUT_DUMP
-	fwrite(buffer, bytes, 1, fpInput);
-	LOGD("Input PCM dumped!!");
-#endif
 
     return snd_pcm_frames_to_bytes(mHandle, n);
 }
@@ -1757,86 +1570,52 @@ status_t AudioStreamInALSA::setDevice(int mode, uint32_t newDevice, uint32_t aud
 status_t AudioStreamInALSA::standby()
 {
     AutoMutex lock(mLock);
-
-    return standby_l();
-}
-
-status_t AudioStreamInALSA::standby_l()
-{
     LOGD("Entering AudioStreamInALSA::standby\n");
+
+    ALSAStreamOps::close();
+
     if (mPowerLock) {
-            mParent->mActivatedInputDevice = false;
-	    snd_pcm_close(mHandle);
-	    LOGD("AudioStreamInALSA::standby snd_pcm_close()");
-	    mHandle = NULL;
-    	    release_wake_lock ("AudioInLock");
-     	    mPowerLock = false;
+        release_wake_lock ("AudioInLock");
+        mPowerLock = false;
     }
 
     return NO_ERROR;
 }
 
-void AudioStreamInALSA::setWakeLock()
-{
-    acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioInLock");
-    mPowerLock = true;
-}
-
 /* New Arch */
 status_t    AudioStreamInALSA::setParameters(const String8& keyValuePairs)
 {
-#if defined SLSI_S5PC110
-		AudioParameter param = AudioParameter(keyValuePairs);
-        String8 key = String8(AudioParameter::keyRouting);
-        status_t status = NO_ERROR;
-        int device;
-        LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
+    AudioParameter param = AudioParameter(keyValuePairs);
+    String8 key = String8(AudioParameter::keyRouting);
+    status_t status = NO_ERROR;
+    int device;
+    LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
 
-        if (param.getInt(key, device) == NO_ERROR) {
-            mDevice = device;
-            if(mPowerLock && mDevice != 0)
-                setDevice(mMode, mDevice, CAPTURE);
-            param.remove(key);
-        }
+    if (param.getInt(key, device) == NO_ERROR) {
+        if(mHandle != NULL && device != 0)
+            setDevice(mParent->mode(), device, CAPTURE);
+        param.remove(key);
+    }
 
-        if (param.size()) {
-            status = BAD_VALUE;
-        }
-        return status;
-#else
-        /* TODO: Implement as per new arch */
-
-    if (! mParent->mInput )//|| ! mMode)
-	return NO_INIT;
-
-	//	yman.seo use setDevice temp.
-	int device = keyValuePairs.string()[keyValuePairs.length()-1] - 48 -1 ; //easy conversion frm ascii to int and then to required number
-        LOGD("\n\n-------->> ALSA AudioStreamIn SET PARAMS  device %d \n\n",(1<<device));
-        if(mParent->mActivatedInputDevice )//Recording stopped with Alarm ,then don't call setDevice() of record, just return
-	return mParent->mInput->setDevice(mMode, 1<<device, CAPTURE);
-
-        return NO_ERROR;
-//	yman.seo        return NO_ERROR;
-#endif
+    if (param.size()) {
+        status = BAD_VALUE;
+    }
+    return status;
 }
+
 
 String8  AudioStreamInALSA::getParameters(const String8& keys)
 {
-#if defined SLSI_S5PC110
-        AudioParameter param = AudioParameter(keys);
-        String8 value;
-        String8 key = String8(AudioParameter::keyRouting);
+    AudioParameter param = AudioParameter(keys);
+    String8 value;
+    String8 key = String8(AudioParameter::keyRouting);
 
-        if (param.get(key, value) == NO_ERROR) {
-            param.addInt(key, (int)mDevice);
-        }
+    if (param.get(key, value) == NO_ERROR) {
+        param.addInt(key, (int)mDevice);
+    }
 
-        LOGD("AudioStreamInALSA::getParameters() %s", param.toString().string());
-        return param.toString();
-#else
-        /* TODO: Implement as per new arch */
-        return keys;
-#endif
+    LOGD("AudioStreamInALSA::getParameters() %s", param.toString().string());
+    return param.toString();
 }
 
 
@@ -2158,7 +1937,7 @@ status_t ALSAMixer::getCaptureMuteState(uint32_t device, bool *state)
 status_t ALSAMixer::setPlaybackMuteState(uint32_t device, bool state)
 {
 
-	LOGE("\n set playback mute device %d, state %d \n", device,state);
+    LOGE("\n set playback mute device %d, state %d \n", device,state);
 
     for (int j = 0; mixerProp[j][SND_PCM_STREAM_PLAYBACK].routes; j++)
         if (mixerProp[j][SND_PCM_STREAM_PLAYBACK].routes & device) {
@@ -2319,155 +2098,5 @@ status_t ALSAControl::set(const char *name, unsigned int value, int index)
     return (ret < 0) ? BAD_VALUE : NO_ERROR;
 }
 
-// ----------------------------------------------------------------------------
-
-#if defined SEC_IPC
-AudioHardwareIPC::AudioHardwareIPC() :
-    mClient(NULL)
-{
-LOGD("### %s", __func__);
-    int err = 0;
-
-    mClient = OpenClient_RILD();
-    if (mClient == NULL){
-        LOGE("[*] OpenClient_RILD() error\n");
-        err = 1;
-    }
-
-    if (RegisterRequestCompleteHandler(mClient, RIL_REQUEST_OEM_HOOK_RAW,
-                onRawReqComplete) != RIL_CLIENT_ERR_SUCCESS){
-        LOGE("[*] RegisterRequestCompleteHandler() error\n");
-        err = 1;
-    }
-
-    if (RegisterUnsolicitedHandler(mClient, 11004, onUnsol) !=
-                RIL_CLIENT_ERR_SUCCESS){
-        LOGE("[*] RegisterUnsolicitedHandler() error\n");
-        err = 1;
-    }
-
-    if (!err) LOGD("Success Initializing IPC");
-    else LOGE("Failed Initializing IPC");
-}
-
-AudioHardwareIPC::~AudioHardwareIPC()
-{
-    LOGD("### %s", __func__);
-    if (RegisterRequestCompleteHandler(mClient, RIL_REQUEST_OEM_HOOK_RAW, NULL) != RIL_CLIENT_ERR_SUCCESS)
-        LOGE("RegisterRequestCompleteHandler(NULL) error\n");
-
-    if (RegisterUnsolicitedHandler(mClient, 11004, NULL) != RIL_CLIENT_ERR_SUCCESS)
-        LOGE("RegisterUnsolicitedHandler(NULL) error\n");
-
-    if (Disconnect_RILD(mClient) != RIL_CLIENT_ERR_SUCCESS)
-        LOGE("[*] Disconnect_RILD() error\n");
-
-    if (CloseClient_RILD(mClient) != RIL_CLIENT_ERR_SUCCESS)
-        LOGE("[*] CloseClient_RILD() error\n");
-    mClient = NULL;
-}
-
-status_t AudioHardwareIPC::transmitVolumeIPC(uint32_t type, float volume)
-{
-    int ret = 0;
-    uint32_t level = (uint32_t)(volume * 5);
-
-     if (isConnected_RILD(mClient) == 0) {
-         if (Connect_RILD(mClient) != RIL_CLIENT_ERR_SUCCESS){
-             LOGE("[*] Connect_RILD() error\n");
-             return INVALID_OPERATION;
-         }
-     }
-
-    memset(data, 0, 100);
-    data[0] = OEM_FUNCTION_ID_SOUND;
-    data[1] = OEM_SOUND_SET_VOLUME_CTRL;
-    data[2] = 0x00; // data length
-    data[3] = 0x06; // data length
-    data[4] = type; // volume type
-    data[5] = level; // volume level
-
-    ret = InvokeOemRequestHookRaw(mClient, data, 6); //sizeof(data));
-    if (ret != RIL_CLIENT_ERR_AGAIN && ret != RIL_CLIENT_ERR_SUCCESS){
-        LOGE("[*] InvokeOemRequestHookRaw() error ret = %d\n", ret);
-        return INVALID_OPERATION;
-    }
-    return NO_ERROR;
-}
-
-status_t AudioHardwareIPC::transmitAudioPathIPC(uint32_t path)
-{
-    int ret = 0;
-
-	LOGI("### %s %d ", __func__, path);
-     if (isConnected_RILD(mClient) == 0) {
-         if (Connect_RILD(mClient) != RIL_CLIENT_ERR_SUCCESS){
-             LOGE("[*] Connect_RILD() error\n");
-             return INVALID_OPERATION;
-         }
-     }
-
-    memset(data, 0, 100);
-    data[0] = OEM_FUNCTION_ID_SOUND;
-    data[1] = OEM_SOUND_SET_AUDIO_PATH_CTRL;
-    data[2] = 0x00; // data length
-    data[3] = 0x05; // data length
-    data[4] = path; // audio path
-
-    ret = InvokeOemRequestHookRaw(mClient, data, 5); //sizeof(data));
-    if (ret != RIL_CLIENT_ERR_AGAIN && ret != RIL_CLIENT_ERR_SUCCESS){
-        LOGE("[*] InvokeOemRequestHookRaw() error ret = %d\n", ret);
-        return INVALID_OPERATION;
-    }
-    return NO_ERROR;
-}
-
-
-#if defined SYNCHRONIZE_CP
-status_t AudioHardwareIPC::transmitClock_IPC(uint32_t condition)
-{
-	int ret = 0;
-
-	LOGV("### %s %d ", __func__, condition);
-
-	if (isConnected_RILD(mClient) == 0) {
-		if (Connect_RILD(mClient) != RIL_CLIENT_ERR_SUCCESS){
-			LOGE("[*] Connect_RILD() error\n");
-			return INVALID_OPERATION;
-		}
-	}
-
-	memset(data, 0, 100);
-	data[0] = OEM_FUNCTION_ID_SOUND;
-	data[1] = OEM_SOUND_SET_CLOCK_CTRL;
-	data[2] = 0x00; // data length
-	data[3] = 0x05; // data length
-	data[4] = condition;
-
-	ret = InvokeOemRequestHookRaw(mClient, data, 5); //sizeof(data));
-
-	if (ret != RIL_CLIENT_ERR_AGAIN && ret != RIL_CLIENT_ERR_SUCCESS){
-		LOGE("[*] InvokeOemRequestHookRaw() error ret = %d\n", ret);
-		return INVALID_OPERATION;
-	}
-
-	return NO_ERROR;
-}
-#endif
-
-static int onRawReqComplete(HRilClient client, const void *data, size_t datalen)
-{
-        LOGV("[*] %s(): datalen(%d)\n", __FUNCTION__, datalen);
-        return 0;
-}
-static int onUnsol(HRilClient client, const void *data, size_t datalen)
-{
-        int a;
-        a = ((int *)data)[0];
-		LOGV("%s(): a(%d)\n", __FUNCTION__, a);
-
-        return 0;
-}
-#endif //SEC_IPC
 };        // namespace android
 
