@@ -68,6 +68,7 @@ PRODUCT_PACKAGES += \
 	make_ext4fs \
 	setup_fs
 
+PRODUCT_CHARACTERISTICS := nosdcard
 
 # ALSA configuration files
 PRODUCT_COPY_FILES += \

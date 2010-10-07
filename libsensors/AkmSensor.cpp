@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/select.h>
+#include <dlfcn.h>
 
 #include "ak8973b.h"
 
@@ -30,12 +31,37 @@
 
 /*****************************************************************************/
 
+int (*akm_is_sensor_enabled)(uint32_t sensor_type);
+int (*akm_enable_sensor)(uint32_t sensor_type);
+int (*akm_disable_sensor)(uint32_t sensor_type);
+int (*akm_set_delay)(uint64_t delay);
+
+int stub_is_sensor_enabled(uint32_t sensor_type) {
+    return 0;
+}
+
+int stub_enable_disable_sensor(uint32_t sensor_type) {
+    return -ENODEV;
+}
+
+int stub_set_delay(uint64_t delay) {
+    return -ENODEV;
+}
+
 AkmSensor::AkmSensor()
-: SensorBase(AKM_DEVICE_NAME, "compass"),
+: SensorBase(NULL, NULL),
       mEnabled(0),
       mPendingMask(0),
       mInputReader(32)
 {
+    /* Open the library before opening the input device.  The library
+     * creates a uinput device.
+     */
+    if (loadAKMLibrary() == 0) {
+        data_name = "compass";
+        data_fd = openInput("compass");
+    }
+
     memset(mPendingEvents, 0, sizeof(mPendingEvents));
 
     mPendingEvents[Accelerometer].version = sizeof(sensors_event_t);
@@ -60,69 +86,61 @@ AkmSensor::AkmSensor()
     struct input_absinfo absinfo;
     short flags = 0;
 
-    open_device();
-
-    if (!ioctl(dev_fd, ECS_IOCTL_APP_GET_AFLAG, &flags)) {
-        if (flags)  {
-            mEnabled |= 1<<Accelerometer;
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_X), &absinfo)) {
-                mPendingEvents[Accelerometer].acceleration.x = absinfo.value * CONVERT_A_X;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_Y), &absinfo)) {
-                mPendingEvents[Accelerometer].acceleration.y = absinfo.value * CONVERT_A_Y;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_Z), &absinfo)) {
-                mPendingEvents[Accelerometer].acceleration.z = absinfo.value * CONVERT_A_Z;
-            }
+    if (akm_is_sensor_enabled(SENSOR_TYPE_ACCELEROMETER))  {
+        mEnabled |= 1<<Accelerometer;
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_X), &absinfo)) {
+            mPendingEvents[Accelerometer].acceleration.x = absinfo.value * CONVERT_A_X;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_Y), &absinfo)) {
+            mPendingEvents[Accelerometer].acceleration.y = absinfo.value * CONVERT_A_Y;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_Z), &absinfo)) {
+            mPendingEvents[Accelerometer].acceleration.z = absinfo.value * CONVERT_A_Z;
         }
     }
-    if (!ioctl(dev_fd, ECS_IOCTL_APP_GET_MVFLAG, &flags)) {
-        if (flags)  {
-            mEnabled |= 1<<MagneticField;
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_X), &absinfo)) {
-                mPendingEvents[MagneticField].magnetic.x = absinfo.value * CONVERT_M_X;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_Y), &absinfo)) {
-                mPendingEvents[MagneticField].magnetic.y = absinfo.value * CONVERT_M_Y;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_Z), &absinfo)) {
-                mPendingEvents[MagneticField].magnetic.z = absinfo.value * CONVERT_M_Z;
-            }
+    if (akm_is_sensor_enabled(SENSOR_TYPE_MAGNETIC_FIELD))  {
+        mEnabled |= 1<<MagneticField;
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_X), &absinfo)) {
+            mPendingEvents[MagneticField].magnetic.x = absinfo.value * CONVERT_M_X;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_Y), &absinfo)) {
+            mPendingEvents[MagneticField].magnetic.y = absinfo.value * CONVERT_M_Y;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_Z), &absinfo)) {
+            mPendingEvents[MagneticField].magnetic.z = absinfo.value * CONVERT_M_Z;
         }
     }
-    if (!ioctl(dev_fd, ECS_IOCTL_APP_GET_MFLAG, &flags)) {
-        if (flags)  {
-            mEnabled |= 1<<Orientation;
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_YAW), &absinfo)) {
-                mPendingEvents[Orientation].orientation.azimuth = absinfo.value;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_PITCH), &absinfo)) {
-                mPendingEvents[Orientation].orientation.pitch = absinfo.value;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ROLL), &absinfo)) {
-                mPendingEvents[Orientation].orientation.roll = -absinfo.value;
-            }
-            if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ORIENT_STATUS), &absinfo)) {
-                mPendingEvents[Orientation].orientation.status = uint8_t(absinfo.value & SENSOR_STATE_MASK);
-            }
+    if (akm_is_sensor_enabled(SENSOR_TYPE_ORIENTATION))  {
+        mEnabled |= 1<<Orientation;
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_YAW), &absinfo)) {
+            mPendingEvents[Orientation].orientation.azimuth = absinfo.value;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_PITCH), &absinfo)) {
+            mPendingEvents[Orientation].orientation.pitch = absinfo.value;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ROLL), &absinfo)) {
+            mPendingEvents[Orientation].orientation.roll = -absinfo.value;
+        }
+        if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ORIENT_STATUS), &absinfo)) {
+            mPendingEvents[Orientation].orientation.status = uint8_t(absinfo.value & SENSOR_STATE_MASK);
         }
     }
 
     // disable temperature sensor, since it is not supported
-    flags = 0;
-    ioctl(dev_fd, ECS_IOCTL_APP_SET_TFLAG, &flags);
-
-    if (!mEnabled) {
-        close_device();
-    }
+    akm_disable_sensor(SENSOR_TYPE_TEMPERATURE);
 }
 
-AkmSensor::~AkmSensor() {
+AkmSensor::~AkmSensor()
+{
+    if (mLibAKM) {
+        unsigned ref = ::dlclose(mLibAKM);
+    }
 }
 
 int AkmSensor::enable(int32_t handle, int en)
 {
     int what = -1;
+
     switch (handle) {
         case ID_A: what = Accelerometer; break;
         case ID_M: what = MagneticField; break;
@@ -136,26 +154,23 @@ int AkmSensor::enable(int32_t handle, int en)
     int err = 0;
 
     if ((uint32_t(newState)<<what) != (mEnabled & (1<<what))) {
-        if (!mEnabled) {
-            open_device();
-        }
-        int cmd;
+        uint32_t sensor_type;
         switch (what) {
-            case Accelerometer: cmd = ECS_IOCTL_APP_SET_AFLAG;  break;
-            case MagneticField: cmd = ECS_IOCTL_APP_SET_MVFLAG; break;
-            case Orientation:   cmd = ECS_IOCTL_APP_SET_MFLAG;  break;
+            case Accelerometer: sensor_type = SENSOR_TYPE_ACCELEROMETER;  break;
+            case MagneticField: sensor_type = SENSOR_TYPE_MAGNETIC_FIELD; break;
+            case Orientation:   sensor_type = SENSOR_TYPE_ORIENTATION;  break;
         }
         short flags = newState;
-        err = ioctl(dev_fd, cmd, &flags);
-        err = err<0 ? -errno : 0;
-        LOGE_IF(err, "ECS_IOCTL_APP_SET_XXX failed (%s)", strerror(-err));
+        if (en)
+            err = akm_enable_sensor(sensor_type);
+        else
+            err = akm_disable_sensor(sensor_type);
+
+        LOGE_IF(err, "Could not change sensor state (%s)", strerror(-err));
         if (!err) {
             mEnabled &= ~(1<<what);
             mEnabled |= (uint32_t(flags)<<what);
             update_delay();
-        }
-        if (!mEnabled) {
-            close_device();
         }
     }
     return err;
@@ -163,7 +178,6 @@ int AkmSensor::enable(int32_t handle, int en)
 
 int AkmSensor::setDelay(int32_t handle, int64_t ns)
 {
-#ifdef ECS_IOCTL_APP_SET_DELAY
     int what = -1;
     switch (handle) {
         case ID_A: what = Accelerometer; break;
@@ -179,9 +193,6 @@ int AkmSensor::setDelay(int32_t handle, int64_t ns)
 
     mDelays[what] = ns;
     return update_delay();
-#else
-    return -1;
-#endif
 }
 
 int AkmSensor::update_delay()
@@ -194,11 +205,29 @@ int AkmSensor::update_delay()
                 wanted = wanted < ns ? wanted : ns;
             }
         }
-        int64_t delay = int64_t(wanted);
-        if (ioctl(dev_fd, ECS_IOCTL_APP_SET_DELAY, &delay)) {
-            return -errno;
-        }
+        return akm_set_delay(int64_t(wanted));
     }
+    return 0;
+}
+
+int AkmSensor::loadAKMLibrary()
+{
+    mLibAKM = dlopen("libakm.so", RTLD_NOW);
+
+    if (!mLibAKM) {
+        akm_is_sensor_enabled = stub_is_sensor_enabled;
+        akm_enable_sensor = stub_enable_disable_sensor;
+        akm_disable_sensor = stub_enable_disable_sensor;
+        akm_set_delay = stub_set_delay;
+        LOGE("AkmSensor: unable to load AKM Library, %s", dlerror());
+        return -ENOENT;
+    }
+
+    *(void **)&akm_is_sensor_enabled = dlsym(mLibAKM, "akm_is_sensor_enabled");
+    *(void **)&akm_enable_sensor = dlsym(mLibAKM, "akm_enable_sensor");
+    *(void **)&akm_disable_sensor = dlsym(mLibAKM, "akm_disable_sensor");
+    *(void **)&akm_set_delay = dlsym(mLibAKM, "akm_set_delay");
+
     return 0;
 }
 
@@ -241,7 +270,6 @@ int AkmSensor::readEvents(sensors_event_t* data, int count)
             mInputReader.next();
         }
     }
-
     return numEventReceived;
 }
 
