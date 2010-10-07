@@ -108,7 +108,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
 	overlay.s5pc110 \
-	sensors.crespo
+	sensors.herring
 
 # Libs
 PRODUCT_PACKAGES += \
