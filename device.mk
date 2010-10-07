@@ -136,13 +136,13 @@ PRODUCT_COPY_FILES += \
 
 # The OpenGL ES API level that is natively supported by this device.
 # This is a 16.16 fixed point number
-PRODUCT_PROPERTY_OVERRIDES += \
+PRODUCT_PROPERTY_OVERRIDES := \
     ro.opengles.version=131072
 
 # These are the hardware-specific settings that are stored in system properties.
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
-PRODUCT_PROPERTY_OVERRIDES := \
+PRODUCT_PROPERTY_OVERRIDES += \
        wifi.interface=eth0 \
        dalvik.vm.heapsize=24m
 
