@@ -81,10 +81,10 @@ __BEGIN_DECLS
 
 // 720 LSG = 1G
 #define LSG                         (720.0f)
-
+#define NUMOFACCDATA                8
 
 // conversion of acceleration data to SI units (m/s^2)
-#define CONVERT_A                   (GRAVITY_EARTH / LSG)
+#define CONVERT_A                   (GRAVITY_EARTH / LSG / NUMOFACCDATA)
 #define CONVERT_A_X                 (CONVERT_A)
 #define CONVERT_A_Y                 (-CONVERT_A)
 #define CONVERT_A_Z                 (-CONVERT_A)
