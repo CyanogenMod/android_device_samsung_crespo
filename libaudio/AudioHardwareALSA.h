@@ -89,6 +89,10 @@ namespace android
 
     class ALSAStreamOps
     {
+     public:
+                uint32_t            device() { return mDevice; }
+                void                close();
+
         protected:
             friend class AudioStreamOutALSA;
             friend class AudioStreamInALSA;
@@ -124,13 +128,12 @@ namespace android
                     uint32_t        getAndroidChannels(int channelCount) const;
 
             status_t                open(int mode, uint32_t device);
-            void                    close();
             status_t                setSoftwareParams();
             status_t                setPCMFormat(snd_pcm_format_t format);
             status_t                setHardwareResample(bool resample);
 
             const char             *streamName();
-            virtual status_t        setDevice(int mode, uint32_t device, uint32_t audio_mode);
+            status_t                setDevice(int mode, uint32_t device, uint32_t audio_mode);
 
             const char             *deviceName(int mode, uint32_t device);
 
@@ -187,7 +190,8 @@ namespace android
 
             virtual ssize_t         write(const void *buffer, size_t bytes);
             virtual status_t        dump(int fd, const Vector<String16>& args);
-            virtual status_t        setDevice(int mode, uint32_t newDevice, uint32_t audio_mode);
+                    status_t        setDevice(int mode, uint32_t newDevice, uint32_t audio_mode,
+                                              bool force = false);
             virtual status_t        setVolume(float left, float right); //Tushar: New arch
 
             status_t                setVolume(float volume);
@@ -198,7 +202,7 @@ namespace android
             virtual String8         getParameters(const String8& keys);
 
             virtual status_t        getRenderPosition(uint32_t *dspFrames);
-
+                    bool            isActive() { return mPowerLock; }
 
         private:
             AudioHardwareALSA      *mParent;
@@ -238,7 +242,8 @@ namespace android
 
             virtual ssize_t         read(void* buffer, ssize_t bytes);
             virtual status_t        dump(int fd, const Vector<String16>& args);
-            virtual status_t        setDevice(int mode, uint32_t newDevice, uint32_t audio_mode);
+                    status_t        setDevice(int mode, uint32_t newDevice, uint32_t audio_mode,
+                                              bool force = false);
 
             virtual status_t        setGain(float gain);
 
@@ -248,6 +253,8 @@ namespace android
             virtual String8         getParameters(const String8& keys);
 
             virtual unsigned int    getInputFramesLost() const { return 0; }
+
+                    bool            isActive() { return mPowerLock; }
 
         private:
             AudioHardwareALSA      *mParent;
@@ -267,14 +274,10 @@ namespace android
              */
             virtual status_t        initCheck();
 
-            /**
-             * put the audio hardware into standby mode to conserve power. Returns
-             * status based on include/utils/Errors.h
-             */
-            virtual status_t        standby();
-
             /** set the audio volume of a voice call. Range is between 0.0 and 1.0 */
             virtual status_t        setVoiceVolume(float volume);
+
+            virtual status_t        setMode(int mode);
 
             /**
              * set the audio volume for all audio activities other than voice call.
@@ -312,6 +315,10 @@ namespace android
             static const uint32_t   inputSamplingRates[];
 
                    int              mode() { return mMode; }
+                   Mutex&           lock() { return mLock; }
+
+                   int              setVoiceRecordGain(bool enable);
+                   int              setVoiceRecordGain_l(bool enable);
 
         protected:
             /**
@@ -320,7 +327,8 @@ namespace android
              * doRouting when required. If the device has any special requirements these
              * methods can be overriden.
              */
-            virtual status_t        doRouting(uint32_t device);
+                    status_t        doRouting(uint32_t device, bool force = false);
+                    status_t        doRouting_l(uint32_t device, bool force = false);
 
             virtual status_t        dump(int fd, const Vector<String16>& args);
 
@@ -331,13 +339,12 @@ namespace android
             AudioStreamOutALSA     *mOutput;
             AudioStreamInALSA      *mInput;
 
-            uint32_t                mRoutes[AudioSystem::NUM_MODES];
         private:
             Mutex                   mLock;
-            bool                    mActivatedInputDevice;
-
             void                   *mSecRilLibHandle;
             HRilClient              mRilClient;
+            bool                    mVrModeEnabled;
+
             HRilClient (*openClientRILD)  (void);
             int        (*disconnectRILD)  (HRilClient);
             int        (*closeClientRILD) (HRilClient);
@@ -348,6 +355,7 @@ namespace android
 
             void                    loadRILD(void);
             status_t                connectRILDIfRequired(void);
+
     };
 
 };        // namespace android
