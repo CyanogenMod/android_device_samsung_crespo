@@ -17,8 +17,7 @@
 /dev/block/mtdblock5      0660   radio      radio
 
 # for Sensor HAL
-/dev/akm8973_dev	0660	system	system
-/dev/akmd8973_aot	0660	system	system
+/dev/akm8973		0660	system	system
 /dev/accelerometer	0660	system	system
 
 
