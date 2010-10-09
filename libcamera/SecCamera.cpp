@@ -34,19 +34,7 @@
 #include "SecCamera.h"
 #include "cutils/properties.h"
 
-#ifdef BOARD_USES_SDTV
-#include "TvOut.h"
-#endif
-
 using namespace android;
-
-#ifdef BOARD_USES_SDTV
-#include "utils/Timers.h"
-//#define  MEASURE_DURATION_TVOUT
-sp<TvOut> mtvoutcamera;
-static bool suspendTvInit = false;
-#define TVOUT_RESUME_TIME 4
-#endif
 
 //#define PERFORMANCE //Uncomment to measure performance
 //#define DUMP_YUV    //Uncomment to take a dump of YUV frame during capture
@@ -286,18 +274,18 @@ static int fimc_v4l2_querycap(int fp)
     return ret;
 }
 
-static int fimc_v4l2_enuminput(int fp, int index)
+static const __u8* fimc_v4l2_enuminput(int fp, int index)
 {
-    struct v4l2_input input;
+    static struct v4l2_input input;
 
     input.index = index;
     if (ioctl(fp, VIDIOC_ENUMINPUT, &input) != 0) {
         LOGE("ERR(%s):No matching index found\n", __func__);
-        return -1;
+        return NULL;
     }
     LOGI("Name of input channel[%d] is %s\n", input.index, input.name);
 
-    return 0;
+    return input.name;
 }
 
 
@@ -559,7 +547,8 @@ static int fimc_v4l2_s_ctrl(int fp, unsigned int id, unsigned int value)
 
     ret = ioctl(fp, VIDIOC_S_CTRL, &ctrl);
     if (ret < 0) {
-        LOGE("ERR(%s):VIDIOC_S_CTRL failed, ret: %d\n", __func__, ret);
+        LOGE("ERR(%s):VIDIOC_S_CTRL failed, ret: %d, value = %d, id = %#x\n",
+             __func__, ret, value, id);
         return ret;
     }
 
@@ -626,35 +615,15 @@ static int fimc_v4l2_s_parm(int fp, int fps_numerator, int fps_denominator)
     return 0;
 }
 
-#if 0
-static int fimc_v4l2_s_parm_ex(int fp, int mode, int no_dma_op) //Kamat: not present in new code
-{
-    struct v4l2_streamparm stream;
-    int ret;
-
-    stream.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    stream.parm.capture.capturemode = mode;
-    if (no_dma_op)
-        stream.parm.capture.reserved[0] = 100;
-
-    ret = ioctl(fp, VIDIOC_S_PARM, &stream);
-    if (ret < 0) {
-        LOGE("ERR(%s):VIDIOC_S_PARM_EX failed\n", __func__);
-        return ret;
-    }
-
-    return 0;
-}
-#endif
-
 // ======================================================================
 // Constructor & Destructor
 
 SecCamera::SecCamera() :
             m_focus_mode(1),
-            m_iso(0),
+            m_iso(-1),
+            m_flag_init(0),
             m_camera_id(CAMERA_ID_BACK),
-            m_preview_v4lformat(-1),
+            m_preview_v4lformat(V4L2_PIX_FMT_NV21),
             m_preview_width      (0),
             m_preview_height     (0),
             m_preview_max_width  (MAX_BACK_CAMERA_PREVIEW_WIDTH),
@@ -664,79 +633,53 @@ SecCamera::SecCamera() :
             m_snapshot_height     (0),
             m_snapshot_max_width  (MAX_BACK_CAMERA_SNAPSHOT_WIDTH),
             m_snapshot_max_height (MAX_BACK_CAMERA_SNAPSHOT_HEIGHT),
-            m_angle(0),
-            m_fps(30),
-            m_autofocus(AUTO_FOCUS_ON),
-            m_white_balance(WHITE_BALANCE_AUTO),
-            m_brightness(BRIGHTNESS_NORMAL),
-            m_image_effect(IMAGE_EFFECT_NONE),
+            m_angle(-1),
+            m_fps(-1),
+            m_autofocus(-1),
+            m_white_balance(-1),
+            m_brightness(-1),
+            m_image_effect(-1),
             #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-            m_anti_banding(0),
-            m_flash_mode(1),
-            m_metering(2),
-            m_contrast(2),
-            m_saturation(2),
-            m_sharpness(2),
-            m_wdr(0),
-            m_anti_shake(0),
-            m_zoom_level(0),
-            m_object_tracking(0),
-            m_smart_auto(0),
-            m_beauty_shot(0),
-            m_vintage_mode(1),
-            m_face_detect(0),
-            m_gps_latitude(0),
-            m_gps_longitude(0),
-            m_gps_altitude(0),
-            m_gps_timestamp(0),
+            m_anti_banding(-1),
+            m_flash_mode(-1),
+            m_metering(-1),
+            m_contrast(-1),
+            m_saturation(-1),
+            m_sharpness(-1),
+            m_wdr(-1),
+            m_anti_shake(-1),
+            m_zoom_level(-1),
+            m_object_tracking(-1),
+            m_smart_auto(-1),
+            m_beauty_shot(-1),
+            m_vintage_mode(-1),
+            m_face_detect(-1),
+            m_gps_latitude(-1),
+            m_gps_longitude(-1),
+            m_gps_altitude(-1),
+            m_gps_timestamp(-1),
             m_vtmode(0),
-            m_sensor_mode(0),
-            m_exif_orientation(1),
-            m_blur_level(0),
-            m_chk_dataline(0),
-            m_video_gamma(0),
-            m_slow_ae(0),
+            m_sensor_mode(-1),
+            m_shot_mode(-1),
+            m_exif_orientation(-1),
+            m_blur_level(-1),
+            m_chk_dataline(-1),
+            m_video_gamma(-1),
+            m_slow_ae(-1),
+            m_camera_af_flag(-1),
             #else
             m_image_effect(IMAGE_EFFECT_ORIGINAL),
             #endif
             m_flag_camera_start(0),
             m_jpeg_thumbnail_width (0),
             m_jpeg_thumbnail_height(0),
-            m_jpeg_quality(100),
-            m_camera_af_flag(-1),
-            m_shot_mode(0),
-            m_flag_init(0)
+            m_jpeg_quality(100)
 #ifdef ENABLE_ESD_PREVIEW_CHECK
             ,
             m_esd_check_count(0)
 #endif // ENABLE_ESD_PREVIEW_CHECK
 {
     LOGV("%s()", __func__);
-#ifdef BOARD_USES_SDTV
-    nsecs_t   before1, after1;
-
-#ifdef  MEASURE_DURATION_TVOUT
-    before1 = systemTime(SYSTEM_TIME_MONOTONIC);
-#endif
-    //suspend
-    if (mtvoutcamera == 0) {
-        mtvoutcamera = TvOut::connect();
-    }
-
-    if (mtvoutcamera != 0) {
-        if (mtvoutcamera->isEnabled()) {
-            mtvoutcamera->DisableTvOut();
-            //TvOutSuspend("Tvout is not available! so what can i do, close camera or any other app which uses fimc");
-            suspendTvInit = true;
-        }
-    }
-
-#ifdef  MEASURE_DURATION_TVOUT
-    after1 = systemTime(SYSTEM_TIME_MONOTONIC);
-    LOGD("%s: MEASURE_DURATION_TVOUT duration=%lld", __func__, ns2us(after1-before1));
-#endif
-
-#endif
 }
 
 int SecCamera::flagCreate(void) const
@@ -748,26 +691,6 @@ int SecCamera::flagCreate(void) const
 SecCamera::~SecCamera()
 {
     LOGV("%s()", __func__);
-
-#ifdef BOARD_USES_SDTV
-    nsecs_t   before1, after1;
-
-#ifdef  MEASURE_DURATION_TVOUT
-    before1 = systemTime(SYSTEM_TIME_MONOTONIC);
-#endif
-
-    //resume
-    if (mtvoutcamera != 0) {
-        if (!mtvoutcamera->isEnabled() && mtvoutcamera->isSuspended()) {
-            mtvoutcamera->TvOutResume(TVOUT_RESUME_TIME);
-        }
-    }
-    suspendTvInit = false;
-#ifdef  MEASURE_DURATION_TVOUT
-    after1  = systemTime(SYSTEM_TIME_MONOTONIC);
-    LOGD("%s: MEASURE_DURATION_TVOUT duration=%lld", __func__, ns2us(after1-before1));
-#endif
-#endif
 }
 
 int SecCamera::initCamera(int index)
@@ -782,33 +705,6 @@ int SecCamera::initCamera(int index)
          */
         m_camera_af_flag = -1;
 
-#ifdef BOARD_USES_SDTV
-        nsecs_t   before1, after1;
-
-#ifdef  MEASURE_DURATION_TVOUT
-        before1 = systemTime(SYSTEM_TIME_MONOTONIC);
-#endif
-
-        //suspend
-        if (mtvoutcamera == 0) {
-            mtvoutcamera = TvOut::connect();
-        }
-
-        if (mtvoutcamera != 0) {
-            if (mtvoutcamera->isEnabled()) {
-
-                mtvoutcamera->DisableTvOut();
-                suspendTvInit = true;
-            }
-        }
-
-#ifdef  MEASURE_DURATION_TVOUT
-        after1  = systemTime(SYSTEM_TIME_MONOTONIC);
-        LOGD("%s: MEASURE_DURATION_TVOUT duration=%lld", __func__, ns2us(after1-before1));
-#endif
-
-
-#endif
 #ifndef JPEG_FROM_SENSOR
         m_jpeg_fd = SsbSipJPEGEncodeInit();
         LOGD("(%s):JPEG device open ID = %d\n", __func__, m_jpeg_fd);
@@ -864,8 +760,8 @@ int SecCamera::initCamera(int index)
 
         ret = fimc_v4l2_querycap(m_cam_fd);
         CHECK(ret);
-        ret = fimc_v4l2_enuminput(m_cam_fd, index);
-        CHECK(ret);
+        if (!fimc_v4l2_enuminput(m_cam_fd, index))
+            return -1;
         ret = fimc_v4l2_s_input(m_cam_fd, index);
         CHECK(ret);
 
@@ -920,8 +816,8 @@ int SecCamera::initCamera(int index)
 
         ret = fimc_v4l2_querycap(m_cam_fd2);
         CHECK(ret);
-        ret = fimc_v4l2_enuminput(m_cam_fd2, index);
-        CHECK(ret);
+        if (!fimc_v4l2_enuminput(m_cam_fd2, index))
+            return -1;
         ret = fimc_v4l2_s_input(m_cam_fd2, index);
         CHECK(ret);
 #endif
@@ -975,28 +871,6 @@ void SecCamera::DeinitCamera()
             m_cam_fd2_temp = -1;
         }
 
-#ifdef  BOARD_USES_SDTV
-        nsecs_t   before1, after1;
-
-#ifdef  MEASURE_DURATION_TVOUT
-        before1  = systemTime(SYSTEM_TIME_MONOTONIC);
-#endif
-
-        if (mtvoutcamera == 0) {
-            mtvoutcamera = TvOut::connect();
-        }
-
-        //resume
-        if (mtvoutcamera != 0 ) {
-            if (mtvoutcamera->isSuspended()) {
-                mtvoutcamera->TvOutResume(TVOUT_RESUME_TIME);
-            }
-        }
-#ifdef  MEASURE_DURATION_TVOUT
-        after1  = systemTime(SYSTEM_TIME_MONOTONIC);
-        LOGD("%s: MEASURE_DURATION_TVOUT duration=%lld", __func__, ns2us(after1-before1));
-#endif
-#endif
         m_flag_init = 0;
         usleep(100000); //100 ms delay to allow proper closure of fimc device.
     }
@@ -1007,38 +881,6 @@ int SecCamera::getCameraFd(void)
 {
     return m_cam_fd;
 }
-
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-int SecCamera::setCameraSensorReset(void)
-{
-    int ret = 0;
-
-    LOGV("%s", __func__);
-
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_RESET, 0);
-    CHECK(ret);
-
-    return ret;
-}
-
-int SecCamera::setDefultIMEI(int imei)
-{
-    LOGV("%s(m_default_imei (%d))", __func__, imei);
-
-    if (m_default_imei != imei) {
-        m_default_imei = imei;
-    }
-    return 0;
-}
-
-int SecCamera::getDefultIMEI(void)
-{
-    return m_default_imei;
-}
-
-
-#endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
-
 
 // ======================================================================
 // Preview
@@ -1094,33 +936,12 @@ int SecCamera::startPreview(void)
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGE("%s()m_preview_width: %d m_preview_height: %d m_angle: %d\n",
             __func__, m_preview_width, m_preview_height, m_angle);
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_ROTATION, m_angle);
+
+    ret = fimc_v4l2_s_ctrl(m_cam_fd,
+                           V4L2_CID_CAMERA_CHECK_DATALINE, m_chk_dataline);
     CHECK(ret);
 
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CHECK_DATALINE, m_chk_dataline);
-    CHECK(ret);
-
-    if (m_camera_id == CAMERA_ID_BACK) {
-        /*Should be set before starting preview*/
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ANTI_BANDING, m_anti_banding);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_iso);
-        CHECK(ret);
-        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, m_fps);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_metering);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_GAMMA, m_video_gamma);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_SLOW_AE, m_slow_ae);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_image_effect);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_white_balance);
-        CHECK(ret);
-    } else {
+    if (m_camera_id == CAMERA_ID_FRONT) {
         /* VT mode setting */
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VT_MODE, m_vtmode);
         CHECK(ret);
@@ -1145,6 +966,9 @@ int SecCamera::startPreview(void)
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_white_balance);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_iso);
+        CHECK(ret);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FLASH_MODE,
+                               m_flash_mode);
         CHECK(ret);
         if (m_focus_mode ==FOCUS_MODE_FACEDETECT)
             ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, FOCUS_MODE_AUTO);
@@ -1171,22 +995,22 @@ int SecCamera::startPreview(void)
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_contrast);
         CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ZOOM, m_zoom_level);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SENSOR_MODE, m_sensor_mode);
-        CHECK(ret);
+
         // Apply the scene mode only in camera not in camcorder
         if (!m_sensor_mode) {
             ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_scene_mode);
             CHECK(ret);
         }
-        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness);
         CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_sharpness);
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
-        ret = setBrightness(m_brightness - BRIGHTNESS_NORMAL);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness);
+        CHECK(ret);
+        /* Blur setting */
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
         CHECK(ret);
     }
 #endif
@@ -1208,22 +1032,12 @@ int SecCamera::startPreview(void)
     hdmi_gl_initialize(0);
     hdmi_gl_streamoff(0);
 #endif
-#ifdef BOARD_USES_SDTV
-
-    if (suspendTvInit == true) {
-        if (!mtvoutcamera->isSuspended()) {
-            mtvoutcamera->TvOutSuspend("");
-        }
-    }
-
-#endif
     return 0;
 }
 
 int SecCamera::stopPreview(void)
 {
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGE("%s()\n", __func__);
+    LOGV("%s()", __func__);
 
     close_buffers(m_buffers_c);
 
@@ -1231,14 +1045,7 @@ int SecCamera::stopPreview(void)
         LOGE("%s: m_flag_camera_start is zero", __func__);
         return 0;
     }
-#else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
-    LOGV("%s()", __func__);
 
-    close_buffers(m_buffers_c);
-
-    if (m_flag_camera_start == 0)
-        return 0;
-#endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 #ifdef ENABLE_HDMI_DISPLAY
     hdmi_deinitialize();
     hdmi_gl_streamon(0);
@@ -1453,8 +1260,8 @@ int SecCamera::getPreview()
         /* Reset Only Camera Device */
         ret = fimc_v4l2_querycap(m_cam_fd);
         CHECK(ret);
-        ret = fimc_v4l2_enuminput(m_cam_fd, m_camera_id);
-        CHECK(ret);
+        if (fimc_v4l2_enuminput(m_cam_fd, m_camera_id))
+            return -1;
         ret = fimc_v4l2_s_input(m_cam_fd, 1000);
         CHECK(ret);
         //setCameraSensorReset();
@@ -1719,11 +1526,6 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
     CHECK_PTR(ret);
     LOG_TIME_END(2)
 
-#if 0 //temporary blocked for build
-    LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu), "
-                "capture(%lu), memcpy(%lu), yuv2Jpeg(%lu), post(%lu) us",
-                    LOG_TIME(0), LOG_TIME(1), LOG_TIME(2), LOG_TIME(3), LOG_TIME(4), LOG_TIME(5));
-#endif
     return addr;
 }
 
@@ -1825,18 +1627,6 @@ void SecCamera::SetJpgAddr(unsigned char *addr)
 {
     SetMapAddr(addr);
 }
-
-#if 0
-int SecCamera::getSnapshot(unsigned char *buffer, unsigned int buffer_size)
-{
-    LOGV("%s(buffer(%p), size(%d))", __func__, buffer, buffer_size);
-
-    if (getSnapshotAndJpeg(buffer, buffer_size, NULL, NULL) == 0)
-        return -1;
-
-    return 0;
-}
-#endif
 
 #endif
 
@@ -1942,7 +1732,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
 #endif
     LOG_TIME_END(5)
 
-    LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu),
+    LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu),"
                 " capture(%lu), memcpy(%lu), yuv2Jpeg(%lu), post(%lu)  us",
                     LOG_TIME(0), LOG_TIME(1), LOG_TIME(2), LOG_TIME(3), LOG_TIME(4), LOG_TIME(5));
     /* JPEG encoding */
@@ -2183,10 +1973,6 @@ int SecCamera::cancelAutofocus(void)
 
     usleep(1000);
 
-    if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_STATUS) < 0) {
-        LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SET_AUTO_FOCUS", __func__);
-        return -1;
-    }
     return 0;
 }
 #endif
@@ -2210,6 +1996,7 @@ int SecCamera::SetRotate(int angle)
 {
     LOGE("%s(angle(%d))", __func__, angle);
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
     if (m_angle != angle) {
         switch (angle) {
         case -360:
@@ -2439,8 +2226,8 @@ int SecCamera::setAntiBanding(int anti_banding)
         m_anti_banding = anti_banding;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ANTI_BANDING, anti_banding) < 0) {
-                LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_ANTI_BANDING", __func__);
-                return -1;
+                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_ANTI_BANDING", __func__);
+                 return -1;
             }
         }
     }
@@ -2515,8 +2302,7 @@ int SecCamera::setISO(int iso_value)
         return -1;
     }
 
-    if (m_iso != iso_value)
-    {
+    if (m_iso != iso_value) {
         m_iso = iso_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, iso_value) < 0) {
@@ -2722,9 +2508,11 @@ int SecCamera::setJpegQuality(int jpeg_quality)
 
     if (m_jpeg_quality != jpeg_quality) {
         m_jpeg_quality = jpeg_quality;
-        if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_QUALITY, jpeg_quality) < 0) {
-            LOGE("ERR(%s):Fail on V4L2_CID_CAM_JPEG_QUALITY", __func__);
-            return -1;
+        if (m_flag_camera_start) {
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_QUALITY, jpeg_quality) < 0) {
+                LOGE("ERR(%s):Fail on V4L2_CID_CAM_JPEG_QUALITY", __func__);
+                return -1;
+            }
         }
     }
 
@@ -2749,7 +2537,6 @@ int SecCamera::setZoom(int zoom_level)
 
     if (m_zoom_level != zoom_level) {
         m_zoom_level = zoom_level;
-
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ZOOM, zoom_level) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_ZOOM", __func__);
@@ -2888,9 +2675,9 @@ int SecCamera::setBeautyShot(int beauty_shot)
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_BEAUTY_SHOT", __func__);
                 return -1;
             }
-
-            setFaceDetect(FACE_DETECT_BEAUTY_ON);
         }
+
+        setFaceDetect(FACE_DETECT_BEAUTY_ON);
     }
 
     return 0;
@@ -2960,9 +2747,8 @@ int SecCamera::setFocusMode(int focus_mode)
                 if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, FOCUS_MODE_AUTO) < 0) {
                     LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FOCUS_MODE", __func__);
                     return -1;
-                }
-
 //              setFaceDetect(m_face_detect);
+                }
             }
         }
     }
@@ -2981,7 +2767,7 @@ int SecCamera::setFaceDetect(int face_detect)
 {
     LOGV("%s(face_detect(%d))", __func__, face_detect);
 
-//  if (m_face_detect != face_detect) {
+    if (m_face_detect != face_detect) {
         m_face_detect = face_detect;
         if (m_flag_camera_start) {
             if (m_face_detect != FACE_DETECT_OFF) {
@@ -2995,7 +2781,7 @@ int SecCamera::setFaceDetect(int face_detect)
                 return -1;
             }
         }
-//  }
+    }
 
     return 0;
 }
@@ -3061,29 +2847,6 @@ int SecCamera::setGPSTimeStamp(const char *gps_timestamp)
         m_gps_timestamp = atol(gps_timestamp);
 
     LOGV("%s(m_gps_timestamp(%ld))", __func__, m_gps_timestamp);
-    return 0;
- }
-
-//======================================================================
-int SecCamera::setAEAWBLockUnlock(int ae_lockunlock, int awb_lockunlock)
-{
-    LOGV("%s(ae_lockunlock(%d) , (awb_lockunlock(%d))", __func__, ae_lockunlock, awb_lockunlock);
-    int ae_awb_status = 1;
-#if 0
-    if (ae_lockunlock == 0 && awb_lockunlock == 0)
-        ae_awb_status = AE_UNLOCK_AWB_UNLOCK;
-    else if (ae_lockunlock == 1 && awb_lockunlock == 0)
-        ae_awb_status = AE_LOCK_AWB_UNLOCK;
-    else if (ae_lockunlock == 1 && awb_lockunlock == 0)
-        ae_awb_status = AE_UNLOCK_AWB_LOCK;
-    else
-        ae_awb_status = AE_LOCK_AWB_LOCK;
-#endif
-    if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_AEAWB_LOCK_UNLOCK, ae_awb_status) < 0) {
-        LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_AE_AWB_LOCKUNLOCK", __func__);
-        return -1;
-    }
-
     return 0;
 }
 
@@ -3275,7 +3038,6 @@ int SecCamera::setBlur(int blur_level)
 
     if (m_blur_level != blur_level) {
         m_blur_level = blur_level;
-
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, blur_level) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_VGA_BLUR", __func__);
@@ -3326,6 +3088,13 @@ int SecCamera::setDataLineCheckStop(void)
 }
 
 #endif
+
+const __u8* SecCamera::getCameraSensorName(void)
+{
+    LOGV("%s", __func__);
+
+    return fimc_v4l2_enuminput(m_cam_fd, getCameraId());
+}
 
 #ifdef ENABLE_ESD_PREVIEW_CHECK
 int SecCamera::getCameraSensorESDStatus(void)
@@ -3824,5 +3593,6 @@ status_t SecCamera::dump(int fd, const Vector<String16> &args)
 
 double SecCamera::jpeg_ratio = 0.7;
 int SecCamera::interleaveDataSize = 4261248;
+int SecCamera::jpegLineLength = 636;
 
 }; // namespace android

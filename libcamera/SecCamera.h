@@ -216,9 +216,9 @@ public:
     };
 
     enum AUTO_FOCUS {
-        AUTO_FOCUS_OFF,
+        AUTO_FOCUS_OFF = 0,
         AUTO_FOCUS_ON,
-        AUTO_FOCUS_STATUS,
+        AUTO_FOCUS_MAX,
     };
 
     enum WHILTE_BALANCE {
@@ -598,8 +598,6 @@ public:
     int             getPreviewPixelFormat(void);
     int             setPreviewImage(int index, unsigned char *buffer, int size);
 
-
-    int             getSnapshot(unsigned char *buffer, unsigned int buffer_size);
     int             setSnapshotSize(int width, int height);
     int             getSnapshotSize(int *width, int *height, int *frame_size);
     int             getSnapshotMaxSize(int *width, int *height);
@@ -691,7 +689,6 @@ public:
     int             setGPSAltitude(const char *gps_altitude);
     int             setGPSTimeStamp(const char *gps_timestamp);
     int             cancelAutofocus(void);
-    int             setAEAWBLockUnlock(int ae_lockunlock, int awb_lockunlock);
     int             setFaceDetectLockUnlock(int facedetect_lockunlock);
     int             setObjectPosition(int x, int y);
     int             setObjectTrackingStartStop(int start_stop);
@@ -719,6 +716,7 @@ public:
     int             setDataLineCheckStop(void);
     int             setDefultIMEI(int imei);
     int             getDefultIMEI(void);
+    const __u8*     getCameraSensorName(void);
 #ifdef ENABLE_ESD_PREVIEW_CHECK
     int             getCameraSensorESDStatus(void);
 #endif // ENABLE_ESD_PREVIEW_CHECK
@@ -773,6 +771,17 @@ public:
         return interleaveDataSize;
     }
 
+    static void     setJpegLineLength(int x)
+    {
+        jpegLineLength = x;
+    }
+
+    static int      getJpegLineLength()
+    {
+        return jpegLineLength;
+    }
+
+
 private:
     int             m_flag_init;
 
@@ -811,20 +820,17 @@ private:
     int             m_anti_banding;
     int             m_scene_mode;
     int             m_flash_mode;
-//  int             m_iso;
     int             m_metering;
     int             m_contrast;
     int             m_saturation;
     int             m_sharpness;
     int             m_wdr;
     int             m_anti_shake;
-//  int             m_jpeg_quality;
     int             m_zoom_level;
     int             m_object_tracking;
     int             m_smart_auto;
     int             m_beauty_shot;
     int             m_vintage_mode;
-//  int             m_focus_mode;
     int             m_face_detect;
     int             m_object_tracking_start_stop;
     int             m_recording_width;
@@ -872,6 +878,7 @@ private:
 
     static double   jpeg_ratio;
     static int      interleaveDataSize;
+    static int      jpegLineLength;
 };
 
 extern unsigned long measure_time(struct timeval *start, struct timeval *stop);
