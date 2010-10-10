@@ -823,6 +823,28 @@ static int overlay_commit(struct overlay_control_device_t *dev,
         shared->controlReady = 1;
     }
 
+    g_s5p_fimc.params.dst.full_width = g_lcd_width;
+    g_s5p_fimc.params.dst.full_height = g_lcd_height;
+    g_s5p_fimc.params.dst.width = stage->posW;
+    g_s5p_fimc.params.dst.height = stage->posH;
+    if (g_lcd_bpp == 32)
+        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB32;
+    else
+        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB565;
+    ret = check_fimc_dst_constraints(&g_s5p_fimc, stage->rotation);
+    if (ret != 0) {
+        if (ret < 0) {
+            LOGE("Unsupported destination image size");
+            goto end;
+        } else {
+            LOGD("dst width, height have changed [w= %d, h= %d] -> [w=%d, h= %d]",
+                    stage->posW, stage->posH, g_s5p_fimc.params.dst.width,
+                    g_s5p_fimc.params.dst.height);
+            stage->posW = g_s5p_fimc.params.dst.width;
+            stage->posH = g_s5p_fimc.params.dst.height;
+        }
+    }
+
     if (data->posX == stage->posX && data->posY == stage->posY &&
             data->posW == stage->posW && data->posH == stage->posH &&
             data->rotation == stage->rotation) {
@@ -848,27 +870,6 @@ static int overlay_commit(struct overlay_control_device_t *dev,
         v4l2_overlay_s_fbuf(fd, stage->rotation);
     }
 
-    g_s5p_fimc.params.dst.full_width = g_lcd_width;
-    g_s5p_fimc.params.dst.full_height = g_lcd_height;
-    g_s5p_fimc.params.dst.width = stage->posW;
-    g_s5p_fimc.params.dst.height = stage->posH;
-    if (g_lcd_bpp == 32)
-        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB32;
-    else
-        g_s5p_fimc.params.dst.color_space = V4L2_PIX_FMT_RGB565;
-    ret = check_fimc_dst_constraints(&g_s5p_fimc, stage->rotation);
-    if (ret != 0) {
-        if (ret < 0) {
-            LOGE("Unsupported destination image size");
-            goto end;
-        } else {
-            LOGD("dst width, height have changed [w= %d, h= %d] -> [w=%d, h= %d]",
-                    stage->posW, stage->posH, g_s5p_fimc.params.dst.width,
-                    g_s5p_fimc.params.dst.height);
-            stage->posW = g_s5p_fimc.params.dst.width;
-            stage->posH = g_s5p_fimc.params.dst.height;
-        }
-    }
     ret = v4l2_overlay_set_position(fd, stage->posX, stage->posY,
             stage->posW, stage->posH, stage->rotation);
     if (ret) {
