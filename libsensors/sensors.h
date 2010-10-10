@@ -81,10 +81,10 @@ __BEGIN_DECLS
 
 // 720 LSG = 1G
 #define LSG                         (720.0f)
-
+#define NUMOFACCDATA                8
 
 // conversion of acceleration data to SI units (m/s^2)
-#define CONVERT_A                   (GRAVITY_EARTH / LSG)
+#define CONVERT_A                   (GRAVITY_EARTH / LSG / NUMOFACCDATA)
 #define CONVERT_A_X                 (CONVERT_A)
 #define CONVERT_A_Y                 (-CONVERT_A)
 #define CONVERT_A_Z                 (-CONVERT_A)
@@ -102,7 +102,7 @@ __BEGIN_DECLS
 #define CONVERT_O_R                 (-CONVERT_O)
 
 // conversion of gyro data to SI units (radian/sec)
-#define CONVERT_GYRO                ((8.75f / 1000.0f) * ((float)M_PI / 180.0f))
+#define CONVERT_GYRO                ((70.0f / 1000.0f) * ((float)M_PI / 180.0f))
 #define CONVERT_GYRO_X              (CONVERT_GYRO)
 #define CONVERT_GYRO_Y              (CONVERT_GYRO)
 #define CONVERT_GYRO_Z              (CONVERT_GYRO)
