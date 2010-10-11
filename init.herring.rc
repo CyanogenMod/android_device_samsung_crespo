@@ -22,9 +22,9 @@ on boot
 # create data/gps for GPS demon
     chown root system /dev/s3c2410_serial1
     chmod 664 /dev/s3c2410_serial1
-    mkdir /data/gps 771 system system
-    chown system system /data/gps
-    chown root system /sys/class/sec/gps/GPS_PWR_EN/value
+    mkdir /data/gps 700 gps system
+    chown gps system /data/gps
+    chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
     chmod 664 /sys/class/sec/gps/GPS_PWR_EN/value
     chown root system /sys/class/gpio/gpio104/value
     chmod 664 /sys/class/gpio/gpio104/value
@@ -98,8 +98,9 @@ on fs
     chown system system /sys/class/backlight/s5p_bl/brightness
 
 service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
-    user system
-    group system inet
+    socket gps seqpacket 0660 gps system
+    user gps
+    group inet
 
 # create filesystems if necessary
 service setup_fs /system/bin/setup_fs /dev/block/platform/s3c-sdhci.0/by-name/userdata
