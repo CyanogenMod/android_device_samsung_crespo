@@ -2406,7 +2406,7 @@ static CameraInfo sCameraInfo[] = {
     },
     {
         CAMERA_FACING_FRONT,
-        0,  /* orientation */
+        90,  /* orientation */
     }
 };
 
