@@ -208,7 +208,8 @@ AudioHardwareALSA::AudioHardwareALSA() :
     mOutput(0),
     mInput(0),
     mSecRilLibHandle(NULL),
-    mRilClient(0)
+    mRilClient(0),
+    mVrModeEnabled(false)
 {
     snd_lib_error_set_handler(&ALSAErrorHandler);
     mMixer = new ALSAMixer;
@@ -289,14 +290,6 @@ status_t AudioHardwareALSA::initCheck()
         return NO_INIT;
 }
 
-status_t AudioHardwareALSA::standby()
-{
-    if (mOutput)
-        return mOutput->standby();
-
-    return NO_ERROR;
-}
-
 
 status_t AudioHardwareALSA::connectRILDIfRequired(void)
 {
@@ -322,11 +315,15 @@ status_t AudioHardwareALSA::setVoiceVolume(float volume)
 {
     LOGI("### setVoiceVolume");
 
+    AutoMutex lock(mLock);
     // sangsu fix : transmic volume level IPC to modem
     if ( (AudioSystem::MODE_IN_CALL == mMode) && (mSecRilLibHandle) &&
          (connectRILDIfRequired() == OK) ) {
 
-        uint32_t routes = mRoutes[mMode];
+        uint32_t routes = AudioSystem::ROUTE_EARPIECE;
+        if (mOutput != NULL) {
+            routes = mOutput->device();
+        }
         int int_volume = (int)(volume * 5);
 
         LOGI("### route(%d) call volume(%f)", routes, volume);
@@ -395,32 +392,40 @@ AudioHardwareALSA::openOutputStream(
                         uint32_t *sampleRate,
                         status_t *status)
 {
-    AutoMutex lock(mLock);
+    AudioStreamOutALSA *out = NULL;
+    status_t  ret = NO_ERROR;
+    {
+        AutoMutex lock(mLock);
 
-    // only one output stream allowed
-    if (mOutput) {
-        *status = ALREADY_EXISTS;
-        return 0;
+        // only one output stream allowed
+        if (mOutput) {
+            ret = ALREADY_EXISTS;
+            goto exit;
+        }
+
+        LOGV("[[[[[[[[\n%s - format = %d, channels = %d, sampleRate = %d, devices = %d]]]]]]]]\n", __func__, *format, *channels, *sampleRate,devices);
+
+        out = new AudioStreamOutALSA(this);
+
+        ret = out->set(format, channels, sampleRate);
+
+        if (ret == NO_ERROR) {
+            mOutput = out;
+        }
     }
-
-    LOGV("[[[[[[[[\n%s - format = %d, channels = %d, sampleRate = %d, devices = %d]]]]]]]]\n", __func__, *format, *channels, *sampleRate,devices);
-
-    AudioStreamOutALSA *out = new AudioStreamOutALSA(this);
-
-    *status = out->set(format, channels, sampleRate);
-
-    if (*status == NO_ERROR) {
-        mOutput = out;
+exit:
+    if (ret == NO_ERROR) {
         // Some information is expected to be available immediately after
         // the device is open.
         /* Tushar - Sets the current device output here - we may set device here */
         LOGI("%s] Setting ALSA device.", __func__);
         mOutput->setDevice(mMode, devices, PLAYBACK); /* tushar - Enable all devices as of now */
-    }
-    else {
+    } else if (out) {
         delete out;
     }
-
+    if (status) {
+        *status = ret;
+    }
     return mOutput;
 }
 
@@ -429,16 +434,16 @@ AudioHardwareALSA::closeOutputStream(AudioStreamOut* out)
 {
     /* TODO:Tushar: May lead to segmentation fault - check*/
     //delete out;
-    AutoMutex lock(mLock);
+    {
+        AutoMutex lock(mLock);
 
-    if (mOutput == 0 || mOutput != out) {
-        LOGW("Attempt to close invalid output stream");
-    }
-    else {
-        delete mOutput;
+        if (mOutput == 0 || mOutput != out) {
+            LOGW("Attempt to close invalid output stream");
+            return;
+        }
         mOutput = 0;
     }
-
+    delete out;
 }
 
 
@@ -451,27 +456,35 @@ AudioHardwareALSA::openInputStream(
                                 status_t *status,
                                 AudioSystem::audio_in_acoustics acoustics)
 {
-    AutoMutex lock(mLock);
+    AudioStreamInALSA *in = NULL;
+    status_t ret = NO_ERROR;
+    {
+        AutoMutex lock(mLock);
 
-    // only one input stream allowed
-    if (mInput) {
-        *status = ALREADY_EXISTS;
-        return 0;
+        // only one input stream allowed
+        if (mInput) {
+            ret = ALREADY_EXISTS;
+            goto exit;
+        }
+
+        in = new AudioStreamInALSA(this);
+
+        ret = in->set(format, channels, sampleRate);
+        if (ret == NO_ERROR) {
+            mInput = in;
+        }
     }
-
-    AudioStreamInALSA *in = new AudioStreamInALSA(this);
-
-    *status = in->set(format, channels, sampleRate);
-    if (*status == NO_ERROR) {
-        mInput = in;
+exit:
+    if (ret == NO_ERROR) {
         // Some information is expected to be available immediately after
         // the device is open.
         mInput->setDevice(mMode, devices, CAPTURE);  /* Tushar - as per modified arch */
         setMicStatus(1);
-        return mInput;
-    }
-    else {
+    } else if (in != NULL) {
         delete in;
+    }
+    if (status) {
+        *status = ret;
     }
     return mInput;
 }
@@ -481,29 +494,39 @@ AudioHardwareALSA::closeInputStream(AudioStreamIn* in)
 {
     /* TODO:Tushar: May lead to segmentation fault - check*/
     //delete in;
-    AutoMutex lock(mLock);
+    {
+        AutoMutex lock(mLock);
 
-    if (mInput == 0 || mInput != in) {
-        LOGW("Attempt to close invalid input stream");
-    } else {
-        delete mInput;
-        mInput = 0;
-        setMicStatus(0);
+        if (mInput == 0 || mInput != in) {
+            LOGW("Attempt to close invalid input stream");
+            return;
+        } else {
+            mInput = 0;
+            setMicStatus(0);
+        }
     }
+    delete in;
 }
 
 
-status_t AudioHardwareALSA::doRouting(uint32_t device)
+status_t AudioHardwareALSA::doRouting(uint32_t device, bool force)
+{
+    AutoMutex lock(mLock);
+    return doRouting_l(device, force);
+}
+
+status_t AudioHardwareALSA::doRouting_l(uint32_t device, bool force)
 {
     status_t ret;
-
-    AutoMutex lock(mLock);
     int mode = mMode;        // Prevent to changing mode on setup sequence.
 
-    LOGV("doRouting (%d)", device);
+    LOGV("doRouting: device %x, force %d", device, force);
 
     if (mOutput) {
         //device = 0; /* Tushar - temp implementation */
+        if (device == AudioSystem::DEVICE_OUT_DEFAULT) {
+            device = mOutput->device();
+        }
 
         // Setup sound path for CP clocking
         if ( (AudioSystem::MODE_IN_CALL == mode) && (mSecRilLibHandle) &&
@@ -546,7 +569,7 @@ status_t AudioHardwareALSA::doRouting(uint32_t device)
             }
         }
 
-        ret = mOutput->setDevice(mode, device, PLAYBACK);
+        ret = mOutput->setDevice(mode, device, PLAYBACK, force);
 
         return ret;
     }
@@ -597,14 +620,6 @@ size_t AudioHardwareALSA::getInputBufferSize(uint32_t sampleRate, int format, in
     LOGV("getInputBufferSize() rate %d, shift %d, size %d", sampleRate, shift, size);
     return size;
 
-//#if defined SEC_SWP_SOUND
-//    if (sampleRate == 32000 || sampleRate == 44100 || sampleRate == 48000)
-//        return READ_FRAME_SIZE_STANDARD;
-//    else
-//        return READ_FRAME_SIZE;
-//#else /* SEC_SWP_SOUND */
-//    return 320;
-//#endif /* SEC_SWP_SOUND */
 }
 
 uint32_t AudioHardwareALSA::checkInputSampleRate(uint32_t sampleRate)
@@ -619,6 +634,53 @@ uint32_t AudioHardwareALSA::checkInputSampleRate(uint32_t sampleRate)
     }
     // i is always > 0 here
     return i-1;
+}
+
+status_t AudioHardwareALSA::setMode(int mode)
+{
+    AutoMutex lock(mLock);
+    int prevMode = mMode;
+    status_t status = AudioHardwareBase::setMode(mode);
+    LOGV("setMode() : new %d, old %d", mMode, prevMode);
+    if (status == NO_ERROR) {
+        // make sure that doAudioRouteOrMute() is called by doRouting()
+        // when entering or exiting in call mode even if the new device
+        // selected is the same as current one.
+        if ((prevMode != AudioSystem::MODE_IN_CALL) && (mMode == AudioSystem::MODE_IN_CALL)) {
+            LOGV("setMode() entering call");
+            doRouting_l(AudioSystem::DEVICE_OUT_DEFAULT, true);
+            setVoiceRecordGain_l(false);
+        }
+        if ((prevMode == AudioSystem::MODE_IN_CALL) && (mMode != AudioSystem::MODE_IN_CALL)) {
+            LOGV("setMode() exiting call");
+            doRouting_l(AudioSystem::DEVICE_OUT_DEFAULT, true);
+            if (mOutput != NULL && !mOutput->isActive()) {
+                mOutput->close();
+            }
+        }
+    }
+
+    return status;
+}
+
+int AudioHardwareALSA::setVoiceRecordGain(bool enable)
+{
+    AutoMutex lock(mLock);
+    return setVoiceRecordGain_l(enable);
+}
+
+int AudioHardwareALSA::setVoiceRecordGain_l(bool enable)
+{
+     LOGI("[%s], enable=%d", __func__, enable);
+     if (enable != mVrModeEnabled &&
+         !(enable && (mMode == AudioSystem::MODE_IN_CALL))) {
+         ALSAControl *alsaControl = new ALSAControl();
+         status_t ret = alsaControl->set("Codec Status", enable ? 5 : 4);
+         delete alsaControl;
+         mVrModeEnabled = enable;
+     }
+
+     return NO_ERROR;
 }
 
 // ----------------------------------------------------------------------------
@@ -699,15 +761,6 @@ status_t ALSAStreamOps::set(int      *pformat,
 
 uint32_t ALSAStreamOps::sampleRate() const
 {
-//    unsigned int rate;
-//    int err;
-//
-//    if (! mHandle)
-//        return NO_INIT;
-//
-//    return snd_pcm_hw_params_get_rate(mHardwareParams, &rate, 0) < 0
-//        ? 0 : static_cast<uint32_t>(rate);
-
     return mDefaults->sampleRate;
 }
 
@@ -790,9 +843,6 @@ int ALSAStreamOps::format() const
     int pcmFormatBitWidth;
     int audioSystemFormat;
 
-//    if (!mHandle)
-//        return -1;
-
     if (snd_pcm_hw_params_get_format(mHardwareParams, &ALSAFormat) < 0) {
         return -1;
     }
@@ -868,8 +918,6 @@ status_t ALSAStreamOps::channelCount(int channelCount) {
     if (!mHandle)
         return NO_INIT;
 
-   // if(channelCount == 1) channelCount = 2; //Kamat: This is a fix added to avoid audioflinger crash (current audio driver does not support mono). Please check and modify suitably later.
-
     err = snd_pcm_hw_params_set_channels(mHandle, mHardwareParams, channelCount);
     if (err < 0) {
         LOGE("Unable to set channel count to %i: %s",
@@ -930,6 +978,7 @@ void ALSAStreamOps::close()
     mHandle = NULL;
 
     if (handle) {
+        LOGV("ALSAStreamOps::close()");
         snd_pcm_drain(handle);
         snd_pcm_close(handle);
     }
@@ -1301,7 +1350,6 @@ AudioStreamOutALSA::AudioStreamOutALSA(AudioHardwareALSA *parent) :
 AudioStreamOutALSA::~AudioStreamOutALSA()
 {
     standby();
-    mParent->mOutput = NULL;
 }
 
 
@@ -1338,12 +1386,6 @@ status_t    AudioStreamOutALSA::setParameters(const String8& keyValuePairs)
         mParent->doRouting(device);
 
         param.remove(String8(AudioParameter::keyRouting));
-    }
-    else if (param.getInt(String8(AudioParameter::keySamplingRate), value) == NO_ERROR)
-    {
-        mParent->mOutput->mDefaults->sampleRate = value;
-        mParent->doRouting(mDevice);
-        param.remove(String8(AudioParameter::keySamplingRate));
     }
 
     if (param.size()) {
@@ -1382,6 +1424,7 @@ ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
     size_t            sent = 0;
     status_t          err;
 
+    mParent->lock().lock();
     AutoMutex lock(mLock);
 
     if (!mPowerLock) {
@@ -1390,6 +1433,7 @@ ssize_t AudioStreamOutALSA::write(const void *buffer, size_t bytes)
         acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioOutLock");
         mPowerLock = true;
     }
+    mParent->lock().unlock();
 
     do {
         // write correct number of bytes per attempt
@@ -1422,24 +1466,29 @@ status_t AudioStreamOutALSA::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-status_t AudioStreamOutALSA::setDevice(int mode, uint32_t newDevice, uint32_t audio_mode)
+status_t AudioStreamOutALSA::setDevice(int mode,
+                                       uint32_t newDevice,
+                                       uint32_t audio_mode,
+                                       bool force)
 {
     AutoMutex lock(mLock);
 
     LOGV("AudioStreamOutALSA::setDevice(mode %d, newDevice %x, audio_mode %d), mDevice %x",
          mode, newDevice, audio_mode, mDevice);
-    if (newDevice != mDevice) {
-        mParent->mRoutes[mParent->mMode] = newDevice;
+    if (newDevice != mDevice || force) {
         return ALSAStreamOps::setDevice(mode, newDevice, audio_mode);
     }
     return NO_ERROR;
 }
 
 status_t AudioStreamOutALSA::standby() {
+    AutoMutex _l(mParent->lock());
     AutoMutex lock(mLock);
     LOGD("Inside AudioStreamOutALSA::standby\n");
 
-    ALSAStreamOps::close();
+    if (mParent->mode() != AudioSystem::MODE_IN_CALL) {
+        ALSAStreamOps::close();
+    }
 
     if (mPowerLock) {
         release_wake_lock("AudioOutLock");
@@ -1481,7 +1530,6 @@ AudioStreamInALSA::AudioStreamInALSA(AudioHardwareALSA *parent) :
 AudioStreamInALSA::~AudioStreamInALSA()
 {
     standby();
-    mParent->mInput = NULL;
 }
 
 status_t AudioStreamInALSA::setGain(float gain)
@@ -1497,17 +1545,19 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     snd_pcm_sframes_t n;
     status_t          err;
 
+    mParent->lock().lock();
     AutoMutex lock(mLock);
-
     if (!mPowerLock) {
         acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioInLock");
 
 //        setMicStatus(1);
 
         LOGD("Calling setDevice from read@..%d.\n",__LINE__);
-        ALSAStreamOps::setDevice(mParent->mode(), mDevice,CAPTURE);
+        ALSAStreamOps::setDevice(mParent->mode(), mDevice, CAPTURE);
         mPowerLock = true;
     }
+    mParent->lock().unlock();
+
     if (!mHandle) {
         return -1;
     }
@@ -1560,7 +1610,10 @@ status_t AudioStreamInALSA::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-status_t AudioStreamInALSA::setDevice(int mode, uint32_t newDevice, uint32_t audio_mode)
+status_t AudioStreamInALSA::setDevice(int mode,
+                                      uint32_t newDevice,
+                                      uint32_t audio_mode,
+                                      bool force)
 {
     AutoMutex lock(mLock);
 
@@ -1569,7 +1622,9 @@ status_t AudioStreamInALSA::setDevice(int mode, uint32_t newDevice, uint32_t aud
 
 status_t AudioStreamInALSA::standby()
 {
+    AutoMutex _l(mParent->lock());
     AutoMutex lock(mLock);
+
     LOGD("Entering AudioStreamInALSA::standby\n");
 
     ALSAStreamOps::close();
@@ -1586,14 +1641,21 @@ status_t AudioStreamInALSA::standby()
 status_t    AudioStreamInALSA::setParameters(const String8& keyValuePairs)
 {
     AudioParameter param = AudioParameter(keyValuePairs);
-    String8 key = String8(AudioParameter::keyRouting);
+    String8 key = String8("vr_mode");
     status_t status = NO_ERROR;
-    int device;
+    int value;
     LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
 
-    if (param.getInt(key, device) == NO_ERROR) {
-        if(mHandle != NULL && device != 0)
-            setDevice(mParent->mode(), device, CAPTURE);
+
+    if (param.getInt(key, value) == NO_ERROR) {
+        mParent->setVoiceRecordGain((value != 0));
+        param.remove(key);
+    }
+
+    key = String8(AudioParameter::keyRouting);
+    if (param.getInt(key, value) == NO_ERROR) {
+        if(mHandle != NULL && value != 0)
+            setDevice(mParent->mode(), value, CAPTURE);
         param.remove(key);
     }
 
