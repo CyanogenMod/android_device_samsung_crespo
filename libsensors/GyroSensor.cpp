@@ -143,7 +143,6 @@ again:
 #endif
     while (count && mInputReader.readEvent(&event)) {
         int type = event->type;
-        //        LOGE("GyroSensor::readEvents() event type = %d, code = %d, value = %d", event->type, event->code, event->value);
         if (type == EV_ABS) {
             float value = event->value;
             if (event->code == EVENT_TYPE_GYRO_X) {
@@ -170,14 +169,12 @@ again:
 #if FETCH_FULL_EVENT_BEFORE_RETURN
     /* if we didn't read a complete event, see if we can fill and
        try again instead of returning with nothing and redoing poll. */
-    if (numEventReceived == 0) {
+    if (numEventReceived == 0 && mEnabled == 1) {
         n = mInputReader.fill(data_fd);
         if (n)
             goto again;
     }
 #endif
-
-    LOGI("GyroSensor::readEvents() returning count %d", numEventReceived);
 
     return numEventReceived;
 }
