@@ -14,6 +14,11 @@
 ** limitations under the License.
 */
 
+#define LOG_TAG "alsa_pcm"
+//#define LOG_NDEBUG 0
+#include <cutils/log.h>
+#include <cutils/config_utils.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -236,7 +241,6 @@ int pcm_write(struct pcm *pcm, void *data, unsigned count)
                 return oops(pcm, errno, "cannot prepare channel");
             if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
                 return oops(pcm, errno, "cannot write initial data");
-            fprintf(stderr,"RUNNING\n");
             pcm->running = 1;
             return 0;
         }
@@ -249,7 +253,6 @@ int pcm_write(struct pcm *pcm, void *data, unsigned count)
             }
             return oops(pcm, errno, "cannot write stream data");
         }
-        fprintf(stderr,".");
         return 0;
     }
 }
@@ -264,13 +267,13 @@ int pcm_read(struct pcm *pcm, void *data, unsigned count)
     x.buf = data;
     x.frames = (pcm->flags & PCM_MONO) ? (count / 2) : (count / 4);
 
+//    LOGV("read() %d frames", x.frames);
     for (;;) {
         if (!pcm->running) {
             if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_PREPARE))
                 return oops(pcm, errno, "cannot prepare channel");
             if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_START))
                 return oops(pcm, errno, "cannot start channel");
-            fprintf(stderr,"RUNNING\n");
             pcm->running = 1;
             return 0;
         }
@@ -283,7 +286,7 @@ int pcm_read(struct pcm *pcm, void *data, unsigned count)
             }
             return oops(pcm, errno, "cannot read stream data");
         }
-        fprintf(stderr,".");
+//        LOGV("read() got %d frames", x.frames);
         return 0;
     }
 }
@@ -312,7 +315,10 @@ struct pcm *pcm_open(unsigned flags)
     struct snd_pcm_info info;
     struct snd_pcm_hw_params params;
     struct snd_pcm_sw_params sparams;
-    unsigned bufsz = 8192;
+    unsigned period_sz;
+    unsigned period_cnt;
+
+    LOGV("pcm_open(0x%08x)",flags);
 
     pcm = calloc(1, sizeof(struct pcm));
     if (!pcm)
@@ -323,6 +329,13 @@ struct pcm *pcm_open(unsigned flags)
     } else {
         dname = "/dev/snd/pcmC0D0p";
     }
+
+    LOGV("pcm_open() period sz multiplier %d",
+         ((flags & PCM_PERIOD_SZ_MASK) >> PCM_PERIOD_SZ_SHIFT) + 1);
+    period_sz = 128 * (((flags & PCM_PERIOD_SZ_MASK) >> PCM_PERIOD_SZ_SHIFT) + 1);
+    LOGV("pcm_open() period cnt %d",
+         ((flags & PCM_PERIOD_CNT_MASK) >> PCM_PERIOD_CNT_SHIFT) + PCM_PERIOD_CNT_MIN);
+    period_cnt = ((flags & PCM_PERIOD_CNT_MASK) >> PCM_PERIOD_CNT_SHIFT) + PCM_PERIOD_CNT_MIN;
 
     pcm->flags = flags;
     pcm->fd = open(dname, O_RDWR);
@@ -337,6 +350,9 @@ struct pcm *pcm_open(unsigned flags)
     }
     info_dump(&info);
 
+    LOGV("pcm_open() period_cnt %d period_sz %d channels %d",
+         period_cnt, period_sz, (flags & PCM_MONO) ? 1 : 2);
+
     param_init(&params);
     param_set_mask(&params, SNDRV_PCM_HW_PARAM_ACCESS,
                    SNDRV_PCM_ACCESS_RW_INTERLEAVED);
@@ -344,13 +360,13 @@ struct pcm *pcm_open(unsigned flags)
                    SNDRV_PCM_FORMAT_S16_LE);
     param_set_mask(&params, SNDRV_PCM_HW_PARAM_SUBFORMAT,
                    SNDRV_PCM_SUBFORMAT_STD);
-    param_set_min(&params, SNDRV_PCM_HW_PARAM_BUFFER_BYTES, bufsz);
+    param_set_min(&params, SNDRV_PCM_HW_PARAM_PERIOD_SIZE, period_sz);
     param_set_int(&params, SNDRV_PCM_HW_PARAM_SAMPLE_BITS, 16);
     param_set_int(&params, SNDRV_PCM_HW_PARAM_FRAME_BITS,
                   (flags & PCM_MONO) ? 16 : 32);
     param_set_int(&params, SNDRV_PCM_HW_PARAM_CHANNELS,
                   (flags & PCM_MONO) ? 1 : 2);
-    param_set_int(&params, SNDRV_PCM_HW_PARAM_PERIODS, 2);
+    param_set_int(&params, SNDRV_PCM_HW_PARAM_PERIODS, period_cnt);
     param_set_int(&params, SNDRV_PCM_HW_PARAM_RATE, 44100);
 
     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_HW_PARAMS, &params)) {
@@ -363,9 +379,9 @@ struct pcm *pcm_open(unsigned flags)
     sparams.tstamp_mode = SNDRV_PCM_TSTAMP_NONE;
     sparams.period_step = 1;
     sparams.avail_min = 1;
-    sparams.start_threshold = bufsz / 4;
-    sparams.stop_threshold = bufsz / 4;
-    sparams.xfer_align = bufsz / 8; /* needed for old kernels */
+    sparams.start_threshold = period_cnt * period_sz;
+    sparams.stop_threshold = period_cnt * period_sz;
+    sparams.xfer_align = period_sz / 2; /* needed for old kernels */
     sparams.silence_size = 0;
     sparams.silence_threshold = 0;
 
@@ -374,7 +390,7 @@ struct pcm *pcm_open(unsigned flags)
         goto fail;
     }
 
-    pcm->buffer_size = bufsz / 2;
+    pcm->buffer_size = period_cnt * period_sz;
     pcm->underruns = 0;
     return pcm;
 
