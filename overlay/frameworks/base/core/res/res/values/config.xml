@@ -24,6 +24,9 @@
          config_hardware_automatic_brightness_available is not set, so we will use software implementation -->
     <bool name="config_automatic_brightness_available">true</bool>
 
+    <!-- There is no charging LED. -->
+    <bool name="config_unplugTurnsOnScreen">true</bool>
+
     <!-- disable menu hard key on Crespo in non-pattern lockscreen -->
     <bool name="config_disableMenuKeyInLockScreen">true</bool>
 
