@@ -83,7 +83,7 @@ int play_file(unsigned rate, unsigned channels, int fd, unsigned count)
         
             /* HACK: remove */
         if (ctl) {
-            mixer_ctl_select(ctl, "SPK");
+            //mixer_ctl_select(ctl, "SPK");
             ctl = 0;
         }
     }
