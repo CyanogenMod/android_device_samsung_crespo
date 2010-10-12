@@ -1,5 +1,5 @@
-key 42    VOLUME_UP
-key 58    VOLUME_DOWN
+key 42    VOLUME_UP         WAKE
+key 58    VOLUME_DOWN       WAKE
 key 50    HOME              WAKE_DROPPED
 key 26    ENDCALL           WAKE_DROPPED
 key 34    BACK              WAKE_DROPPED
