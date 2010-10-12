@@ -1156,6 +1156,7 @@ status_t ALSAStreamOps::setDevice(int mode, uint32_t device, uint audio_mode)
         return NO_INIT;
     }
 
+
     //
     // Some devices do not have the default two channels.  Force an error to
     // prevent AudioMixer from crashing and taking the whole system down.
@@ -1202,11 +1203,11 @@ status_t ALSAStreamOps::setDevice(int mode, uint32_t device, uint audio_mode)
             return NO_INIT;
         }
     }
-    err = snd_pcm_hw_params_get_period_size (mHardwareParams, &periodSize, NULL);
-    if (err < 0) {
-        LOGE("Unable to get the period size for latency: %s", snd_strerror(err));
-        return NO_INIT;
-    }
+//    err = snd_pcm_hw_params_get_period_size (mHardwareParams, &periodSize, NULL);
+//    if (err < 0) {
+//        LOGE("Unable to get the period size for latency: %s", snd_strerror(err));
+//        return NO_INIT;
+//    }
 
 //    // Setup buffers for latency
 //    err = snd_pcm_hw_params_set_buffer_time_near (mHandle, mHardwareParams,
