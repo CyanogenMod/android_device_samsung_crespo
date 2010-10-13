@@ -59,7 +59,6 @@ BOARD_CAMERA_LIBRARIES := libcamera
 endif
 
 BOARD_USES_HGL := true
-BOARD_USES_COPYBIT := false
 BOARD_USES_OVERLAY := true
 
 DEFAULT_FB_NUM := 2
