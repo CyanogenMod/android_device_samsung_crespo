@@ -475,7 +475,7 @@ static int fimc_v4l2_streamoff(int fp)
     int ret;
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGE("%s()", __func__);
+    LOGV("%s :", __func__);
 #endif
     ret = ioctl(fp, VIDIOC_STREAMOFF, &type);
     if (ret < 0) {
@@ -530,7 +530,7 @@ static int fimc_v4l2_g_ctrl(int fp, unsigned int id)
 
     ret = ioctl(fp, VIDIOC_G_CTRL, &ctrl);
     if (ret < 0) {
-        LOGE("ERR(%s):VIDIOC_G_CTRL failed\n", __func__);
+        LOGE("ERR(%s):VIDIOC_G_CTRL(id = 0x%x) failed\n", __func__, id);
         return ret;
     }
 
@@ -679,23 +679,23 @@ SecCamera::SecCamera() :
             m_esd_check_count(0)
 #endif // ENABLE_ESD_PREVIEW_CHECK
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 }
 
 int SecCamera::flagCreate(void) const
 {
-    LOGV("%s() : %d", __func__, m_flag_init);
+    LOGV("%s : : %d", __func__, m_flag_init);
     return m_flag_init;
 }
 
 SecCamera::~SecCamera()
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 }
 
 int SecCamera::initCamera(int index)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
     int ret = 0;
 
     if (!m_flag_init) {
@@ -831,14 +831,14 @@ int SecCamera::initCamera(int index)
 
 void SecCamera::resetCamera()
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
     DeinitCamera();
     initCamera(m_camera_id);
 }
 
 void SecCamera::DeinitCamera()
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     if (m_flag_init) {
 #ifndef JPEG_FROM_SENSOR
@@ -895,9 +895,9 @@ int SecCamera::flagPreviewStart(void)
 int SecCamera::startPreview(void)
 {
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
-    LOGE("%s()", __func__);
+    LOGE("%s :", __func__);
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
     // aleady started
@@ -934,7 +934,7 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGE("%s()m_preview_width: %d m_preview_height: %d m_angle: %d\n",
+    LOGV("%s : m_preview_width: %d m_preview_height: %d m_angle: %d\n",
             __func__, m_preview_width, m_preview_height, m_angle);
 
     ret = fimc_v4l2_s_ctrl(m_cam_fd,
@@ -1037,7 +1037,7 @@ int SecCamera::startPreview(void)
 
 int SecCamera::stopPreview(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     close_buffers(m_buffers_c);
 
@@ -1045,6 +1045,9 @@ int SecCamera::stopPreview(void)
         LOGE("%s: m_flag_camera_start is zero", __func__);
         return 0;
     }
+
+    /* if auto focus wasn't complete by now, stop it */
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_OFF);
 
 #ifdef ENABLE_HDMI_DISPLAY
     hdmi_deinitialize();
@@ -1068,7 +1071,7 @@ int SecCamera::stopPreview(void)
 #ifdef DUAL_PORT_RECORDING
 int SecCamera::startRecord(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     // aleady started
     if (m_flag_record_start > 0) {
@@ -1139,7 +1142,7 @@ int SecCamera::stopRecord(void)
     if (m_flag_record_start == 0)
         return 0;
 
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     close_buffers(m_buffers_c2);
 
@@ -1407,7 +1410,7 @@ int SecCamera::getPreviewPixelFormat(void)
  */
 int SecCamera::setSnapshotCmd(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     int ret = 0;
 
@@ -1463,7 +1466,7 @@ int SecCamera::setSnapshotCmd(void)
  */
 unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     int index, ret = 0;
     unsigned char *addr;
@@ -1633,7 +1636,7 @@ void SecCamera::SetJpgAddr(unsigned char *addr)
 int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
                                             unsigned int *output_size)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     int index;
     //unsigned int addr;
@@ -1852,24 +1855,23 @@ int SecCamera::setSnapshotPixelFormat(int pixel_format)
         m_snapshot_v4lformat = v4lpixelformat;
     }
 
-
 #if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
     if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV420)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_YUV420", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_YUV420", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12T)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV21)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV422P)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUYV)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_UYVY)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_RGB565)
-        LOGE("%s():SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
+        LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
     else
         LOGE("SnapshotFormat:UnknownFormat");
 #endif
@@ -1928,7 +1930,7 @@ int SecCamera::getCameraId(void)
 
 int SecCamera::setAutofocus(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     if (m_cam_fd <= 0) {
@@ -1940,6 +1942,7 @@ int SecCamera::setAutofocus(void)
             LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SET_AUTO_FOCUS", __func__);
         return -1;
     }
+
 #else
     // kcoolsw : turn on setAutofocus initially..
     if (m_autofocus != AUTO_FOCUS_ON) {
@@ -1953,14 +1956,17 @@ int SecCamera::setAutofocus(void)
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
 int SecCamera::getAutoFocusResult(void)
 {
-    int af_result = 0;
+    int af_result;
 
     af_result = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_AUTO_FOCUS_RESULT);
+
+    LOGV("%s : returning %d", __func__, af_result);
+
     return af_result;
 }
 int SecCamera::cancelAutofocus(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);
@@ -1972,8 +1978,6 @@ int SecCamera::cancelAutofocus(void)
         return -1;
     }
 
-    usleep(1000);
-
     return 0;
 }
 #endif
@@ -1981,13 +1985,13 @@ int SecCamera::cancelAutofocus(void)
 
 int SecCamera::zoomIn(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
     return 0;
 }
 
 int SecCamera::zoomOut(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
     return 0;
 }
 
@@ -2039,7 +2043,7 @@ int SecCamera::SetRotate(int angle)
 
 int SecCamera::getRotate(void)
 {
-    LOGV("%s():angle(%d)", __func__, m_angle);
+    LOGV("%s : angle(%d)", __func__, m_angle);
     return m_angle;
 }
 
@@ -2074,7 +2078,7 @@ void SecCamera::setJpegQuality(int quality)
 
 int SecCamera::setVerticalMirror(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);
@@ -2091,7 +2095,7 @@ int SecCamera::setVerticalMirror(void)
 
 int SecCamera::setHorizontalMirror(void)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);
@@ -2138,7 +2142,7 @@ int SecCamera::setWhiteBalance(int white_balance)
 
 int SecCamera::getWhiteBalance(void)
 {
-    LOGV("%s():white_balance(%d)", __func__, m_white_balance);
+    LOGV("%s : white_balance(%d)", __func__, m_white_balance);
     return m_white_balance;
 }
 
@@ -2172,7 +2176,7 @@ int SecCamera::setBrightness(int brightness)
 
 int SecCamera::getBrightness(void)
 {
-    LOGV("%s():brightness(%d)", __func__, m_brightness);
+    LOGV("%s : brightness(%d)", __func__, m_brightness);
     return m_brightness;
 }
 
@@ -2208,7 +2212,7 @@ int SecCamera::setImageEffect(int image_effect)
 
 int SecCamera::getImageEffect(void)
 {
-    LOGV("%s():image_effect(%d)", __func__, m_image_effect);
+    LOGV("%s : image_effect(%d)", __func__, m_image_effect);
     return m_image_effect;
 }
 
@@ -2655,7 +2659,7 @@ int SecCamera::getAutosceneStatus(void)
             return -1;
         }
     }
-    //LOGV("%s()    autoscene_status (%d)", __func__, autoscene_status);
+    //LOGV("%s :    autoscene_status (%d)", __func__, autoscene_status);
     return autoscene_status;
 }
 //======================================================================
@@ -3115,7 +3119,7 @@ int SecCamera::getCameraSensorESDStatus(void)
 #ifndef JPEG_FROM_SENSOR
 unsigned char* SecCamera::getJpeg(unsigned char *snapshot_data, int snapshot_size, int *size)
 {
-    LOGV("%s()", __func__);
+    LOGV("%s :", __func__);
 
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);

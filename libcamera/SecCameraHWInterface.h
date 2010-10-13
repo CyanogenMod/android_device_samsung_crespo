@@ -139,6 +139,7 @@ private:
     mutable Mutex       mLock;
 
     CameraParameters    mParameters;
+    CameraParameters    mInternalParameters;
 
     sp<MemoryHeapBase>  mPreviewHeap;
     sp<MemoryHeapBase>  mRawHeap;
