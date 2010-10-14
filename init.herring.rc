@@ -124,7 +124,8 @@ service hciattach /system/bin/brcm_patchram_plus -d --enable_hci --enable_lpm \
     disabled
     oneshot
 
+# bugreport is triggered by holding down volume down, volume up and power
 service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
     disabled
     oneshot
-    keycodes 114 115
+    keycodes 114 115 116
