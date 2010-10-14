@@ -377,16 +377,6 @@ status_t AudioHardwareALSA::setMasterVolume(float volume)
         return INVALID_OPERATION;
 }
 
-int AudioHardwareALSA::setMicStatus(int on)
-{
-    LOGI("[%s], on=%d", __func__, on);
-    ALSAControl *mALSAControl = new ALSAControl();
-    status_t ret =  mALSAControl->set("Mic Status", on);
-    delete mALSAControl;
-    return NO_ERROR;
-}
-
-
 AudioStreamOut *
 AudioHardwareALSA::openOutputStream(
                         uint32_t devices,
@@ -482,7 +472,6 @@ exit:
         // Some information is expected to be available immediately after
         // the device is open.
         mInput->setDevice(mMode, devices, CAPTURE);  /* Tushar - as per modified arch */
-        setMicStatus(1);
     } else if (in != NULL) {
         delete in;
     }
@@ -505,7 +494,6 @@ AudioHardwareALSA::closeInputStream(AudioStreamIn* in)
             return;
         } else {
             mInput = 0;
-            setMicStatus(0);
         }
     }
     delete in;
@@ -693,7 +681,7 @@ int AudioHardwareALSA::setVoiceRecordGain_l(bool enable)
      if (enable != mVrModeEnabled &&
          !(enable && (mMode == AudioSystem::MODE_IN_CALL))) {
          ALSAControl *alsaControl = new ALSAControl();
-         status_t ret = alsaControl->set("Codec Status", enable ? 5 : 4);
+         status_t ret = alsaControl->set("Recognition Control", enable ? RECOGNITION_ON : RECOGNITION_OFF);
          delete alsaControl;
          mVrModeEnabled = enable;
      }
@@ -1565,8 +1553,6 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     AutoMutex lock(mLock);
     if (!mPowerLock) {
         acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioInLock");
-
-//        setMicStatus(1);
 
         LOGD("Calling setDevice from read@..%d.\n",__LINE__);
         ALSAStreamOps::setDevice(mParent->mode(), mDevice, CAPTURE);
