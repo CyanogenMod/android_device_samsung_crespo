@@ -209,7 +209,8 @@ AudioHardwareALSA::AudioHardwareALSA() :
     mInput(0),
     mSecRilLibHandle(NULL),
     mRilClient(0),
-    mVrModeEnabled(false)
+    mVrModeEnabled(false),
+    mActivatedCP(false)
 {
     snd_lib_error_set_handler(&ALSAErrorHandler);
     mMixer = new ALSAMixer;
@@ -259,10 +260,12 @@ void AudioHardwareALSA::loadRILD(void)
                               dlsym(mSecRilLibHandle, "SetCallVolume");
         setCallAudioPath = (int (*)(HRilClient, AudioPath))
                               dlsym(mSecRilLibHandle, "SetCallAudioPath");
+        setCallClockSync = (int (*)(HRilClient, SoundClockCondition))
+                              dlsym(mSecRilLibHandle, "SetCallClockSync");
 
         if (!openClientRILD  || !disconnectRILD   || !closeClientRILD ||
             !isConnectedRILD || !connectRILD      ||
-            !setCallVolume   || !setCallAudioPath) {
+            !setCallVolume   || !setCallAudioPath || !setCallClockSync) {
             LOGE("Can't load all functions from libsecril-client.so");
 
             dlclose(mSecRilLibHandle);
@@ -298,7 +301,7 @@ status_t AudioHardwareALSA::connectRILDIfRequired(void)
         return INVALID_OPERATION;
     }
 
-    if (isConnectedRILD(mRilClient) == 0) {
+    if (isConnectedRILD(mRilClient)) {
         return OK;
     }
 
@@ -570,6 +573,21 @@ status_t AudioHardwareALSA::doRouting_l(uint32_t device, bool force)
         }
 
         ret = mOutput->setDevice(mode, device, PLAYBACK, force);
+
+        if (mSecRilLibHandle && (connectRILDIfRequired() == OK) ) {
+            if (AudioSystem::MODE_IN_CALL == mode) {
+                if (!mActivatedCP) {
+                    setCallClockSync(mRilClient, SOUND_CLOCK_START);
+                    mActivatedCP = true;
+                }
+            }
+
+            if (AudioSystem::MODE_NORMAL == mode) {
+                if(mActivatedCP)
+                    mActivatedCP = false;
+            }
+        }
+
 
         return ret;
     }
@@ -1188,21 +1206,18 @@ status_t ALSAStreamOps::setDevice(int mode, uint32_t device, uint audio_mode)
         return NO_INIT;
     }
 
-//    if(audio_mode == PLAYBACK) {
-//      period_val = PERIODS_PLAYBACK;
-//    }
-//    else {
-//      period_val = PERIODS_CAPTURE;
-//    }
-    // not working for capture ?
-    if (mDefaults->direction == SND_PCM_STREAM_PLAYBACK) {
-        if(snd_pcm_hw_params_set_periods(mHandle, mHardwareParams,
-                                         period_val, mDefaults->direction) < 0) {
-            LOGE("Fail to set period size %d for %d direction",
-                 period_val, mDefaults->direction);
-            return NO_INIT;
-        }
+    err = snd_pcm_hw_params_set_period_size (mHandle, mHardwareParams, periodSize, NULL);
+    if (err < 0) {
+        LOGE("Unable to set the period size for latency: %s", snd_strerror(err));
+        return NO_INIT;
     }
+
+    err = snd_pcm_hw_params_get_period_size (mHardwareParams, &periodSize, NULL);
+    if (err < 0) {
+        LOGE("Unable to get the period size for latency: %s", snd_strerror(err));
+        return NO_INIT;
+    }
+
 //    err = snd_pcm_hw_params_get_period_size (mHardwareParams, &periodSize, NULL);
 //    if (err < 0) {
 //        LOGE("Unable to get the period size for latency: %s", snd_strerror(err));
