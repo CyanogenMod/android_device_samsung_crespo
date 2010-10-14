@@ -40,8 +40,8 @@
 #define LATENCY_PLAYBACK_MS  ((BUFFER_SZ_PLAYBACK * 1000 / DEFAULT_SAMPLE_RATE) * 1000)
 
 #define CAPTURE     1
-#define PERIOD_SZ_CAPTURE   2048
-#define PERIODS_CAPTURE     2
+#define PERIOD_SZ_CAPTURE   1024
+#define PERIODS_CAPTURE     4
 #define BUFFER_SZ_CAPTURE   (PERIODS_CAPTURE * PERIOD_SZ_CAPTURE)
 #define LATENCY_CAPTURE_MS  ((BUFFER_SZ_CAPTURE * 1000 / DEFAULT_SAMPLE_RATE) * 1000)
 
@@ -344,6 +344,7 @@ namespace android
             void                   *mSecRilLibHandle;
             HRilClient              mRilClient;
             bool                    mVrModeEnabled;
+            bool                    mActivatedCP;
 
             HRilClient (*openClientRILD)  (void);
             int        (*disconnectRILD)  (HRilClient);
@@ -352,6 +353,7 @@ namespace android
             int        (*connectRILD)     (HRilClient);
             int        (*setCallVolume)   (HRilClient, SoundType, int);
             int        (*setCallAudioPath)(HRilClient, AudioPath);
+            int        (*setCallClockSync)(HRilClient, SoundClockCondition);
 
             void                    loadRILD(void);
             status_t                connectRILDIfRequired(void);
