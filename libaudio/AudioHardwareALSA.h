@@ -45,6 +45,10 @@
 #define BUFFER_SZ_CAPTURE   (PERIODS_CAPTURE * PERIOD_SZ_CAPTURE)
 #define LATENCY_CAPTURE_MS  ((BUFFER_SZ_CAPTURE * 1000 / DEFAULT_SAMPLE_RATE) * 1000)
 
+//Recognition param
+#define RECOGNITION_OFF	0
+#define RECOGNITION_ON	1
+
 namespace android
 {
 
@@ -292,7 +296,6 @@ namespace android
             virtual size_t          getInputBufferSize(uint32_t sampleRate,
                                                        int format,
                                                        int channelCount);
-            virtual int             setMicStatus(int on);   // To deliver status of input stream(activated or not). If it's activated, doesn't turn off codec.
 
             /** This method creates and opens the audio hardware output stream */
             virtual AudioStreamOut* openOutputStream(uint32_t devices,
