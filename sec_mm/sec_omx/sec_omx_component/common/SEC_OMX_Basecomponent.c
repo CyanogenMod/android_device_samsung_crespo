@@ -585,7 +585,7 @@ static OMX_ERRORTYPE SEC_SetPortFlush(SEC_OMX_BASECOMPONENT *pSECComponent, OMX_
     OMX_ERRORTYPE     ret = OMX_ErrorNone;
     SEC_OMX_BASEPORT *pSECPort = NULL;
     OMX_U32           portIndex = nParam;
-    OMX_U16           i = 0, cnt = 0;
+    OMX_U16           i = 0, cnt = 0, index = 0;
 
 
     if ((pSECComponent->currentState == OMX_StateExecuting) ||
@@ -599,7 +599,14 @@ static OMX_ERRORTYPE SEC_SetPortFlush(SEC_OMX_BASECOMPONENT *pSECComponent, OMX_
         /*********************
         *    need flush event set ?????
         **********************/
-
+        cnt = (portIndex == ALL_PORT_INDEX ) ? ALL_PORT_NUM : 1;
+        for (i = 0; i < cnt; i++) {
+            if (portIndex == ALL_PORT_INDEX)
+                index = i;
+            else
+                index = portIndex;
+            pSECComponent->pSECPort[index].bIsPortFlushed = OMX_TRUE;
+        }
     } else {
         ret = OMX_ErrorIncorrectStateOperation;
         goto EXIT;
@@ -676,10 +683,12 @@ static OMX_ERRORTYPE SEC_SetPortDisable(SEC_OMX_BASECOMPONENT *pSECComponent, OM
                 goto EXIT;
             }
             pSECPort->portState = OMX_StateLoaded;
+            pSECPort->bIsPortDisabled = OMX_TRUE;
         }
     } else {
         pSECPort = &pSECComponent->pSECPort[portIndex];
         pSECPort->portState = OMX_StateLoaded;
+        pSECPort->bIsPortDisabled = OMX_TRUE;
     }
     ret = OMX_ErrorNone;
 
