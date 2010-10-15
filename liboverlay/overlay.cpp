@@ -1309,6 +1309,7 @@ int overlay_queueBuffer(struct overlay_data_device_t *dev,
         enable_streaming(ctx->shared, ctx->ctl_fd);
     }
 
+    if (!ctx->shared->controlReady) return -1;
     int rc = v4l2_overlay_q_buf( ctx->ctl_fd, (int)buffer, (int) ctx->zerocopy );
     if (rc == 0 && ctx->qd_buf_count < ctx->num_buffers) {
         ctx->qd_buf_count ++;
