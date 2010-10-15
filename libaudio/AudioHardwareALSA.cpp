@@ -2128,7 +2128,7 @@ status_t ALSAControl::set(const char *name, unsigned int value, int index)
     snd_ctl_elem_info_get_id(info, id);
     snd_ctl_elem_type_t type = snd_ctl_elem_info_get_type(info);
     unsigned int count = snd_ctl_elem_info_get_count(info);
-    if ((unsigned int)index >= count) return BAD_VALUE;
+    if (index >= (int)count) return BAD_VALUE;
 
     if (index == -1)
         index = 0; // Range over all of them
