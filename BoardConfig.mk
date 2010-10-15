@@ -22,6 +22,8 @@ BOARD_USES_GENERIC_AUDIO := false
 
 BOARD_USES_LIBSECRIL_STUB := true
 
+BOARD_NO_PAGE_FLIPPING := true
+
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/BoardConfigVendor.mk
 
