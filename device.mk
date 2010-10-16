@@ -121,7 +121,7 @@ PRODUCT_PACKAGES += \
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/qt602240_ts_input.idc:system/usr/idc/qt602240_ts_input.idc
+	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
