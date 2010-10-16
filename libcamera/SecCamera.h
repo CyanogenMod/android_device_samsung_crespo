@@ -215,155 +215,7 @@ public:
         CAMERA_ID_FRONT = 1,
     };
 
-    enum AUTO_FOCUS {
-        AUTO_FOCUS_OFF = 0,
-        AUTO_FOCUS_ON,
-        AUTO_FOCUS_MAX,
-    };
-
-    enum WHILTE_BALANCE {
-        #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-        WHITE_BALANCE_BASE,
-        WHITE_BALANCE_AUTO,
-        WHITE_BALANCE_DAYLIGHT,
-        WHITE_BALANCE_CLOUDY,
-        WHITE_BALANCE_INCANDESCENT,
-        WHITE_BALANCE_FLUORESCENT,
-        WHITE_BALANCE_MAX,
-        #else
-        WHITE_BALANCE_AUTO,
-        WHITE_BALANCE_INDOOR3100,
-        WHITE_BALANCE_OUTDOOR5100,
-        WHITE_BALANCE_INDOOR2000,
-        WHITE_BALANCE_HALT,
-        WHITE_BALANCE_CLOUDY,
-        WHITE_BALANCE_SUNNY,
-        #endif
-    };
-
-    enum BRIGHTNESS {
-        BRIGHTNESS_MINUS_4= 0,
-        BRIGHTNESS_MINUS_3,
-        BRIGHTNESS_MINUS_2,
-        BRIGHTNESS_MINUS_1,
-        BRIGHTNESS_NORMAL,
-        BRIGHTNESS_PLUS_1,
-        BRIGHTNESS_PLUS_2,
-        BRIGHTNESS_PLUS_3,
-        BRIGHTNESS_PLUS_4,
-    };
-
-    enum IMAGE_EFFECT {
-        #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-        IMAGE_EFFECT_BASE,
-        IMAGE_EFFECT_NONE,
-        IMAGE_EFFECT_BNW,
-        IMAGE_EFFECT_SEPIA,
-        IMAGE_EFFECT_AQUA,
-        IMAGE_EFFECT_ANTIQUE,
-        IMAGE_EFFECT_NEGATIVE,
-        IMAGE_EFFECT_SHARPEN,
-        IMAGE_EFFECT_MAX,
-        #else
-        IMAGE_EFFECT_ORIGINAL,
-        IMAGE_EFFECT_ARBITRARY,
-        IMAGE_EFFECT_NEGATIVE,
-        IMAGE_EFFECT_FREEZE,
-        IMAGE_EFFECT_EMBOSSING,
-        IMAGE_EFFECT_SILHOUETTE,
-        #endif
-    };
-
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    enum SCENE_MODE {
-        SCENE_MODE_BASE,
-        SCENE_MODE_NONE,
-        SCENE_MODE_PORTRAIT,
-        SCENE_MODE_NIGHTSHOT,
-        SCENE_MODE_BACK_LIGHT,
-        SCENE_MODE_LANDSCAPE,
-        SCENE_MODE_SPORTS,
-        SCENE_MODE_PARTY_INDOOR,
-        SCENE_MODE_BEACH_SNOW,
-        SCENE_MODE_SUNSET,
-        SCENE_MODE_DUSK_DAWN,
-        SCENE_MODE_FALL_COLOR,
-        SCENE_MODE_FIREWORKS,
-        SCENE_MODE_TEXT,
-        SCENE_MODE_CANDLE_LIGHT,
-        SCENE_MODE_MAX,
-    };
-
-    enum FLASH_MODE {
-        FLASH_MODE_BASE,
-        FLASH_MODE_OFF,
-        FLASH_MODE_AUTO,
-        FLASH_MODE_ON,
-        FLASH_MODE_TORCH,
-        FLASH_MODE_MAX,
-    };
-
-    enum ISO {
-        ISO_AUTO,
-        ISO_50,
-        ISO_100,
-        ISO_200,
-        ISO_400,
-        ISO_800,
-        ISO_1600,
-        ISO_SPORTS,
-        ISO_NIGHT,
-        ISO_MOVIE,
-        ISO_MAX,
-    };
-
-    enum METERING {
-        METERING_BASE = 0,
-        METERING_MATRIX,
-        METERING_CENTER,
-        METERING_SPOT,
-        METERING_MAX,
-    };
-
-    enum CONTRAST {
-        CONTRAST_MINUS_2 = 0,
-        CONTRAST_MINUS_1,
-        CONTRAST_NORMAL,
-        CONTRAST_PLUS_1,
-        CONTRAST_PLUS_2,
-        CONTRAST_MAX,
-    };
-
-    enum SATURATION {
-        SATURATION_MINUS_2= 0,
-        SATURATION_MINUS_1,
-        SATURATION_NORMAL,
-        SATURATION_PLUS_1,
-        SATURATION_PLUS_2,
-        SATURATION_MAX,
-    };
-
-    enum SHARPNESS {
-        SHARPNESS_MINUS_2 = 0,
-        SHARPNESS_MINUS_1,
-        SHARPNESS_NORMAL,
-        SHARPNESS_PLUS_1,
-        SHARPNESS_PLUS_2,
-        SHARPNESS_MAX,
-    };
-
-    enum WDR {
-        WDR_OFF,
-        WDR_ON,
-        WDR_MAX,
-    };
-
-    enum ANTI_SHAKE {
-        ANTI_SHAKE_OFF,
-        ANTI_SHAKE_ON,
-        ANTI_SHAKE_MAX,
-    };
-
     enum JPEG_QUALITY {
         JPEG_QUALITY_ECONOMY    = 0,
         JPEG_QUALITY_NORMAL     = 50,
@@ -371,126 +223,10 @@ public:
         JPEG_QUALITY_MAX,
     };
 
-    enum ZOOM_LEVEL {
-        ZOOM_LEVEL_0 = 0,
-        ZOOM_LEVEL_1,
-        ZOOM_LEVEL_2,
-        ZOOM_LEVEL_3,
-        ZOOM_LEVEL_4,
-        ZOOM_LEVEL_5,
-        ZOOM_LEVEL_6,
-        ZOOM_LEVEL_7,
-        ZOOM_LEVEL_8,
-        ZOOM_LEVEL_9,
-        ZOOM_LEVEL_10,
-        ZOOM_LEVEL_11,
-        ZOOM_LEVEL_12,
-        ZOOM_LEVEL_MAX,
-    };
-
     enum OBJECT_TRACKING {
         OBJECT_TRACKING_OFF,
         OBJECT_TRACKING_ON,
         OBJECT_TRACKING_MAX,
-    };
-
-    enum OBJECT_TRACKING_STAUS {
-        OBJECT_TRACKING_STATUS_BASE,
-        OBJECT_TRACKING_STATUS_PROGRESSING,
-        OBJECT_TRACKING_STATUS_SUCCESS,
-        OBJECT_TRACKING_STATUS_FAIL,
-        OBJECT_TRACKING_STATUS_MISSING,
-        OBJECT_TRACKING_STATUS_MAX,
-    };
-
-    enum SMART_AUTO {
-        SMART_AUTO_OFF,
-        SMART_AUTO_ON,
-        SMART_AUTO_MAX,
-    };
-
-    enum BEAUTY_SHOT {
-        BEAUTY_SHOT_OFF,
-        BEAUTY_SHOT_ON,
-        BEAUTY_SHOT_MAX,
-    };
-
-    enum VINTAGE_MODE {
-        VINTAGE_MODE_BASE,
-        VINTAGE_MODE_OFF,
-        VINTAGE_MODE_NORMAL,
-        VINTAGE_MODE_WARM,
-        VINTAGE_MODE_COOL,
-        VINTAGE_MODE_BNW,
-        VINTAGE_MODE_MAX,
-    };
-
-    enum FOCUS_MODE {
-        FOCUS_MODE_AUTO,
-        FOCUS_MODE_MACRO,
-        FOCUS_MODE_FACEDETECT,
-        FOCUS_MODE_AUTO_DEFAULT,
-        FOCUS_MODE_MACRO_DEFAULT,
-        FOCUS_MODE_FACEDETECT_DEFAULT,
-        FOCUS_MODE_INFINITY,
-        FOCUS_MODE_MAX,
-    };
-
-    enum FACE_DETECT {
-        FACE_DETECT_OFF,
-        FACE_DETECT_NORMAL_ON,
-        FACE_DETECT_BEAUTY_ON,
-        FACE_DETECT_NO_LINE,
-        FACE_DETECT_MAX,
-    };
-
-    enum AE_AWB_LOCK_UNLOCK  {
-        AE_UNLOCK_AWB_UNLOCK = 0,
-        AE_LOCK_AWB_UNLOCK,
-        AE_UNLOCK_AWB_LOCK,
-        AE_LOCK_AWB_LOCK,
-        AE_AWB_MAX
-    };
-
-    enum FRAME_RATE {
-        FRAME_RATE_AUTO = 0,
-        FRAME_RATE_15   = 15,
-        FRAME_RATE_30   = 30,
-        FRAME_RATE_60   = 60,
-        FRAME_RATE_120  = 120,
-        FRAME_RATE_MAX
-    };
-    enum ANTI_BANDING {
-        ANTI_BANDING_AUTO   = 0,
-        ANTI_BANDING_50HZ   = 1,
-        ANTI_BANDING_60HZ   = 2,
-        ANTI_BANDING_OFF    = 3,
-    };
-
-    enum SMART_AUTO_SCENE {
-        SMART_AUTO_STATUS_AUTO = 0,
-        SMART_AUTO_STATUS_LANDSCAPE,
-        SMART_AUTO_STATUS_PORTRAIT,
-        SMART_AUTO_STATUS_MACRO,
-        SMART_AUTO_STATUS_NIGHT,
-        SMART_AUTO_STATUS_PORTRAIT_NIGHT,
-        SMART_AUTO_STATUS_BACKLIT,
-        SMART_AUTO_STATUS_PORTRAIT_BACKLIT,
-        SMART_AUTO_STATUS_ANTISHAKE,
-        SMART_AUTO_STATUS_PORTRAIT_ANTISHAKE,
-        SMART_AUTO_STATUS_MAX,
-    };
-
-    enum GAMMA {
-        GAMMA_OFF,
-        GAMMA_ON,
-        GAMMA_MAX,
-    };
-
-    enum SLOW_AE {
-        SLOW_AE_OFF,
-        SLOW_AE_ON,
-        SLOW_AE_MAX,
     };
 
     /*VT call*/
@@ -515,30 +251,13 @@ public:
         SHOT_MODE_SELF          = 6,
     };
 
-    enum BLUR_LEVEL {
-        BLUR_LEVEL_0 = 0,
-        BLUR_LEVEL_1,
-        BLUR_LEVEL_2,
-        BLUR_LEVEL_3,
-        BLUR_LEVEL_MAX,
-    };
-
     enum CHK_DATALINE {
         CHK_DATALINE_OFF,
         CHK_DATALINE_ON,
         CHK_DATALINE_MAX,
     };
 
-    enum FACE_LOCK {
-        FACE_LOCK_OFF,
-        FACE_LOCK_ON,
-        FIRST_FACE_TRACKING,
-        FACE_LOCK_MAX
-    };
-
     int m_touch_af_start_stop;
-    int m_focus_mode;
-    int m_iso;
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     struct gps_info_latiude {
@@ -590,9 +309,7 @@ public:
     unsigned int    getRecPhyAddrC(int);
 #endif
     int             flagPreviewStart(void);
-    //int             getPreview (unsigned char *buffer, unsigned int buffer_size);
     int             getPreview(void);
-    //int             getPreview(int *offset, int *size, unsigned char *buffer, unsigned int buffer_size);
     int             setPreviewSize(int width, int height, int pixel_format);
     int             getPreviewSize(int *width, int *height, int *frame_size);
     int             getPreviewMaxSize(int *width, int *height);
@@ -724,7 +441,6 @@ public:
 #endif
 
     void setFrameRate(int frame_rate);
-//  void setJpegQuality(int quality);
     unsigned char*  getJpeg(int*, unsigned int*);
     int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
                                         unsigned int *output_size);
@@ -784,6 +500,8 @@ public:
 
 
 private:
+    v4l2_streamparm m_streamparm;
+    struct sec_cam_parm   *m_params;
     int             m_flag_init;
 
     int             m_camera_id;
@@ -812,19 +530,11 @@ private:
     int             m_snapshot_max_height;
 
     int             m_angle;
-    int             m_fps;
+#ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     int             m_autofocus;
-    int             m_white_balance;
-    int             m_brightness;
-    int             m_image_effect;
+#endif
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     int             m_anti_banding;
-    int             m_scene_mode;
-    int             m_flash_mode;
-    int             m_metering;
-    int             m_contrast;
-    int             m_saturation;
-    int             m_sharpness;
     int             m_wdr;
     int             m_anti_shake;
     int             m_zoom_level;
