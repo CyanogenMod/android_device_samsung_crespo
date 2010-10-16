@@ -855,6 +855,8 @@ void SecCamera::DeinitCamera()
             m_cam_fd = -1;
         }
 #ifdef DUAL_PORT_RECORDING
+        stopRecord();
+
         LOGE("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
         if (m_cam_fd2 > -1) {
             close(m_cam_fd2);
