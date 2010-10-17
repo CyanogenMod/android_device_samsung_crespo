@@ -118,7 +118,7 @@ PRODUCT_PACKAGES += \
 # NFC
 PRODUCT_PACKAGES += \
 	libnfc \
-	libnc_jni \
+	libnfc_jni \
 	Nfc
 
 # Input device calibration files
