@@ -2305,13 +2305,16 @@ void resample_2_1(int16_t* input, int16_t* output, int* num_samples_in, int* num
         return;
     }
 
-        for (int i = 0; i < *num_samples_in - (int)OVERLAP_22KHZ; i += 2) {
-                output[i / 2] = clip(fir_convolve(input + i, filter_22khz_coeff, NUM_COEFF_22KHZ));
-        }
+    int odd_smp = *num_samples_in & 0x1;
+    int num_samples = *num_samples_in - odd_smp - OVERLAP_22KHZ;
 
-    memmove(input, input + *num_samples_in - OVERLAP_22KHZ, OVERLAP_22KHZ * sizeof(*input));
-    *num_samples_out = (*num_samples_in - OVERLAP_22KHZ) / 2;
-    *num_samples_in = OVERLAP_22KHZ;
+    for (int i = 0; i < num_samples; i += 2) {
+            output[i / 2] = clip(fir_convolve(input + i, filter_22khz_coeff, NUM_COEFF_22KHZ));
+    }
+
+    memmove(input, input + num_samples, (OVERLAP_22KHZ + odd_smp) * sizeof(*input));
+    *num_samples_out = num_samples / 2;
+    *num_samples_in = OVERLAP_22KHZ + odd_smp;
 }
 
 /*
