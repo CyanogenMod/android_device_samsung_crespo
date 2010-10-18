@@ -1668,18 +1668,18 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         const char *new_flash_mode_str = NULL;
 
         if (!strcmp(new_scene_mode_str, CameraParameters::SCENE_MODE_AUTO)) {
-            new_scene_mode = SecCamera::SCENE_MODE_NONE;
+            new_scene_mode = SCENE_MODE_NONE;
 
         } else {
             // defaults for the scene modes
             mInternalParameters.set("iso", "auto");
             mInternalParameters.set("metering", "center");
             mParameters.set(CameraParameters::KEY_EXPOSURE_COMPENSATION,
-                            SecCamera::BRIGHTNESS_NORMAL);
+                            EV_DEFAULT);
             mParameters.set(CameraParameters::KEY_WHITE_BALANCE,
                             CameraParameters::WHITE_BALANCE_AUTO);
-            mInternalParameters.set("sharpness", SecCamera::SHARPNESS_NORMAL);
-            mInternalParameters.set("saturation", SecCamera::SATURATION_NORMAL);
+            mInternalParameters.set("sharpness", SHARPNESS_DEFAULT);
+            mInternalParameters.set("saturation", SATURATION_DEFAULT);
             if (new_camera_id == SecCamera::CAMERA_ID_BACK) {
                 mParameters.set(CameraParameters::KEY_FOCUS_MODE,
                                 CameraParameters::FOCUS_MODE_AUTO);
@@ -1689,47 +1689,46 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
             if (!strcmp(new_scene_mode_str,
                        CameraParameters::SCENE_MODE_PORTRAIT)) {
-                new_scene_mode = SecCamera::SCENE_MODE_PORTRAIT;
+                new_scene_mode = SCENE_MODE_PORTRAIT;
 
-                mInternalParameters.set("sharpness",
-                                        SecCamera::SHARPNESS_MINUS_1);
+                mInternalParameters.set("sharpness", SHARPNESS_MINUS_1);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_LANDSCAPE)) {
-                new_scene_mode = SecCamera::SCENE_MODE_LANDSCAPE;
+                new_scene_mode = SCENE_MODE_LANDSCAPE;
 
                 mInternalParameters.set("metering", "matrix");
-                mInternalParameters.set("sharpness", SecCamera::SHARPNESS_PLUS_1);
-                mInternalParameters.set("saturation", SecCamera::SATURATION_PLUS_1);
+                mInternalParameters.set("sharpness", SHARPNESS_PLUS_1);
+                mInternalParameters.set("saturation", SATURATION_PLUS_1);
                 mParameters.set(CameraParameters::KEY_FLASH_MODE,
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_SPORTS)) {
-                new_scene_mode = SecCamera::SCENE_MODE_SPORTS;
+                new_scene_mode = SCENE_MODE_SPORTS;
 
                 mInternalParameters.set("iso", "sports");
                 mParameters.set(CameraParameters::KEY_FLASH_MODE,
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_PARTY)) {
-                new_scene_mode = SecCamera::SCENE_MODE_PARTY_INDOOR;
+                new_scene_mode = SCENE_MODE_PARTY_INDOOR;
 
                 mInternalParameters.set("iso", "200");
-                mInternalParameters.set("saturation", SecCamera::SATURATION_PLUS_1);
+                mInternalParameters.set("saturation", SATURATION_PLUS_1);
             } else if ((!strcmp(new_scene_mode_str,
                                 CameraParameters::SCENE_MODE_BEACH)) ||
                         (!strcmp(new_scene_mode_str,
                                  CameraParameters::SCENE_MODE_SNOW))) {
-                new_scene_mode = SecCamera::SCENE_MODE_BEACH_SNOW;
+                new_scene_mode = SCENE_MODE_BEACH_SNOW;
 
                 mInternalParameters.set("iso", "50");
                 mParameters.set(CameraParameters::KEY_EXPOSURE_COMPENSATION,
-                                SecCamera::BRIGHTNESS_PLUS_2);
-                mInternalParameters.set("saturation", SecCamera::SATURATION_PLUS_1);
+                                EV_PLUS_2);
+                mInternalParameters.set("saturation", SATURATION_PLUS_1);
                 mParameters.set(CameraParameters::KEY_FLASH_MODE,
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_SUNSET)) {
-                new_scene_mode = SecCamera::SCENE_MODE_SUNSET;
+                new_scene_mode = SCENE_MODE_SUNSET;
 
                 mParameters.set(CameraParameters::KEY_WHITE_BALANCE,
                                 CameraParameters::WHITE_BALANCE_DAYLIGHT);
@@ -1737,7 +1736,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_NIGHT)) {
-                new_scene_mode = SecCamera::SCENE_MODE_NIGHTSHOT;
+                new_scene_mode = SCENE_MODE_NIGHTSHOT;
                 mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE,
                                 "3780,30000");
 
@@ -1746,14 +1745,14 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_FIREWORKS)) {
-                new_scene_mode = SecCamera::SCENE_MODE_FIREWORKS;
+                new_scene_mode = SCENE_MODE_FIREWORKS;
 
                 mInternalParameters.set("iso", "50");
                 mParameters.set(CameraParameters::KEY_FLASH_MODE,
                                 CameraParameters::FLASH_MODE_OFF);
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_CANDLELIGHT)) {
-                new_scene_mode = SecCamera::SCENE_MODE_CANDLE_LIGHT;
+                new_scene_mode = SCENE_MODE_CANDLE_LIGHT;
 
                 mParameters.set(CameraParameters::KEY_WHITE_BALANCE,
                                 CameraParameters::WHITE_BALANCE_DAYLIGHT);
@@ -1780,25 +1779,25 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         if (new_iso_str != NULL) {
             int  new_iso = -1;
             if (!strcmp(new_iso_str, "auto"))
-                new_iso = SecCamera::ISO_AUTO;
+                new_iso = ISO_AUTO;
             else if (!strcmp(new_iso_str, "50"))
-                new_iso = SecCamera::ISO_50;
+                new_iso = ISO_50;
             else if (!strcmp(new_iso_str, "100"))
-                new_iso = SecCamera::ISO_100;
+                new_iso = ISO_100;
             else if (!strcmp(new_iso_str, "200"))
-                new_iso = SecCamera::ISO_200;
+                new_iso = ISO_200;
             else if (!strcmp(new_iso_str, "400"))
-                new_iso = SecCamera::ISO_400;
+                new_iso = ISO_400;
             else if (!strcmp(new_iso_str, "800"))
-                new_iso = SecCamera::ISO_800;
+                new_iso = ISO_800;
             else if (!strcmp(new_iso_str, "1600"))
-                new_iso = SecCamera::ISO_1600;
+                new_iso = ISO_1600;
             else if (!strcmp(new_iso_str, "sports"))
-                new_iso = SecCamera::ISO_SPORTS;
+                new_iso = ISO_SPORTS;
             else if (!strcmp(new_iso_str, "night"))
-                new_iso = SecCamera::ISO_NIGHT;
+                new_iso = ISO_NIGHT;
             else if (!strcmp(new_iso_str, "movie"))
-                new_iso = SecCamera::ISO_MOVIE;
+                new_iso = ISO_MOVIE;
             else {
                 LOGE("%s::unmatched iso(%d)", __func__, new_iso);
                 ret = UNKNOWN_ERROR;
@@ -1816,11 +1815,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         if (new_metering_str != NULL) {
             int  new_metering = -1;
             if (!strcmp(new_metering_str, "matrix"))
-                new_metering = SecCamera::METERING_MATRIX;
+                new_metering = METERING_MATRIX;
             else if (!strcmp(new_metering_str, "center"))
-                new_metering = SecCamera::METERING_CENTER;
+                new_metering = METERING_CENTER;
             else if (!strcmp(new_metering_str, "spot"))
-                new_metering = SecCamera::METERING_SPOT;
+                new_metering = METERING_SPOT;
             else {
                 LOGE("%s::unmatched metering(%s)", __func__, new_metering_str);
                 ret = UNKNOWN_ERROR;
@@ -1850,19 +1849,19 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             int new_white = -1;
 
             if (!strcmp(new_white_str, CameraParameters::WHITE_BALANCE_AUTO))
-                new_white = SecCamera::WHITE_BALANCE_AUTO;
+                new_white = WHITE_BALANCE_AUTO;
             else if (!strcmp(new_white_str,
                              CameraParameters::WHITE_BALANCE_DAYLIGHT))
-                new_white = SecCamera::WHITE_BALANCE_DAYLIGHT;
+                new_white = WHITE_BALANCE_SUNNY;
             else if (!strcmp(new_white_str,
                              CameraParameters::WHITE_BALANCE_CLOUDY_DAYLIGHT))
-                new_white = SecCamera::WHITE_BALANCE_CLOUDY;
+                new_white = WHITE_BALANCE_CLOUDY;
             else if (!strcmp(new_white_str,
                              CameraParameters::WHITE_BALANCE_FLUORESCENT))
-                new_white = SecCamera::WHITE_BALANCE_FLUORESCENT;
+                new_white = WHITE_BALANCE_FLUORESCENT;
             else if (!strcmp(new_white_str,
                              CameraParameters::WHITE_BALANCE_INCANDESCENT))
-                new_white = SecCamera::WHITE_BALANCE_INCANDESCENT;
+                new_white = WHITE_BALANCE_TUNGSTEN;
             else {
                 LOGE("ERR(%s):Invalid white balance(%s)", __func__, new_white_str); //twilight, shade, warm_flourescent
                 ret = UNKNOWN_ERROR;
@@ -1899,19 +1898,19 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
             if (!strcmp(new_focus_mode_str,
                         CameraParameters::FOCUS_MODE_AUTO)) {
-                new_focus_mode = SecCamera::FOCUS_MODE_AUTO; 
+                new_focus_mode = FOCUS_MODE_AUTO; 
                 mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
                                 BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR);
             }
             else if (!strcmp(new_focus_mode_str,
                              CameraParameters::FOCUS_MODE_MACRO)) {
-                new_focus_mode = SecCamera::FOCUS_MODE_MACRO;
+                new_focus_mode = FOCUS_MODE_MACRO;
                 mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
                                 BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR);
             }
             else if (!strcmp(new_focus_mode_str,
                              CameraParameters::FOCUS_MODE_INFINITY)) {
-                new_focus_mode = SecCamera::FOCUS_MODE_INFINITY;
+                new_focus_mode = FOCUS_MODE_INFINITY;
                 mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
                                 BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR);
             }
@@ -1933,11 +1932,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             int  new_flash_mode = -1;
 
             if (!strcmp(new_flash_mode_str, CameraParameters::FLASH_MODE_OFF))
-                new_flash_mode = SecCamera::FLASH_MODE_OFF;
+                new_flash_mode = FLASH_MODE_OFF;
             else if (!strcmp(new_flash_mode_str, CameraParameters::FLASH_MODE_AUTO))
-                new_flash_mode = SecCamera::FLASH_MODE_AUTO;
+                new_flash_mode = FLASH_MODE_AUTO;
             else if (!strcmp(new_flash_mode_str, CameraParameters::FLASH_MODE_ON))
-                new_flash_mode = SecCamera::FLASH_MODE_ON;
+                new_flash_mode = FLASH_MODE_ON;
             else {
                 LOGE("%s::unmatched flash_mode(%s)", __func__, new_flash_mode_str); //red-eye
                 ret = UNKNOWN_ERROR;
@@ -1968,15 +1967,15 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         int  new_image_effect = -1;
 
         if (!strcmp(new_image_effect_str, CameraParameters::EFFECT_NONE))
-            new_image_effect = SecCamera::IMAGE_EFFECT_NONE;
+            new_image_effect = IMAGE_EFFECT_NONE;
         else if (!strcmp(new_image_effect_str, CameraParameters::EFFECT_MONO))
-            new_image_effect = SecCamera::IMAGE_EFFECT_BNW;
+            new_image_effect = IMAGE_EFFECT_BNW;
         else if (!strcmp(new_image_effect_str, CameraParameters::EFFECT_SEPIA))
-            new_image_effect = SecCamera::IMAGE_EFFECT_SEPIA;
+            new_image_effect = IMAGE_EFFECT_SEPIA;
         else if (!strcmp(new_image_effect_str, CameraParameters::EFFECT_AQUA))
-            new_image_effect = SecCamera::IMAGE_EFFECT_AQUA;
+            new_image_effect = IMAGE_EFFECT_AQUA;
         else if (!strcmp(new_image_effect_str, CameraParameters::EFFECT_NEGATIVE))
-            new_image_effect = SecCamera::IMAGE_EFFECT_NEGATIVE;
+            new_image_effect = IMAGE_EFFECT_NEGATIVE;
         else {
             //posterize, whiteboard, blackboard, solarize
             LOGE("ERR(%s):Invalid effect(%s)", __func__, new_image_effect_str);
@@ -1998,13 +1997,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         int new_antibanding = -1;
 
         if (!strcmp(new_antibanding_str, CameraParameters::ANTIBANDING_AUTO))
-            new_antibanding = SecCamera::ANTI_BANDING_AUTO;
+            new_antibanding = ANTI_BANDING_AUTO;
         else if (!strcmp(new_antibanding_str, CameraParameters::ANTIBANDING_50HZ))
-            new_antibanding = SecCamera::ANTI_BANDING_50HZ;
+            new_antibanding = ANTI_BANDING_50HZ;
         else if (!strcmp(new_antibanding_str, CameraParameters::ANTIBANDING_60HZ))
-            new_antibanding = SecCamera::ANTI_BANDING_60HZ;
+            new_antibanding = ANTI_BANDING_60HZ;
         else if (!strcmp(new_antibanding_str, CameraParameters::ANTIBANDING_OFF))
-            new_antibanding = SecCamera::ANTI_BANDING_OFF;
+            new_antibanding = ANTI_BANDING_OFF;
         else {
             LOGE("%s::unmatched antibanding(%s)", __func__, new_antibanding_str);
             ret = UNKNOWN_ERROR;
@@ -2102,9 +2101,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     if (new_gamma_str != NULL) {
         int new_gamma = -1;
         if (!strcmp(new_gamma_str, "off"))
-            new_gamma = SecCamera::GAMMA_OFF;
+            new_gamma = GAMMA_OFF;
         else if (!strcmp(new_gamma_str, "on"))
-            new_gamma = SecCamera::GAMMA_ON;
+            new_gamma = GAMMA_ON;
         else {
             LOGE("%s::unmatched gamma(%s)", __func__, new_gamma_str);
             ret = UNKNOWN_ERROR;
@@ -2125,9 +2124,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         int new_slow_ae = -1;
 
         if (!strcmp(new_slow_ae_str, "off"))
-            new_slow_ae = SecCamera::SLOW_AE_OFF;
+            new_slow_ae = SLOW_AE_OFF;
         else if (!strcmp(new_slow_ae_str, "on"))
-            new_slow_ae = SecCamera::SLOW_AE_ON;
+            new_slow_ae = SLOW_AE_ON;
         else {
             LOGE("%s::unmatched slow_ae(%s)", __func__, new_slow_ae_str);
             ret = UNKNOWN_ERROR;
