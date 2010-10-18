@@ -576,14 +576,14 @@ static int fimc_v4l2_s_ext_ctrl(int fp, unsigned int id, void *value)
     return ret;
 }
 #endif
-static int fimc_v4l2_g_parm(int fp)
+
+static int fimc_v4l2_g_parm(int fp, struct v4l2_streamparm *streamparm)
 {
-    struct v4l2_streamparm stream;
     int ret;
 
-    stream.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    streamparm->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    ret = ioctl(fp, VIDIOC_G_PARM, &stream);
+    ret = ioctl(fp, VIDIOC_G_PARM, streamparm);
     if (ret < 0) {
         LOGE("ERR(%s):VIDIOC_G_PARM failed\n", __func__);
         return -1;
@@ -596,17 +596,13 @@ static int fimc_v4l2_g_parm(int fp)
     return 0;
 }
 
-static int fimc_v4l2_s_parm(int fp, int fps_numerator, int fps_denominator)
+static int fimc_v4l2_s_parm(int fp, struct v4l2_streamparm *streamparm)
 {
-    struct v4l2_streamparm stream;
     int ret;
 
-    stream.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    stream.parm.capture.capturemode = 0;
-    stream.parm.capture.timeperframe.numerator = fps_numerator;
-    stream.parm.capture.timeperframe.denominator = fps_denominator;
+    streamparm->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    ret = ioctl(fp, VIDIOC_S_PARM, &stream);
+    ret = ioctl(fp, VIDIOC_S_PARM, streamparm);
     if (ret < 0) {
         LOGE("ERR(%s):VIDIOC_S_PARM failed\n", __func__);
         return ret;
@@ -619,8 +615,6 @@ static int fimc_v4l2_s_parm(int fp, int fps_numerator, int fps_denominator)
 // Constructor & Destructor
 
 SecCamera::SecCamera() :
-            m_focus_mode(1),
-            m_iso(-1),
             m_flag_init(0),
             m_camera_id(CAMERA_ID_BACK),
             m_preview_v4lformat(V4L2_PIX_FMT_NV21),
@@ -634,18 +628,8 @@ SecCamera::SecCamera() :
             m_snapshot_max_width  (MAX_BACK_CAMERA_SNAPSHOT_WIDTH),
             m_snapshot_max_height (MAX_BACK_CAMERA_SNAPSHOT_HEIGHT),
             m_angle(-1),
-            m_fps(-1),
-            m_autofocus(-1),
-            m_white_balance(-1),
-            m_brightness(-1),
-            m_image_effect(-1),
             #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
             m_anti_banding(-1),
-            m_flash_mode(-1),
-            m_metering(-1),
-            m_contrast(-1),
-            m_saturation(-1),
-            m_sharpness(-1),
             m_wdr(-1),
             m_anti_shake(-1),
             m_zoom_level(-1),
@@ -668,7 +652,7 @@ SecCamera::SecCamera() :
             m_slow_ae(-1),
             m_camera_af_flag(-1),
             #else
-            m_image_effect(IMAGE_EFFECT_ORIGINAL),
+            m_autofocus(-1),
             #endif
             m_flag_camera_start(0),
             m_jpeg_thumbnail_width (0),
@@ -679,6 +663,22 @@ SecCamera::SecCamera() :
             m_esd_check_count(0)
 #endif // ENABLE_ESD_PREVIEW_CHECK
 {
+    m_params = (struct sec_cam_parm*)&m_streamparm.parm.raw_data;
+	struct v4l2_captureparm capture;
+    m_params->capture.timeperframe.numerator = 1;
+    m_params->capture.timeperframe.denominator = 0;
+    m_params->contrast = -1;
+    m_params->effects = -1;
+    m_params->brightness = -1;
+    m_params->flash_mode = -1;
+    m_params->focus_mode = -1;
+    m_params->iso = -1;
+    m_params->metering = -1;
+    m_params->saturation = -1;
+    m_params->scene_mode = -1;
+    m_params->sharpness = -1;
+    m_params->white_balance = -1;
+
     LOGV("%s :", __func__);
 }
 
@@ -896,6 +896,9 @@ int SecCamera::flagPreviewStart(void)
 
 int SecCamera::startPreview(void)
 {
+    v4l2_streamparm streamparm;
+    struct sec_cam_parm *parms;
+    parms = (struct sec_cam_parm*)&streamparm.parm.raw_data;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGV("%s :", __func__);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
@@ -929,12 +932,6 @@ int SecCamera::startPreview(void)
     ret = fimc_v4l2_querybuf(m_cam_fd, m_buffers_c, V4L2_BUF_TYPE_VIDEO_CAPTURE, MAX_BUFFERS);
     CHECK(ret);
 
-    /* g_parm, s_parm sample */
-    ret = fimc_v4l2_g_parm(m_cam_fd);
-    CHECK(ret);
-    ret = fimc_v4l2_s_parm(m_cam_fd, 1, m_fps);
-    CHECK(ret);
-
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGV("%s : m_preview_width: %d m_preview_height: %d m_angle: %d\n",
             __func__, m_preview_width, m_preview_height, m_angle);
@@ -963,56 +960,16 @@ int SecCamera::startPreview(void)
     m_flag_camera_start = 1;  //Kamat check
 
     if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_image_effect);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_white_balance);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_iso);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FLASH_MODE,
-                               m_flash_mode);
-        CHECK(ret);
-        if (m_focus_mode ==FOCUS_MODE_FACEDETECT)
-            ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, FOCUS_MODE_AUTO);
-        else {
-            if (m_shot_mode == 2) {             //Panorama shot
-                ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_focus_mode);
-                CHECK(ret);
-                m_camera_af_flag = -1;
-            } else if (m_shot_mode == 3) {      //Smile shot
-                ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_focus_mode);
-                CHECK(ret);
-                m_camera_af_flag = -1;
-            } else if (m_camera_af_flag < 0) {  //After captur, Focus is fixed.
-                ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_focus_mode);
-                CHECK(ret);
-                m_camera_af_flag = 0;
-            }
-        }
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, m_fps);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_metering);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_saturation);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_contrast);
-        CHECK(ret);
-
-        // Apply the scene mode only in camera not in camcorder
-        if (!m_sensor_mode) {
-            ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_scene_mode);
-            CHECK(ret);
-        }
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_sharpness);
+        ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_brightness);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS,
+                               m_params->brightness);
         CHECK(ret);
         /* Blur setting */
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
+                               m_blur_level);
         CHECK(ret);
     }
 #endif
@@ -1113,12 +1070,6 @@ int SecCamera::startRecord(void)
     ret = fimc_v4l2_reqbufs(m_cam_fd2, V4L2_BUF_TYPE_VIDEO_CAPTURE, MAX_BUFFERS);
     CHECK(ret);
     ret = fimc_v4l2_querybuf(m_cam_fd2, m_buffers_c2, V4L2_BUF_TYPE_VIDEO_CAPTURE, MAX_BUFFERS);
-    CHECK(ret);
-
-    /* g_parm, s_parm sample */
-    ret = fimc_v4l2_g_parm(m_cam_fd2);
-    CHECK(ret);
-    ret = fimc_v4l2_s_parm(m_cam_fd2, 1, m_fps);
     CHECK(ret);
 
     /* start with all buffers in queue */
@@ -1448,11 +1399,6 @@ int SecCamera::setSnapshotCmd(void)
     ret = fimc_v4l2_querybuf(m_cam_fd, m_buffers_c, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
     CHECK_PTR(ret);
 
-    ret = fimc_v4l2_g_parm(m_cam_fd);
-    CHECK_PTR(ret);
-    ret = fimc_v4l2_s_parm(m_cam_fd, 1, m_fps);
-    CHECK_PTR(ret);
-
     ret = fimc_v4l2_qbuf(m_cam_fd, 0);
     CHECK_PTR(ret);
 
@@ -1702,12 +1648,6 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
     CHECK(ret);
     ret = fimc_v4l2_querybuf(m_cam_fd, m_buffers_c, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK(ret);
-
-    /* g_parm, s_parm sample */
-    ret = fimc_v4l2_g_parm(m_cam_fd);
-    CHECK(ret);
-    ret = fimc_v4l2_s_parm(m_cam_fd, 1, m_fps);
     CHECK(ret);
 
     ret = fimc_v4l2_qbuf(m_cam_fd, 0);
@@ -2057,25 +1997,19 @@ void SecCamera::setFrameRate(int frame_rate)
     if (frame_rate < FRAME_RATE_AUTO || FRAME_RATE_MAX < frame_rate )
         LOGE("ERR(%s):Invalid frame_rate(%d)", __func__, frame_rate);
 
-    if (m_fps != frame_rate) {
-        m_fps = frame_rate;
+    if (m_params->capture.timeperframe.denominator != (unsigned)frame_rate) {
+        m_params->capture.timeperframe.denominator = frame_rate;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, frame_rate) < 0)
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FRAME_RATE", __func__);
         }
     }
 #else
-    m_fps = frame_rate;
+    m_params->capture.timeperframe.denominator = frame_rate;
 #endif
 
 }
 
-/* kidggang (10.7.5) - Problem - After jpegquality is capture, operation setting is normal.
-void SecCamera::setJpegQuality(int quality)
-{
-    m_jpeg_quality = quality;
-}
-*/
 // -----------------------------------
 
 int SecCamera::setVerticalMirror(void)
@@ -2127,8 +2061,8 @@ int SecCamera::setWhiteBalance(int white_balance)
         return -1;
     }
 
-    if (m_white_balance != white_balance) {
-        m_white_balance = white_balance;
+    if (m_params->white_balance != white_balance) {
+        m_params->white_balance = white_balance;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, white_balance) < 0) {
@@ -2144,8 +2078,8 @@ int SecCamera::setWhiteBalance(int white_balance)
 
 int SecCamera::getWhiteBalance(void)
 {
-    LOGV("%s : white_balance(%d)", __func__, m_white_balance);
-    return m_white_balance;
+    LOGV("%s : white_balance(%d)", __func__, m_parmas.white_balance);
+    return m_params->white_balance;
 }
 
 // -----------------------------------
@@ -2154,15 +2088,15 @@ int SecCamera::setBrightness(int brightness)
 {
     LOGV("%s(brightness(%d))", __func__, brightness);
 
-    brightness += BRIGHTNESS_NORMAL;
+    brightness += EV_DEFAULT;
 
-    if (brightness < BRIGHTNESS_MINUS_4 || BRIGHTNESS_PLUS_4 < brightness) {
+    if (brightness < EV_MINUS_4 || EV_PLUS_4 < brightness) {
         LOGE("ERR(%s):Invalid brightness(%d)", __func__, brightness);
         return -1;
     }
 
-    if (m_brightness != brightness) {
-        m_brightness = brightness;
+    if (m_params->brightness != brightness) {
+        m_params->brightness = brightness;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, brightness) < 0) {
@@ -2178,8 +2112,8 @@ int SecCamera::setBrightness(int brightness)
 
 int SecCamera::getBrightness(void)
 {
-    LOGV("%s : brightness(%d)", __func__, m_brightness);
-    return m_brightness;
+    LOGV("%s : brightness(%d)", __func__, m_params->brightness);
+    return m_params->brightness;
 }
 
 // -----------------------------------
@@ -2197,8 +2131,8 @@ int SecCamera::setImageEffect(int image_effect)
         return -1;
     }
 
-    if (m_image_effect != image_effect) {
-        m_image_effect = image_effect;
+    if (m_params->effects != image_effect) {
+        m_params->effects = image_effect;
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, image_effect) < 0) {
@@ -2214,8 +2148,8 @@ int SecCamera::setImageEffect(int image_effect)
 
 int SecCamera::getImageEffect(void)
 {
-    LOGV("%s : image_effect(%d)", __func__, m_image_effect);
-    return m_image_effect;
+    LOGV("%s : image_effect(%d)", __func__, m_params->effects);
+    return m_params->effects;
 }
 
 // ======================================================================
@@ -2252,10 +2186,10 @@ int SecCamera::setSceneMode(int scene_mode)
         return -1;
     }
 
-    if (m_scene_mode != scene_mode) {
-        m_scene_mode = scene_mode;
+    if (m_params->scene_mode != scene_mode) {
+        m_params->scene_mode = scene_mode;
         if (m_flag_camera_start) {
-            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_scene_mode) < 0) {
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, scene_mode) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SCENE_MODE", __func__);
                 return -1;
             }
@@ -2267,7 +2201,7 @@ int SecCamera::setSceneMode(int scene_mode)
 
 int SecCamera::getSceneMode(void)
 {
-    return m_scene_mode;
+    return m_params->scene_mode;
 }
 
 //======================================================================
@@ -2281,8 +2215,8 @@ int SecCamera::setFlashMode(int flash_mode)
         return -1;
     }
 
-    if (m_flash_mode != flash_mode) {
-        m_flash_mode = flash_mode;
+    if (m_params->flash_mode != flash_mode) {
+        m_params->flash_mode = flash_mode;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FLASH_MODE, flash_mode) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FLASH_MODE", __func__);
@@ -2296,7 +2230,7 @@ int SecCamera::setFlashMode(int flash_mode)
 
 int SecCamera::getFlashMode(void)
 {
-    return m_flash_mode;
+    return m_params->flash_mode;
 }
 
 //======================================================================
@@ -2309,8 +2243,8 @@ int SecCamera::setISO(int iso_value)
         return -1;
     }
 
-    if (m_iso != iso_value) {
-        m_iso = iso_value;
+    if (m_params->iso != iso_value) {
+        m_params->iso = iso_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, iso_value) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_ISO", __func__);
@@ -2324,7 +2258,7 @@ int SecCamera::setISO(int iso_value)
 
 int SecCamera::getISO(void)
 {
-    return m_iso;
+    return m_params->iso;
 }
 
 //======================================================================
@@ -2338,8 +2272,8 @@ int SecCamera::setContrast(int contrast_value)
         return -1;
     }
 
-    if (m_contrast != contrast_value) {
-        m_contrast = contrast_value;
+    if (m_params->contrast != contrast_value) {
+        m_params->contrast = contrast_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, contrast_value) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_CONTRAST", __func__);
@@ -2353,7 +2287,7 @@ int SecCamera::setContrast(int contrast_value)
 
 int SecCamera::getContrast(void)
 {
-    return m_contrast;
+    return m_params->contrast;
 }
 
 //======================================================================
@@ -2367,8 +2301,8 @@ int SecCamera::setSaturation(int saturation_value)
         return -1;
     }
 
-    if (m_saturation != saturation_value) {
-        m_saturation = saturation_value;
+    if (m_params->saturation != saturation_value) {
+        m_params->saturation = saturation_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, saturation_value) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SATURATION", __func__);
@@ -2382,7 +2316,7 @@ int SecCamera::setSaturation(int saturation_value)
 
 int SecCamera::getSaturation(void)
 {
-    return m_saturation;
+    return m_params->saturation;
 }
 
 //======================================================================
@@ -2396,8 +2330,8 @@ int SecCamera::setSharpness(int sharpness_value)
         return -1;
     }
 
-    if (m_sharpness != sharpness_value) {
-        m_sharpness = sharpness_value;
+    if (m_params->sharpness != sharpness_value) {
+        m_params->sharpness = sharpness_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, sharpness_value) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SHARPNESS", __func__);
@@ -2411,7 +2345,7 @@ int SecCamera::setSharpness(int sharpness_value)
 
 int SecCamera::getSharpness(void)
 {
-    return m_sharpness;
+    return m_params->sharpness;
 }
 
 //======================================================================
@@ -2484,8 +2418,8 @@ int SecCamera::setMetering(int metering_value)
         return -1;
     }
 
-    if (m_metering != metering_value) {
-        m_metering = metering_value;
+    if (m_params->metering != metering_value) {
+        m_params->metering = metering_value;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, metering_value) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_METERING", __func__);
@@ -2499,7 +2433,7 @@ int SecCamera::setMetering(int metering_value)
 
 int SecCamera::getMetering(void)
 {
-    return m_metering;
+    return m_params->metering;
 }
 
 //======================================================================
@@ -2684,7 +2618,7 @@ int SecCamera::setBeautyShot(int beauty_shot)
             }
         }
 
-        setFaceDetect(FACE_DETECT_BEAUTY_ON);
+        setFaceDetect(FACE_DETECTION_ON_BEAUTY);
     }
 
     return 0;
@@ -2735,27 +2669,13 @@ int SecCamera::setFocusMode(int focus_mode)
         return -1;
     }
 
-    if (m_focus_mode != focus_mode) {
-        m_focus_mode = focus_mode;
+    if (m_params->focus_mode != focus_mode) {
+        m_params->focus_mode = focus_mode;
 
-        if (m_focus_mode != FOCUS_MODE_FACEDETECT) {
-            m_face_detect = FACE_DETECT_OFF;
-            if (m_flag_camera_start) {
-//              setFaceDetect(m_face_detect);
-
-                if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, focus_mode) < 0) {
-                    LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FOCUS_MODE", __func__);
-                    return -1;
-                }
-            }
-        } else {
-            m_face_detect = FACE_DETECT_NORMAL_ON;
-            if (m_flag_camera_start) {
-                if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, FOCUS_MODE_AUTO) < 0) {
-                    LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FOCUS_MODE", __func__);
-                    return -1;
-//              setFaceDetect(m_face_detect);
-                }
+        if (m_flag_camera_start) {
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, focus_mode) < 0) {
+                LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FOCUS_MODE", __func__);
+                return -1;
             }
         }
     }
@@ -2765,7 +2685,7 @@ int SecCamera::setFocusMode(int focus_mode)
 
 int SecCamera::getFocusMode(void)
 {
-    return m_focus_mode;
+    return m_params->focus_mode;
 }
 
 //======================================================================
@@ -2777,7 +2697,7 @@ int SecCamera::setFaceDetect(int face_detect)
     if (m_face_detect != face_detect) {
         m_face_detect = face_detect;
         if (m_flag_camera_start) {
-            if (m_face_detect != FACE_DETECT_OFF) {
+            if (m_face_detect != FACE_DETECTION_OFF) {
                 if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, FOCUS_MODE_AUTO) < 0) {
                     LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FOCUS_MODin face detecion", __func__);
                     return -1;
@@ -2940,7 +2860,7 @@ int SecCamera::setSlowAE(int slow_ae)
 //======================================================================
 int SecCamera::setRecordingSize(int width, int height)
 {
-     LOGE("%s(width(%d), height(%d))", __func__, width, height);
+     LOGV("%s(width(%d), height(%d))", __func__, width, height);
 
      m_recording_width  = width;
      m_recording_height = height;
@@ -3412,10 +3332,10 @@ void SecCamera::setExifChangedAttribute()
 
     //3 ISO Speed Rating
     int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
-    if (m_iso == ISO_AUTO) {
+    if (m_params->iso == ISO_AUTO) {
         mExifInfo.iso_speed_rating = iso;
     } else {
-        switch(m_iso) {
+        switch(m_params->iso) {
         case ISO_50:
             mExifInfo.iso_speed_rating = 50;
             break;
@@ -3456,7 +3376,7 @@ void SecCamera::setExifChangedAttribute()
     mExifInfo.brightness.num = bv*EXIF_DEF_APEX_DEN;
     mExifInfo.brightness.den = EXIF_DEF_APEX_DEN;
     //3 Exposure Bias
-    if (m_scene_mode == SCENE_MODE_BEACH_SNOW) {
+    if (m_params->scene_mode == SCENE_MODE_BEACH_SNOW) {
         mExifInfo.exposure_bias.num = EXIF_DEF_APEX_DEN;
         mExifInfo.exposure_bias.den = EXIF_DEF_APEX_DEN;
     } else {
@@ -3464,7 +3384,7 @@ void SecCamera::setExifChangedAttribute()
         mExifInfo.exposure_bias.den = 0;
     }
     //3 Metering Mode
-    switch (m_metering) {
+    switch (m_params->metering) {
     case METERING_SPOT:
         mExifInfo.metering_mode = EXIF_METERING_SPOT;
         break;
@@ -3479,12 +3399,12 @@ void SecCamera::setExifChangedAttribute()
         break;
     }
     //3 White Balance
-    if (m_white_balance == WHITE_BALANCE_AUTO)
+    if (m_params->white_balance == WHITE_BALANCE_AUTO)
         mExifInfo.white_balance = EXIF_WB_AUTO;
     else
         mExifInfo.white_balance = EXIF_WB_MANUAL;
     //3 Scene Capture Type
-    switch (m_scene_mode) {
+    switch (m_params->scene_mode) {
     case SCENE_MODE_PORTRAIT:
         mExifInfo.scene_capture_type = EXIF_SCENE_PORTRAIT;
         break;

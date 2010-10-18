@@ -86,7 +86,8 @@ on fs
 
 # permissions for NFC
     setprop ro.nfc.port "I2C"
-    chmod 0666 /dev/pn544
+    chmod 0600 /dev/pn544
+    chown nfc nfc /dev/pn544
 
 # Permissions for System Server and daemons.
     chown system system /sys/class/backlight/s5p_bl/brightness

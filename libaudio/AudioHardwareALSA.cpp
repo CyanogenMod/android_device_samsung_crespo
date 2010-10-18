@@ -199,7 +199,7 @@ mixerProp[][SND_PCM_STREAM_LAST+1] = {
 };
 
 const uint32_t AudioHardwareALSA::inputSamplingRates[] = {
-        44100, 22050, 11025
+        8000, 11025, 16000, 22050, 44100
 };
 
 // ----------------------------------------------------------------------------
@@ -606,9 +606,26 @@ status_t AudioHardwareALSA::dump(int fd, const Vector<String16>& args)
 }
 
 
+uint32_t AudioHardwareALSA::bufferRatio(uint32_t samplingRate) {
+    switch (samplingRate) {
+    case 8000:
+    case 11025:
+        return 4;
+    case 16000:
+    case 22050:
+        return 2;
+    case 44100:
+    default:
+        break;
+    }
+    return 1;
+}
+
+
 size_t AudioHardwareALSA::getInputBufferSize(uint32_t sampleRate, int format, int channelCount)
 {
-    if (sampleRate < 8000 || sampleRate > 48000) {
+    if (sampleRate != 8000 && sampleRate != 11025 && sampleRate != 16000 &&
+            sampleRate != 22050 && sampleRate != 44100) {
         LOGW("getInputBufferSize bad sampling rate: %d", sampleRate);
         return 0;
     }
@@ -621,9 +638,8 @@ size_t AudioHardwareALSA::getInputBufferSize(uint32_t sampleRate, int format, in
         return 0;
     }
 
-    uint32_t shift = checkInputSampleRate(sampleRate);
-    size_t size = (PERIOD_SZ_CAPTURE >> shift) * sizeof(int16_t);
-    LOGV("getInputBufferSize() rate %d, shift %d, size %d", sampleRate, shift, size);
+    size_t size = (PERIOD_SZ_CAPTURE / bufferRatio(sampleRate)) * sizeof(int16_t);
+    LOGV("getInputBufferSize() rate %d, ratio %d", sampleRate, size);
     return size;
 
 }
@@ -639,7 +655,7 @@ uint32_t AudioHardwareALSA::checkInputSampleRate(uint32_t sampleRate)
         if (delta > prevDelta) break;
     }
     // i is always > 0 here
-    return i-1;
+    return inputSamplingRates[i-1];
 }
 
 status_t AudioHardwareALSA::setMode(int mode)
@@ -748,13 +764,14 @@ status_t ALSAStreamOps::set(int      *pformat,
             return BAD_VALUE;
         }
     } else {
-        mDefaults->smpRateShift = AudioHardwareALSA::checkInputSampleRate(lrate);
-        // audioFlinger will reopen the input stream with correct smp rate
-        if (AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift] != lrate) {
-            if(prate) *prate = AudioHardwareALSA::inputSamplingRates[mDefaults->smpRateShift];
+        uint32_t rate = AudioHardwareALSA::checkInputSampleRate(lrate);
+        if (rate != lrate) {
+            if (prate) *prate = rate;
             return BAD_VALUE;
         }
+        lrate = rate;
     }
+    mDefaults->bufferRatio = AudioHardwareALSA::bufferRatio(lrate);
     mDefaults->sampleRate = lrate;
 
     if(pformat)     *pformat = getAndroidFormat(mDefaults->format);
@@ -811,10 +828,10 @@ size_t ALSAStreamOps::bufferSize() const
 {
     int err;
 
-    size_t size = ((mDefaults->periodSize >> mDefaults->smpRateShift) * mDefaults->channelCount *
+    size_t size = ((mDefaults->periodSize / mDefaults->bufferRatio) * mDefaults->channelCount *
             snd_pcm_format_physical_width(mDefaults->format)) / 8;
-    LOGV("bufferSize() channelCount %d, shift %d, size %d",
-         mDefaults->channelCount, mDefaults->smpRateShift, size);
+    LOGV("bufferSize() channelCount %d, bufferRatio %d, size %d",
+         mDefaults->channelCount, mDefaults->bufferRatio, size);
     return size;
 
 }
@@ -1342,7 +1359,7 @@ AudioStreamOutALSA::AudioStreamOutALSA(AudioHardwareALSA *parent) :
         format         : SND_PCM_FORMAT_S16_LE,   // AudioSystem::PCM_16_BIT
         channelCount       : 2,
         sampleRate     : DEFAULT_SAMPLE_RATE,
-        smpRateShift   : 0,
+        bufferRatio   : 1,
         latency        : LATENCY_PLAYBACK_MS,               // Desired Delay in usec
         bufferSize     : BUFFER_SZ_PLAYBACK,                // Desired Number of samples
         periodSize     : PERIOD_SZ_PLAYBACK
@@ -1513,8 +1530,8 @@ uint32_t AudioStreamOutALSA::latency() const
 // ----------------------------------------------------------------------------
 
 AudioStreamInALSA::AudioStreamInALSA(AudioHardwareALSA *parent) :
-    mParent(parent),
-    mPowerLock(false)
+    mParent(parent), mPowerLock(false),
+    mDownSampler(NULL), mPcmIn(NULL)
 {
     static StreamDefaults _defaults = {
         devicePrefix   : "AndroidRecord",
@@ -1522,7 +1539,7 @@ AudioStreamInALSA::AudioStreamInALSA(AudioHardwareALSA *parent) :
         format         : SND_PCM_FORMAT_S16_LE,   // AudioSystem::PCM_16_BIT
         channelCount       : 1,
         sampleRate     : DEFAULT_SAMPLE_RATE,
-        smpRateShift   : 0,
+        bufferRatio   : 1,
         latency        : LATENCY_CAPTURE_MS,// Desired Delay in usec
         bufferSize     : BUFFER_SZ_CAPTURE,      // Desired Number of samples
         periodSize     : PERIOD_SZ_CAPTURE
@@ -1531,9 +1548,34 @@ AudioStreamInALSA::AudioStreamInALSA(AudioHardwareALSA *parent) :
     setStreamDefaults(&_defaults);
 }
 
+status_t AudioStreamInALSA::set(int *pformat,
+                            uint32_t *pchannels,
+                            uint32_t *prate)
+{
+    status_t status = ALSAStreamOps::set(pformat, pchannels, prate);
+    if (status == NO_ERROR && prate && *prate != DEFAULT_SAMPLE_RATE) {
+        mDownSampler = new ALSADownsampler(*prate,
+                                           mDefaults->channelCount,
+                                           PERIOD_SZ_CAPTURE,
+                                           this);
+        status = mDownSampler->initCheck();
+        if (status != NO_ERROR) {
+            return status;
+        }
+        mPcmIn = new int16_t[PERIOD_SZ_CAPTURE * mDefaults->channelCount];
+    }
+    return status;
+}
+
 AudioStreamInALSA::~AudioStreamInALSA()
 {
     standby();
+    if (mDownSampler != NULL) {
+        delete mDownSampler;
+    }
+    if (mPcmIn != NULL) {
+        delete[] mPcmIn;
+    }
 }
 
 status_t AudioStreamInALSA::setGain(float gain)
@@ -1547,7 +1589,6 @@ status_t AudioStreamInALSA::setGain(float gain)
 ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
 {
     snd_pcm_sframes_t n;
-    status_t          err;
 
     mParent->lock().lock();
     AutoMutex lock(mLock);
@@ -1556,6 +1597,12 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
 
         LOGD("Calling setDevice from read@..%d.\n",__LINE__);
         ALSAStreamOps::setDevice(mParent->mode(), mDevice, CAPTURE);
+
+        if (mDownSampler != NULL) {
+            mDownSampler->reset();
+            mReadStatus = 0;
+            mInPcmInBuf = 0;
+        }
         mPowerLock = true;
     }
     mParent->lock().unlock();
@@ -1571,38 +1618,31 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
     }
 
     size_t frames = snd_pcm_bytes_to_frames(mHandle, bytes);
-    uint32_t shift = mDefaults->smpRateShift;
     do {
-        n = snd_pcm_readi(mHandle,
-                          (uint8_t *)mBuffer,
-                          frames << shift);
+        if (mDownSampler) {
+            status_t status = mDownSampler->resample((int16_t *)buffer, &frames);
+            if (status != NO_ERROR) {
+                if (mReadStatus != 0) {
+                    n = mReadStatus;
+                } else {
+                    n = status;
+                }
+            } else {
+                n = frames;
+            }
+        } else {
+            n = snd_pcm_readi(mHandle,
+                              (uint8_t *)buffer,
+                              frames);
+        }
         if (n < 0) {
             LOGD("AudioStreamInALSA::read error %d", (int)n);
             n = snd_pcm_recover(mHandle, n, 0);
             LOGD("AudioStreamInALSA::snd_pcm_recover error %d", (int)n);
             if (n)
                 return static_cast<ssize_t> (n);
-        } else {
-            n >>= shift;
         }
     } while (n == 0);
-
-    // FIXME: quick hack to enable simultaneous playback and record. input and output device
-    // drivers always operate at 44.1kHz. We do a dirty downsampling here by an entire ratio
-    // (4, 2 or 1) without filtering and the resampler in AudioFlinger does the remaining
-    // resampling if any (e.g. 11025 -> 8000). We do this because of the limitation of the
-    // downsampler in AudioFlinger (SR in < 2 * SR out)
-    int16_t *out = (int16_t *)buffer;
-    if (mDefaults->channelCount == 1) {
-        for (ssize_t i = 0; i < n; i++) {
-            out[i] = mBuffer[i << shift];
-        }
-    } else {
-        for (ssize_t i = 0; i < n; i++) {
-            out[i] = mBuffer[i << shift];
-            out[i + 1] = mBuffer[(i << shift) + 1];
-        }
-    }
 
     return snd_pcm_frames_to_bytes(mHandle, n);
 }
@@ -1680,6 +1720,41 @@ String8  AudioStreamInALSA::getParameters(const String8& keys)
 
     LOGD("AudioStreamInALSA::getParameters() %s", param.toString().string());
     return param.toString();
+}
+
+status_t AudioStreamInALSA::getNextBuffer(ALSABufferProvider::Buffer* buffer)
+{
+    if (mHandle == NULL) {
+        buffer->raw = NULL;
+        buffer->frameCount = 0;
+        return NO_INIT;
+    }
+
+    if (mInPcmInBuf == 0) {
+        while (mInPcmInBuf < PERIOD_SZ_CAPTURE) {
+            mReadStatus = snd_pcm_readi(mHandle,
+                              (uint8_t *)mPcmIn +
+                              (mInPcmInBuf * mDefaults->channelCount * sizeof(int16_t)),
+                              PERIOD_SZ_CAPTURE - mInPcmInBuf);
+            if (mReadStatus <= 0) {
+                buffer->raw = NULL;
+                buffer->frameCount = 0;
+                LOGV("resampler read error %d", mReadStatus);
+                return mReadStatus;
+            }
+            mInPcmInBuf += mReadStatus;
+        }
+    }
+
+    buffer->frameCount = (buffer->frameCount > mInPcmInBuf) ? mInPcmInBuf : buffer->frameCount;
+    buffer->i16 = mPcmIn + (PERIOD_SZ_CAPTURE - mInPcmInBuf) * mDefaults->channelCount;
+
+    return NO_ERROR;
+}
+
+void AudioStreamInALSA::releaseBuffer(ALSABufferProvider::Buffer* buffer)
+{
+    mInPcmInBuf -= buffer->frameCount;
 }
 
 
@@ -2128,7 +2203,8 @@ status_t ALSAControl::set(const char *name, unsigned int value, int index)
     snd_ctl_elem_info_get_id(info, id);
     snd_ctl_elem_type_t type = snd_ctl_elem_info_get_type(info);
     unsigned int count = snd_ctl_elem_info_get_count(info);
-    if ((unsigned int)index >= count) return BAD_VALUE;
+
+    if (index >= (int)count) return BAD_VALUE;
 
     if (index == -1)
         index = 0; // Range over all of them
@@ -2157,9 +2233,367 @@ status_t ALSAControl::set(const char *name, unsigned int value, int index)
             default:
                 break;
         }
-
     ret = snd_ctl_elem_write(mHandle, control);
     return (ret < 0) ? BAD_VALUE : NO_ERROR;
+}
+
+//------------------------------------------------------------------------------
+// Downsampler
+//------------------------------------------------------------------------------
+
+/*
+ * 2.30 fixed point FIR filter coefficients for conversion 44100 -> 22050.
+ * (Works equivalently for 22010 -> 11025 or any other halving, of course.)
+ *
+ * Transition band from about 18 kHz, passband ripple < 0.1 dB,
+ * stopband ripple at about -55 dB, linear phase.
+ *
+ * Design and display in MATLAB or Octave using:
+ *
+ * filter = fir1(19, 0.5); filter = round(filter * 2**30); freqz(filter * 2**-30);
+ */
+static const int32_t filter_22khz_coeff[] = {
+    2089257, 2898328, -5820678, -10484531,
+    19038724, 30542725, -50469415, -81505260,
+    152544464, 478517512, 478517512, 152544464,
+    -81505260, -50469415, 30542725, 19038724,
+    -10484531, -5820678, 2898328, 2089257,
+};
+#define NUM_COEFF_22KHZ (sizeof(filter_22khz_coeff) / sizeof(filter_22khz_coeff[0]))
+#define OVERLAP_22KHZ (NUM_COEFF_22KHZ - 2)
+
+/*
+ * Convolution of signals A and reverse(B). (In our case, the filter response
+ * is symmetric, so the reversing doesn't matter.)
+ * A is taken to be in 0.16 fixed-point, and B is taken to be in 2.30 fixed-point.
+ * The answer will be in 16.16 fixed-point, unclipped.
+ *
+ * This function would probably be the prime candidate for SIMD conversion if
+ * you want more speed.
+ */
+int32_t fir_convolve(const int16_t* a, const int32_t* b, int num_samples)
+{
+        int32_t sum = 1 << 13;
+        for (int i = 0; i < num_samples; ++i) {
+                sum += a[i] * (b[i] >> 16);
+        }
+        return sum >> 14;
+}
+
+/* Clip from 16.16 fixed-point to 0.16 fixed-point. */
+int16_t clip(int32_t x)
+{
+    if (x < -32768) {
+        return -32768;
+    } else if (x > 32767) {
+        return 32767;
+    } else {
+        return x;
+    }
+}
+
+/*
+ * Convert a chunk from 44 kHz to 22 kHz. Will update num_samples_in and num_samples_out
+ * accordingly, since it may leave input samples in the buffer due to overlap.
+ *
+ * Input and output are taken to be in 0.16 fixed-point.
+ */
+void resample_2_1(int16_t* input, int16_t* output, int* num_samples_in, int* num_samples_out)
+{
+    if (*num_samples_in < (int)NUM_COEFF_22KHZ) {
+        *num_samples_out = 0;
+        return;
+    }
+
+        for (int i = 0; i < *num_samples_in - (int)OVERLAP_22KHZ; i += 2) {
+                output[i / 2] = clip(fir_convolve(input + i, filter_22khz_coeff, NUM_COEFF_22KHZ));
+        }
+
+    memmove(input, input + *num_samples_in - OVERLAP_22KHZ, OVERLAP_22KHZ * sizeof(*input));
+    *num_samples_out = (*num_samples_in - OVERLAP_22KHZ) / 2;
+    *num_samples_in = OVERLAP_22KHZ;
+}
+
+/*
+ * 2.30 fixed point FIR filter coefficients for conversion 22050 -> 16000,
+ * or 11025 -> 8000.
+ *
+ * Transition band from about 14 kHz, passband ripple < 0.1 dB,
+ * stopband ripple at about -50 dB, linear phase.
+ *
+ * Design and display in MATLAB or Octave using:
+ *
+ * filter = fir1(23, 16000 / 22050); filter = round(filter * 2**30); freqz(filter * 2**-30);
+ */
+static const int32_t filter_16khz_coeff[] = {
+    2057290, -2973608, 1880478, 4362037,
+    -14639744, 18523609, -1609189, -38502470,
+    78073125, -68353935, -59103896, 617555440,
+    617555440, -59103896, -68353935, 78073125,
+    -38502470, -1609189, 18523609, -14639744,
+    4362037, 1880478, -2973608, 2057290,
+};
+#define NUM_COEFF_16KHZ (sizeof(filter_16khz_coeff) / sizeof(filter_16khz_coeff[0]))
+#define OVERLAP_16KHZ (NUM_COEFF_16KHZ - 1)
+
+/*
+ * Convert a chunk from 22 kHz to 16 kHz. Will update num_samples_in and
+ * num_samples_out accordingly, since it may leave input samples in the buffer
+ * due to overlap.
+ *
+ * This implementation is rather ad-hoc; it first low-pass filters the data
+ * into a temporary buffer, and then converts chunks of 441 input samples at a
+ * time into 320 output samples by simple linear interpolation. A better
+ * implementation would use a polyphase filter bank to do these two operations
+ * in one step.
+ *
+ * Input and output are taken to be in 0.16 fixed-point.
+ */
+
+#define RESAMPLE_16KHZ_SAMPLES_IN 441
+#define RESAMPLE_16KHZ_SAMPLES_OUT 320
+
+void resample_441_320(int16_t* input, int16_t* output, int* num_samples_in, int* num_samples_out)
+{
+    const int num_blocks = (*num_samples_in - OVERLAP_16KHZ) / RESAMPLE_16KHZ_SAMPLES_IN;
+    if (num_blocks < 1) {
+        *num_samples_out = 0;
+        return;
+    }
+
+    for (int i = 0; i < num_blocks; ++i) {
+        uint32_t tmp[RESAMPLE_16KHZ_SAMPLES_IN];
+        for (int j = 0; j < RESAMPLE_16KHZ_SAMPLES_IN; ++j) {
+            tmp[j] = fir_convolve(input + i * RESAMPLE_16KHZ_SAMPLES_IN + j,
+                          filter_16khz_coeff,
+                          NUM_COEFF_16KHZ);
+        }
+
+        const float step_float = (float)RESAMPLE_16KHZ_SAMPLES_IN / (float)RESAMPLE_16KHZ_SAMPLES_OUT;
+
+        uint32_t in_sample_num = 0;   // 16.16 fixed point
+        const uint32_t step = (uint32_t)(step_float * 65536.0f + 0.5f);  // 16.16 fixed point
+        for (int j = 0; j < RESAMPLE_16KHZ_SAMPLES_OUT; ++j, in_sample_num += step) {
+            const uint32_t whole = in_sample_num >> 16;
+            const uint32_t frac = (in_sample_num & 0xffff);  // 0.16 fixed point
+            const int32_t s1 = tmp[whole];
+            const int32_t s2 = tmp[whole + 1];
+            *output++ = clip(s1 + (((s2 - s1) * (int32_t)frac) >> 16));
+        }
+    }
+
+    const int samples_consumed = num_blocks * RESAMPLE_16KHZ_SAMPLES_IN;
+    memmove(input, input + samples_consumed, (*num_samples_in - samples_consumed) * sizeof(*input));
+    *num_samples_in -= samples_consumed;
+    *num_samples_out = RESAMPLE_16KHZ_SAMPLES_OUT * num_blocks;
+}
+
+
+ALSADownsampler::ALSADownsampler(uint32_t outSampleRate,
+                                    uint32_t channelCount,
+                                    uint32_t frameCount,
+                                    ALSABufferProvider* provider)
+    :  mStatus(NO_INIT), mProvider(provider), mSampleRate(outSampleRate),
+       mChannelCount(channelCount), mFrameCount(frameCount),
+       mInLeft(NULL), mInRight(NULL), mTmpLeft(NULL), mTmpRight(NULL),
+       mTmp2Left(NULL), mTmp2Right(NULL), mOutLeft(NULL), mOutRight(NULL)
+
+{
+    LOGV("ALSADownsampler() cstor SR %d channels %d frames %d",
+         mSampleRate, mChannelCount, mFrameCount);
+
+    if (mSampleRate != 8000 && mSampleRate != 11025 && mSampleRate != 16000 &&
+            mSampleRate != 22050) {
+        LOGW("ALSADownsampler cstor: bad sampling rate: %d", mSampleRate);
+        return;
+    }
+
+    mInLeft = new int16_t[mFrameCount];
+    mInRight = new int16_t[mFrameCount];
+    mTmpLeft = new int16_t[mFrameCount];
+    mTmpRight = new int16_t[mFrameCount];
+    mTmp2Left = new int16_t[mFrameCount];
+    mTmp2Right = new int16_t[mFrameCount];
+    mOutLeft = new int16_t[mFrameCount];
+    mOutRight = new int16_t[mFrameCount];
+
+    mStatus = NO_ERROR;
+}
+
+ALSADownsampler::~ALSADownsampler()
+{
+    if (mInLeft) delete[] mInLeft;
+    if (mInRight) delete[] mInRight;
+    if (mTmpLeft) delete[] mTmpLeft;
+    if (mTmpRight) delete[] mTmpRight;
+    if (mTmp2Left) delete[] mTmp2Left;
+    if (mTmp2Right) delete[] mTmp2Right;
+    if (mOutLeft) delete[] mOutLeft;
+    if (mOutRight) delete[] mOutRight;
+}
+
+void ALSADownsampler::reset()
+{
+    mInInBuf = 0;
+    mInTmpBuf = 0;
+    mInTmp2Buf = 0;
+    mOutBufPos = 0;
+    mInOutBuf = 0;
+}
+
+
+int ALSADownsampler::resample(int16_t* out, size_t *outFrameCount)
+{
+    if (mStatus != NO_ERROR) {
+        return mStatus;
+    }
+
+    if (out == NULL || outFrameCount == NULL) {
+        return mStatus;
+    }
+
+    int16_t *outLeft = mTmp2Left;
+    int16_t *outRight = mTmp2Left;
+    if (mSampleRate == 22050) {
+        outLeft = mTmpLeft;
+        outRight = mTmpRight;
+    } else if (mSampleRate == 8000){
+        outLeft = mOutLeft;
+        outRight = mOutRight;
+    }
+
+    int outFrames = 0;
+    int remaingFrames = *outFrameCount;
+
+    if (mInOutBuf) {
+        int frames = (remaingFrames > mInOutBuf) ? mInOutBuf : remaingFrames;
+
+        for (int i = 0; i < frames; ++i) {
+            out[i] = outLeft[mOutBufPos + i];
+        }
+        if (mChannelCount == 2) {
+            for (int i = 0; i < frames; ++i) {
+                out[i * 2] = outLeft[mOutBufPos + i];
+                out[i * 2 + 1] = outRight[mOutBufPos + i];
+            }
+        }
+        remaingFrames -= frames;
+        mInOutBuf -= frames;
+        mOutBufPos += frames;
+        outFrames += frames;
+    }
+
+    while (remaingFrames) {
+        LOGW_IF((mInOutBuf != 0), "mInOutBuf should be 0 here");
+
+        ALSABufferProvider::Buffer buf;
+        buf.frameCount =  mFrameCount - mInInBuf;
+        int ret = mProvider->getNextBuffer(&buf);
+        if (buf.raw == NULL) {
+            *outFrameCount = outFrames;
+            return ret;
+        }
+
+        for (size_t i = 0; i < buf.frameCount; ++i) {
+            mInLeft[i + mInInBuf] = buf.i16[i];
+        }
+        if (mChannelCount == 2) {
+            for (size_t i = 0; i < buf.frameCount; ++i) {
+                mInLeft[i + mInInBuf] = buf.i16[i * 2];
+                mInRight[i + mInInBuf] = buf.i16[i * 2 + 1];
+            }
+        }
+        mInInBuf += buf.frameCount;
+        mProvider->releaseBuffer(&buf);
+
+        /* 44010 -> 22050 */
+        {
+            int samples_in_left = mInInBuf;
+            int samples_out_left;
+            resample_2_1(mInLeft, mTmpLeft + mInTmpBuf, &samples_in_left, &samples_out_left);
+
+            if (mChannelCount == 2) {
+                int samples_in_right = mInInBuf;
+                int samples_out_right;
+                resample_2_1(mInRight, mTmpRight + mInTmpBuf, &samples_in_right, &samples_out_right);
+            }
+
+            mInInBuf = samples_in_left;
+            mInTmpBuf += samples_out_left;
+            mInOutBuf = samples_out_left;
+        }
+
+        if (mSampleRate == 11025 || mSampleRate == 8000) {
+            /* 22050 - > 11025 */
+            int samples_in_left = mInTmpBuf;
+            int samples_out_left;
+            resample_2_1(mTmpLeft, mTmp2Left + mInTmp2Buf, &samples_in_left, &samples_out_left);
+
+            if (mChannelCount == 2) {
+                int samples_in_right = mInTmpBuf;
+                int samples_out_right;
+                resample_2_1(mTmpRight, mTmp2Right + mInTmp2Buf, &samples_in_right, &samples_out_right);
+            }
+
+
+            mInTmpBuf = samples_in_left;
+            mInTmp2Buf += samples_out_left;
+            mInOutBuf = samples_out_left;
+
+            if (mSampleRate == 8000) {
+                /* 11025 -> 8000*/
+                int samples_in_left = mInTmp2Buf;
+                int samples_out_left;
+                resample_441_320(mTmp2Left, mOutLeft, &samples_in_left, &samples_out_left);
+
+                if (mChannelCount == 2) {
+                    int samples_in_right = mInTmp2Buf;
+                    int samples_out_right;
+                    resample_441_320(mTmp2Right, mOutRight, &samples_in_right, &samples_out_right);
+                }
+
+                mInTmp2Buf = samples_in_left;
+                mInOutBuf = samples_out_left;
+            } else {
+                mInTmp2Buf = 0;
+            }
+
+        } else if (mSampleRate == 16000) {
+            /* 22050 -> 16000*/
+            int samples_in_left = mInTmpBuf;
+            int samples_out_left;
+            resample_441_320(mTmpLeft, mTmp2Left, &samples_in_left, &samples_out_left);
+
+            if (mChannelCount == 2) {
+                int samples_in_right = mInTmpBuf;
+                int samples_out_right;
+                resample_441_320(mTmpRight, mTmp2Right, &samples_in_right, &samples_out_right);
+            }
+
+            mInTmpBuf = samples_in_left;
+            mInOutBuf = samples_out_left;
+        } else {
+            mInTmpBuf = 0;
+        }
+
+        int frames = (remaingFrames > mInOutBuf) ? mInOutBuf : remaingFrames;
+
+        for (int i = 0; i < frames; ++i) {
+            out[outFrames + i] = outLeft[i];
+        }
+        if (mChannelCount == 2) {
+            for (int i = 0; i < frames; ++i) {
+                out[(outFrames + i) * 2] = outLeft[i];
+                out[(outFrames + i) * 2 + 1] = outRight[i];
+            }
+        }
+        remaingFrames -= frames;
+        outFrames += frames;
+        mOutBufPos = frames;
+        mInOutBuf -= frames;
+    }
+
+    return 0;
 }
 
 };        // namespace android

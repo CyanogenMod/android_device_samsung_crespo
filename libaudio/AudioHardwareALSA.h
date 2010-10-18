@@ -108,7 +108,7 @@ namespace android
                 snd_pcm_format_t    format;
                 int                 channelCount;
                 uint32_t            sampleRate;
-                uint32_t            smpRateShift;
+                uint32_t            bufferRatio;
                 unsigned int        latency;         // Delay in usec
                 unsigned int        bufferSize;      // Size of sample buffer
                 unsigned int        periodSize;      // Size of sample buffer
@@ -213,7 +213,28 @@ namespace android
             bool                    mPowerLock;
     };
 
-    class AudioStreamInALSA : public AudioStreamIn, public ALSAStreamOps
+    class ALSADownsampler;
+
+    class ALSABufferProvider
+    {
+    public:
+
+        struct Buffer {
+            union {
+                void*       raw;
+                short*      i16;
+                int8_t*     i8;
+            };
+            size_t frameCount;
+        };
+
+        virtual ~ALSABufferProvider() {}
+
+        virtual status_t getNextBuffer(Buffer* buffer) = 0;
+        virtual void releaseBuffer(Buffer* buffer) = 0;
+    };
+
+    class AudioStreamInALSA : public AudioStreamIn, public ALSAStreamOps, public ALSABufferProvider
     {
         public:
                                     AudioStreamInALSA(AudioHardwareALSA *parent);
@@ -221,9 +242,7 @@ namespace android
 
             status_t                set(int *format,
                                         uint32_t *channelCount,
-                                        uint32_t *sampleRate) {
-                return ALSAStreamOps::set(format, channelCount, sampleRate);
-            }
+                                        uint32_t *sampleRate);
 
             virtual uint32_t        sampleRate() const {
                 return ALSAStreamOps::sampleRate();
@@ -260,10 +279,17 @@ namespace android
 
                     bool            isActive() { return mPowerLock; }
 
+            // ALSABufferProvider
+            virtual status_t getNextBuffer(ALSABufferProvider::Buffer* buffer);
+            virtual void releaseBuffer(ALSABufferProvider::Buffer* buffer);
+
         private:
             AudioHardwareALSA      *mParent;
             bool                    mPowerLock;
-            int16_t                 mBuffer[2 * PERIOD_SZ_CAPTURE];
+            ALSADownsampler *mDownSampler;
+            status_t mReadStatus;
+            size_t mInPcmInBuf;
+            int16_t *mPcmIn;
     };
 
     class AudioHardwareALSA : public AudioHardwareBase
@@ -316,6 +342,7 @@ namespace android
 
             static uint32_t         checkInputSampleRate(uint32_t sampleRate);
             static const uint32_t   inputSamplingRates[];
+            static uint32_t         bufferRatio(uint32_t samplingRate);
 
                    int              mode() { return mMode; }
                    Mutex&           lock() { return mLock; }
@@ -361,6 +388,40 @@ namespace android
             void                    loadRILD(void);
             status_t                connectRILDIfRequired(void);
 
+    };
+
+    class ALSADownsampler {
+    public:
+        ALSADownsampler(uint32_t outSampleRate,
+                  uint32_t channelCount,
+                  uint32_t frameCount,
+                  ALSABufferProvider* provider);
+
+        virtual ~ALSADownsampler();
+
+                void reset();
+                status_t initCheck() { return mStatus; }
+                int resample(int16_t* out, size_t *outFrameCount);
+
+    private:
+        status_t    mStatus;
+        ALSABufferProvider* mProvider;
+        uint32_t mSampleRate;
+        uint32_t mChannelCount;
+        uint32_t mFrameCount;
+        int16_t *mInLeft;
+        int16_t *mInRight;
+        int16_t *mTmpLeft;
+        int16_t *mTmpRight;
+        int16_t *mTmp2Left;
+        int16_t *mTmp2Right;
+        int16_t *mOutLeft;
+        int16_t *mOutRight;
+        int mInInBuf;
+        int mInTmpBuf;
+        int mInTmp2Buf;
+        int mOutBufPos;
+        int mInOutBuf;
     };
 
 };        // namespace android
