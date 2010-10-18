@@ -99,6 +99,7 @@ int LightSensor::setInitialState() {
     struct input_absinfo absinfo;
     if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_LIGHT), &absinfo)) {
         mPendingEvent.light = indexToValue(absinfo.value);
+        mPreviousLight = mPendingEvent.light;
         mHasPendingEvent = true;
     }
     return 0;
@@ -135,10 +136,11 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
             }
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
-            if (mEnabled) {
+            if (mEnabled && (mPendingEvent.light != mPreviousLight)) {
                 *data++ = mPendingEvent;
                 count--;
                 numEventReceived++;
+                mPreviousLight = mPendingEvent.light;
             }
         } else {
             LOGE("LightSensor: unknown event (type=%d, code=%d)",
