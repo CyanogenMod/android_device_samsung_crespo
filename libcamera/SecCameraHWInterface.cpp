@@ -1643,6 +1643,16 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_exif_rotation = 1;
 
     if (0 <= new_rotation) {
+        // This is a temporary hack to correct the exif orientation of
+        // front-facing camera. Now the picture is mirrored but it shouldn't.
+        // The degrees of KEY_ROTATION is relative to the non-mirrored picture.
+        if (new_camera_id == SecCamera::CAMERA_ID_FRONT) {
+            if (new_rotation == 90) {
+                new_rotation = 270;
+            } else if (new_rotation == 270) {
+                new_rotation = 90;
+            }
+        }
         LOGV("%s : set orientation:%d\n", __func__, new_rotation);
         if (mSecCamera->setExifOrientationInfo(new_rotation) < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
@@ -2228,7 +2238,7 @@ static CameraInfo sCameraInfo[] = {
     },
     {
         CAMERA_FACING_FRONT,
-        90,  /* orientation */
+        270,  /* orientation */
     }
 };
 
