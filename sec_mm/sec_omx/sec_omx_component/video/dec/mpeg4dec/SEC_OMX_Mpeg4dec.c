@@ -244,7 +244,10 @@ OMX_BOOL Check_Stream_PrefixCode(OMX_U8 *pInputStream, OMX_U32 streamSize, CODEC
         }
         break;
     case CODEC_TYPE_H263:
-        return OMX_TRUE;
+        if (streamSize > 0)
+            return OMX_TRUE;
+        else
+            return OMX_FALSE;
     default:
         SEC_OSAL_Log(SEC_LOG_WARNING, "%s: undefined codec type (%d)", __FUNCTION__, codecType);
         return OMX_FALSE;
