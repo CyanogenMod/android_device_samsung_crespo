@@ -455,6 +455,40 @@ int v4l2_overlay_get_crop(int fd, uint32_t *x, uint32_t *y, uint32_t *w,
     return ret;
 }
 
+int v4l2_overlay_set_flip(int fd, int flip)
+{
+    LOG_FUNCTION_NAME
+
+    int ret;
+    struct v4l2_control ctrl_v;
+    struct v4l2_control ctrl_h;
+
+    switch (flip) {
+    case 0:
+        ctrl_v.value = 0;
+        ctrl_h.value = 0;
+        break;
+    case V4L2_CID_HFLIP:
+        ctrl_v.value = 0;
+        ctrl_h.value = 1;
+        break;
+    case V4L2_CID_VFLIP:
+        ctrl_v.value = 1;
+        ctrl_h.value = 0;
+        break;
+    default:
+        return -1;
+    }
+
+    ctrl_v.id = V4L2_CID_VFLIP;
+    ret = v4l2_overlay_ioctl(fd, VIDIOC_S_CTRL, &ctrl_v, "set vflip");
+    if (ret) return ret;
+
+    ctrl_h.id = V4L2_CID_HFLIP;
+    ret = v4l2_overlay_ioctl(fd, VIDIOC_S_CTRL, &ctrl_h, "set hflip");
+    return ret;
+}
+
 int v4l2_overlay_set_rotation(int fd, int degree, int step)
 {
     LOG_FUNCTION_NAME

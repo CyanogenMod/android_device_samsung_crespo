@@ -67,6 +67,7 @@ typedef struct
     uint32_t posW;
     uint32_t posH;
     uint32_t rotation;
+    uint32_t flip;
 
     uint32_t posX_org;
     uint32_t posY_org;
@@ -587,6 +588,11 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
         goto error1;
     }
 
+    if (v4l2_overlay_set_flip(fd, 0)) {
+        LOGE("Failed defaulting flip\n");
+        goto error1;
+    }
+
     if (v4l2_overlay_set_rotation(fd, 0, 0)) {
         LOGE("Failed defaulting rotation\n");
         goto error1;
@@ -774,16 +780,37 @@ static int overlay_setParameter(struct overlay_control_device_t *dev,
         {
         case 0:
             stage->rotation = 0;
+            stage->flip = 0;
             break;
         case OVERLAY_TRANSFORM_ROT_90:
             stage->rotation = 90;
+            stage->flip = 0;
             break;
         case OVERLAY_TRANSFORM_ROT_180:
             stage->rotation = 180;
+            stage->flip = 0;
             break;
         case OVERLAY_TRANSFORM_ROT_270:
             stage->rotation = 270;
+            stage->flip = 0;
             break;
+        case OVERLAY_TRANSFORM_FLIP_H:
+            stage->rotation = 0;
+            stage->flip = V4L2_CID_HFLIP;
+            break;
+        case OVERLAY_TRANSFORM_FLIP_V:
+            stage->rotation = 0;
+            stage->flip = V4L2_CID_VFLIP;
+            break;
+        case OVERLAY_TRANSFORM_ROT_90+OVERLAY_TRANSFORM_FLIP_H:
+            stage->rotation = 90;
+            stage->flip = V4L2_CID_HFLIP;
+            break;
+        case OVERLAY_TRANSFORM_ROT_90+OVERLAY_TRANSFORM_FLIP_V:
+            stage->rotation = 90;
+            stage->flip = V4L2_CID_VFLIP;
+            break;
+
         default:
             rc = -EINVAL;
             break;
@@ -847,7 +874,8 @@ static int overlay_commit(struct overlay_control_device_t *dev,
 
     if (data->posX == stage->posX && data->posY == stage->posY &&
             data->posW == stage->posW && data->posH == stage->posH &&
-            data->rotation == stage->rotation) {
+            data->rotation == stage->rotation &&
+            data->flip == stage->flip) {
         LOGI("Nothing to do!\n");
         goto end;
     }
@@ -860,6 +888,14 @@ static int overlay_commit(struct overlay_control_device_t *dev,
 
     if ((ret = disable_streaming_locked(shared, fd)))
         goto end;
+
+    if (stage->flip != data->flip) {
+        ret = v4l2_overlay_set_flip(fd, stage->flip);
+        if (ret) {
+            LOGE("Set Flip Failed!/%d\n", ret);
+            goto end;
+        }
+    }
 
     if (stage->rotation != data->rotation) {
         ret = v4l2_overlay_set_rotation(fd, stage->rotation, 0);
@@ -882,6 +918,7 @@ static int overlay_commit(struct overlay_control_device_t *dev,
     data->posW = stage->posW;
     data->posH = stage->posH;
     data->rotation = stage->rotation;
+    data->flip = stage->flip;
 
     ret = enable_streaming_locked(shared, fd);
 
