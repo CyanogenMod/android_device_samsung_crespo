@@ -78,6 +78,8 @@ USE_CAMERA_STUB := false
 BOARD_USES_GENERIC_AUDIO := false
 
 BOARD_USES_LIBSECRIL_STUB := false
+
+BOARD_NO_PAGE_FLIPPING := false
 EOF
 
 mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/overlay/packages/apps/Launcher2/res/layout

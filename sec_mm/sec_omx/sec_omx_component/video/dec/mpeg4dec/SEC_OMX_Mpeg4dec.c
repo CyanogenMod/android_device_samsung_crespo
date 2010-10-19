@@ -244,7 +244,10 @@ OMX_BOOL Check_Stream_PrefixCode(OMX_U8 *pInputStream, OMX_U32 streamSize, CODEC
         }
         break;
     case CODEC_TYPE_H263:
-        return OMX_TRUE;
+        if (streamSize > 0)
+            return OMX_TRUE;
+        else
+            return OMX_FALSE;
     default:
         SEC_OSAL_Log(SEC_LOG_WARNING, "%s: undefined codec type (%d)", __FUNCTION__, codecType);
         return OMX_FALSE;
@@ -1114,7 +1117,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
 #ifdef USE_SAMSUNG_COLORFORMAT
         SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
 
-        if ((pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_FALSE) ||
+        if ((pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_FALSE) &&
             (pSECOutputPort->portDefinition.format.video.eColorFormat == SEC_OMX_COLOR_FormatNV12PhysicalAddress))
 
 #else
@@ -1129,8 +1132,14 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             SEC_OSAL_Memcpy(pOutputBuf + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
         } else {
             SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420 out for ThumbnailMode");
-            tile_to_linear_4x2(pOutputBuf, (unsigned char *)outputInfo.YVirAddr, bufWidth, bufHeight);
-            tile_to_linear_4x2(pOutputBuf + frameSize, (unsigned char *)outputInfo.CVirAddr, bufWidth, bufHeight / 2);
+            Y_tile_to_linear_4x2(
+                    (unsigned char *)pOutputBuf,
+                    (unsigned char *)outputInfo.YVirAddr,
+                    bufWidth, bufHeight);
+            CbCr_tile_to_linear_4x2(
+                    ((unsigned char *)pOutputBuf) + frameSize,
+                    (unsigned char *)outputInfo.CVirAddr,
+                    bufWidth, bufHeight);
         }
     }
 
