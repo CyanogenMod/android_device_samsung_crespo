@@ -545,7 +545,7 @@ int tile_4x2_read(int x_size, int y_size, int x_pos, int y_pos)
     return trans_addr;
 }
 
-void tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size)
+void Y_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size)
 {
     int trans_addr;
     unsigned int i, j, k, index;
@@ -568,38 +568,107 @@ void tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_add
                 data8[2] = p_tiled_addr[trans_addr + 64 * k + 2];
                 data8[3] = p_tiled_addr[trans_addr + 64 * k + 3];
 
-                p_linear_addr[i * x_size + x_size * k + j] = data8[0];
-                p_linear_addr[i * x_size + x_size * k + j + 1] = data8[1];
-                p_linear_addr[i * x_size + x_size * k + j + 2] = data8[2];
-                p_linear_addr[i * x_size + x_size * k + j + 3] = data8[3];
+                p_linear_addr[index] = data8[0];
+                p_linear_addr[index + 1] = data8[1];
+                p_linear_addr[index + 2] = data8[2];
+                p_linear_addr[index + 3] = data8[3];
 
                 data8[0] = p_tiled_addr[trans_addr + 64 * k + 4];
                 data8[1] = p_tiled_addr[trans_addr + 64 * k + 5];
                 data8[2] = p_tiled_addr[trans_addr + 64 * k + 6];
                 data8[3] = p_tiled_addr[trans_addr + 64 * k + 7];
 
-                p_linear_addr[i * x_size + x_size * k + j + 4] = data8[0];
-                p_linear_addr[i * x_size + x_size * k + j + 5] = data8[1];
-                p_linear_addr[i * x_size + x_size * k + j + 6] = data8[2];
-                p_linear_addr[i * x_size + x_size * k + j + 7] = data8[3];
+                p_linear_addr[index + 4] = data8[0];
+                p_linear_addr[index + 5] = data8[1];
+                p_linear_addr[index + 6] = data8[2];
+                p_linear_addr[index + 7] = data8[3];
 
                 data8[0] = p_tiled_addr[trans_addr + 64 * k + 8];
                 data8[1] = p_tiled_addr[trans_addr + 64 * k + 9];
                 data8[2] = p_tiled_addr[trans_addr + 64 * k + 10];
                 data8[3] = p_tiled_addr[trans_addr + 64 * k + 11];
-                p_linear_addr[i*x_size + x_size * k + j + 8] = data8[0];
-                p_linear_addr[i*x_size + x_size * k + j + 9] = data8[1];
-                p_linear_addr[i*x_size + x_size * k + j + 10] = data8[2];
-                p_linear_addr[i*x_size + x_size * k + j + 11] = data8[3];
+
+                p_linear_addr[index + 8] = data8[0];
+                p_linear_addr[index + 9] = data8[1];
+                p_linear_addr[index + 10] = data8[2];
+                p_linear_addr[index + 11] = data8[3];
 
                 data8[0] = p_tiled_addr[trans_addr + 64 * k + 12];
                 data8[1] = p_tiled_addr[trans_addr + 64 * k + 13];
                 data8[2] = p_tiled_addr[trans_addr + 64 * k + 14];
                 data8[3] = p_tiled_addr[trans_addr + 64 * k + 15];
-                p_linear_addr[i*x_size + x_size * k + j + 12] = data8[0];
-                p_linear_addr[i*x_size + x_size * k + j + 13] = data8[1];
-                p_linear_addr[i*x_size + x_size * k + j + 14] = data8[2];
-                p_linear_addr[i*x_size + x_size * k + j + 15] = data8[3];
+
+                p_linear_addr[index + 12] = data8[0];
+                p_linear_addr[index + 13] = data8[1];
+                p_linear_addr[index + 14] = data8[2];
+                p_linear_addr[index + 15] = data8[3];
+            }
+        }
+    }
+}
+
+void CbCr_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size)
+{
+    int trans_addr;
+    unsigned int i, j, k, index;
+    unsigned char data8[4];
+	unsigned int half_y_size = y_size / 2;
+    unsigned int max_index = x_size * half_y_size;
+    unsigned char *pUVAddr[2];
+    
+    pUVAddr[0] = p_linear_addr;
+    pUVAddr[1] = p_linear_addr + ((x_size * half_y_size) / 2);
+    
+    for (i = 0; i < half_y_size; i = i + 16) {
+        for (j = 0; j < x_size; j = j + 16) {
+            trans_addr = tile_4x2_read(x_size, half_y_size, j, i);
+            for (k = 0; k < 16; k++) {
+                /* limit check - prohibit segmentation fault */
+                index = (i * x_size) + (x_size * k) + j;
+                /* remove equal condition to solve thumbnail bug */
+                if (index + 16 > max_index) {
+                    continue;
+                }
+
+				data8[0] = p_tiled_addr[trans_addr + 64 * k + 0];
+				data8[1] = p_tiled_addr[trans_addr + 64 * k + 1];
+				data8[2] = p_tiled_addr[trans_addr + 64 * k + 2];
+				data8[3] = p_tiled_addr[trans_addr + 64 * k + 3];
+
+				pUVAddr[index%2][index/2] = data8[0];
+				pUVAddr[(index+1)%2][(index+1)/2] = data8[1];
+				pUVAddr[(index+2)%2][(index+2)/2] = data8[2];
+				pUVAddr[(index+3)%2][(index+3)/2] = data8[3];
+
+				data8[0] = p_tiled_addr[trans_addr + 64 * k + 4];
+				data8[1] = p_tiled_addr[trans_addr + 64 * k + 5];
+				data8[2] = p_tiled_addr[trans_addr + 64 * k + 6];
+				data8[3] = p_tiled_addr[trans_addr + 64 * k + 7];
+
+				pUVAddr[(index+4)%2][(index+4)/2] = data8[0];
+				pUVAddr[(index+5)%2][(index+5)/2] = data8[1];
+				pUVAddr[(index+6)%2][(index+6)/2] = data8[2];
+				pUVAddr[(index+7)%2][(index+7)/2] = data8[3];
+
+				data8[0] = p_tiled_addr[trans_addr + 64 * k + 8];
+				data8[1] = p_tiled_addr[trans_addr + 64 * k + 9];
+				data8[2] = p_tiled_addr[trans_addr + 64 * k + 10];
+				data8[3] = p_tiled_addr[trans_addr + 64 * k + 11];
+
+				pUVAddr[(index+8)%2][(index+8)/2] = data8[0];
+				pUVAddr[(index+9)%2][(index+9)/2] = data8[1];
+				pUVAddr[(index+10)%2][(index+10)/2] = data8[2];
+				pUVAddr[(index+11)%2][(index+11)/2] = data8[3];
+
+				data8[0] = p_tiled_addr[trans_addr + 64 * k + 12];
+				data8[1] = p_tiled_addr[trans_addr + 64 * k + 13];
+				data8[2] = p_tiled_addr[trans_addr + 64 * k + 14];
+				data8[3] = p_tiled_addr[trans_addr + 64 * k + 15];
+
+				pUVAddr[(index+12)%2][(index+12)/2] = data8[0];
+				pUVAddr[(index+13)%2][(index+13)/2] = data8[1];
+				pUVAddr[(index+14)%2][(index+14)/2] = data8[2];
+				pUVAddr[(index+15)%2][(index+15)/2] = data8[3];
             }
         }
     }
