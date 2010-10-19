@@ -275,7 +275,7 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
             SEC_OSAL_ThreadTerminate(pSECComponent->hBufferProcess);
             pSECComponent->hBufferProcess = NULL;
             SEC_OSAL_SignalTerminate(pSECComponent->pauseEvent);
-            for (i = 0; i > ALL_PORT_NUM; i++) {
+            for (i = 0; i < ALL_PORT_NUM; i++) {
                 SEC_OSAL_SemaphoreTerminate(pSECComponent->pSECPort[i].bufferSemID);
                 pSECComponent->pSECPort[i].bufferSemID = NULL;
             }
@@ -360,7 +360,7 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
                     SEC_OSAL_MutexTerminate(pSECComponent->secDataBuffer[i].bufferMutex);
                     pSECComponent->secDataBuffer[i].bufferMutex = NULL;
                 }
-                for (i = 0; i > ALL_PORT_NUM; i++) {
+                for (i = 0; i < ALL_PORT_NUM; i++) {
                     SEC_OSAL_SemaphoreTerminate(pSECComponent->pSECPort[i].bufferSemID);
                     pSECComponent->pSECPort[i].bufferSemID = NULL;
                 }
