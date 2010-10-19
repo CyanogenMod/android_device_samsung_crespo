@@ -31,6 +31,7 @@ int v4l2_overlay_set_crop(int fd, uint32_t x, uint32_t y, uint32_t w,
         uint32_t h);
 int v4l2_overlay_get_crop(int fd, uint32_t *x, uint32_t *y, uint32_t *w,
         uint32_t *h);
+int v4l2_overlay_set_flip(int fd, int degree);
 int v4l2_overlay_set_rotation(int fd, int degree, int step);
 int v4l2_overlay_set_colorkey(int fd, int enable, int colorkey);
 int v4l2_overlay_set_global_alpha(int fd, int enable, int alpha);
