@@ -1,7 +1,7 @@
 /*
 **
 ** Copyright 2008, The Android Open Source Project
-** Copyright@ Samsung Electronics Co. LTD
+** Copyright 2010, Samsung Electronics Co. LTD
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -48,10 +48,10 @@
 #define HIBYTE(x) (((x) >> 8) & 0xFF)
 #define LOBYTE(x) ((x) & 0xFF)
 
+#define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
+#define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
+#define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 /* TBD: placeholder values, to be adjusted */
-#define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.50,1.9,Infinity"
-#define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.30,Infinity"
-#define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.50,0.50,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.30,0.30,Infinity"
 
 namespace android {
@@ -363,6 +363,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
     mParameters = p;
     mInternalParameters = ip;
+
+    /* make sure mSecCamera has all the settings we do.  applications
+     * aren't required to call setParameters themselves (only if they
+     * want to change something.
+     */
+    setParameters(p);
 }
 
 CameraHardwareSec::~CameraHardwareSec()
@@ -1643,6 +1649,16 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_exif_rotation = 1;
 
     if (0 <= new_rotation) {
+        // This is a temporary hack to correct the exif orientation of
+        // front-facing camera. Now the picture is mirrored but it shouldn't.
+        // The degrees of KEY_ROTATION is relative to the non-mirrored picture.
+        if (new_camera_id == SecCamera::CAMERA_ID_FRONT) {
+            if (new_rotation == 90) {
+                new_rotation = 270;
+            } else if (new_rotation == 270) {
+                new_rotation = 90;
+            }
+        }
         LOGV("%s : set orientation:%d\n", __func__, new_rotation);
         if (mSecCamera->setExifOrientationInfo(new_rotation) < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
@@ -2228,7 +2244,7 @@ static CameraInfo sCameraInfo[] = {
     },
     {
         CAMERA_FACING_FRONT,
-        90,  /* orientation */
+        270,  /* orientation */
     }
 };
 

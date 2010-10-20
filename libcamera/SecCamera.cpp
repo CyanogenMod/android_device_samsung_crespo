@@ -1,5 +1,6 @@
 /*
- * Copyright@ Samsung Electronics Co. LTD
+ * Copyright 2008, The Android Open Source Project
+ * Copyright 2010, Samsung Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -874,7 +875,7 @@ void SecCamera::DeinitCamera()
         }
 
         m_flag_init = 0;
-        usleep(100000); //100 ms delay to allow proper closure of fimc device.
+        usleep(500000); //500 ms delay to allow proper closure of fimc device.
     }
 }
 
