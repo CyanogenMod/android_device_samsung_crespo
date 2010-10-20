@@ -396,6 +396,11 @@ CameraHardwareSec::~CameraHardwareSec()
     singleton.clear();
 }
 
+status_t CameraHardwareSec::setPreviewWindow(const sp<ANativeWindow>& buf)
+{
+    return NO_ERROR;
+}
+
 sp<IMemoryHeap> CameraHardwareSec::getPreviewHeap() const
 {
     return mPreviewHeap;
