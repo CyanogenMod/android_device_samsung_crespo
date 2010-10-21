@@ -119,7 +119,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libnfc \
 	libnfc_jni \
-	Nfc
+	Nfc \
+	Tag
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \
