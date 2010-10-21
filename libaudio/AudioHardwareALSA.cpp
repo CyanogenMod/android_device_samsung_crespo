@@ -210,7 +210,8 @@ AudioHardwareALSA::AudioHardwareALSA() :
     mSecRilLibHandle(NULL),
     mRilClient(0),
     mVrModeEnabled(false),
-    mActivatedCP(false)
+    mActivatedCP(false),
+    mBluetoothECOff(false)
 {
     snd_lib_error_set_handler(&ALSAErrorHandler);
     mMixer = new ALSAMixer;
@@ -539,8 +540,11 @@ status_t AudioHardwareALSA::doRouting_l(uint32_t device, bool force)
                 case AudioSystem::ROUTE_BLUETOOTH_SCO:
                 case AudioSystem::ROUTE_BLUETOOTH_SCO_HEADSET:
                 case AudioSystem::ROUTE_BLUETOOTH_SCO_CARKIT:
-                    LOGI("### incall mode bluetooth route");
-                    setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH);
+                    LOGI("### incall mode bluetooth route %s NR", mBluetoothECOff ? "NO" : "");
+                    if (mBluetoothECOff)
+                        setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH_NO_NR);
+                    else
+                        setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH);
                     break;
 
                 case AudioSystem::ROUTE_HEADSET :
@@ -561,21 +565,6 @@ status_t AudioHardwareALSA::doRouting_l(uint32_t device, bool force)
         }
 
         ret = mOutput->setDevice(mode, device, PLAYBACK, force);
-
-        if (mSecRilLibHandle && (connectRILDIfRequired() == OK) ) {
-            if (AudioSystem::MODE_IN_CALL == mode) {
-                if (!mActivatedCP) {
-                    setCallClockSync(mRilClient, SOUND_CLOCK_START);
-                    mActivatedCP = true;
-                }
-            }
-
-            if (AudioSystem::MODE_NORMAL == mode) {
-                if(mActivatedCP)
-                    mActivatedCP = false;
-            }
-        }
-
 
         return ret;
     }
@@ -665,6 +654,14 @@ status_t AudioHardwareALSA::setMode(int mode)
     status_t status = AudioHardwareBase::setMode(mode);
     LOGV("setMode() : new %d, old %d", mMode, prevMode);
     if (status == NO_ERROR) {
+        if ( (mMode == AudioSystem::MODE_RINGTONE) || (mMode == AudioSystem::MODE_IN_CALL) )
+        {
+            if ( (!mActivatedCP) && (mSecRilLibHandle) && (connectRILDIfRequired() == OK) ) {
+                setCallClockSync(mRilClient, SOUND_CLOCK_START);
+                mActivatedCP = true;
+            }
+        }
+
         // make sure that doAudioRouteOrMute() is called by doRouting()
         // when entering or exiting in call mode even if the new device
         // selected is the same as current one.
@@ -679,6 +676,11 @@ status_t AudioHardwareALSA::setMode(int mode)
             if (mOutput != NULL && !mOutput->isActive()) {
                 mOutput->close();
             }
+        }
+
+        if (mMode == AudioSystem::MODE_NORMAL) {
+            if(mActivatedCP)
+                mActivatedCP = false;
         }
     }
 
@@ -704,6 +706,54 @@ int AudioHardwareALSA::setVoiceRecordGain_l(bool enable)
 
      return NO_ERROR;
 }
+
+status_t AudioHardwareALSA::setParameters(const String8& keyValuePairs)
+{
+    AudioParameter param = AudioParameter(keyValuePairs);
+    String8 bt_nrec_key = String8("bt_headset_nrec");
+    String8 value;
+
+    LOGV("setParameters(%s)", keyValuePairs.string());
+
+    if (param.get(bt_nrec_key, value) == NO_ERROR) {
+        setBluetoothNrEcOnOff((value == "on") ? false : true);
+    }
+
+    return NO_ERROR;
+}
+
+void AudioHardwareALSA::setBluetoothNrEcOnOff(bool disable)
+{
+    LOGV("setBluetoothNrEcOnOff(%s)", disable ? "true" : "false");
+
+    if (disable != mBluetoothECOff)
+    {
+        mBluetoothECOff = disable;
+
+        if ( (mOutput)          && (AudioSystem::MODE_IN_CALL == mMode) &&
+             (mSecRilLibHandle) && (connectRILDIfRequired() == OK)) {
+
+            uint32_t device = mOutput->device();
+
+            switch (device) {
+                case AudioSystem::ROUTE_BLUETOOTH_SCO:
+                case AudioSystem::ROUTE_BLUETOOTH_SCO_HEADSET:
+                case AudioSystem::ROUTE_BLUETOOTH_SCO_CARKIT:
+                    LOGV("### incall mode bluetooth EC %s route", mBluetoothECOff ? "OFF" : "ON");
+                    if (mBluetoothECOff)
+                        setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH_NO_NR);
+                    else
+                        setCallAudioPath(mRilClient, SOUND_AUDIO_PATH_BLUETOOTH);
+                    break;
+
+                default :
+                    LOGE("Bluetooth path is not activated!!");
+                    break;
+            }
+        }
+    }
+}
+
 
 // ----------------------------------------------------------------------------
 

@@ -350,6 +350,8 @@ namespace android
                    int              setVoiceRecordGain(bool enable);
                    int              setVoiceRecordGain_l(bool enable);
 
+            virtual status_t        setParameters(const String8& keyValuePairs);
+
         protected:
             /**
              * doRouting actually initiates the routing. A call to setRouting
@@ -375,6 +377,7 @@ namespace android
             HRilClient              mRilClient;
             bool                    mVrModeEnabled;
             bool                    mActivatedCP;
+            bool                    mBluetoothECOff;
 
             HRilClient (*openClientRILD)  (void);
             int        (*disconnectRILD)  (HRilClient);
@@ -387,6 +390,7 @@ namespace android
 
             void                    loadRILD(void);
             status_t                connectRILDIfRequired(void);
+            void                    setBluetoothNrEcOnOff(bool disable);
 
     };
 
