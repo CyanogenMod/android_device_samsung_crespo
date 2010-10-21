@@ -48,10 +48,10 @@
 #define HIBYTE(x) (((x) >> 8) & 0xFF)
 #define LOBYTE(x) ((x) & 0xFF)
 
+#define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
+#define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
+#define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 /* TBD: placeholder values, to be adjusted */
-#define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.50,1.9,Infinity"
-#define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.30,Infinity"
-#define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.50,0.50,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.30,0.30,Infinity"
 
 namespace android {
@@ -363,6 +363,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
     mParameters = p;
     mInternalParameters = ip;
+
+    /* make sure mSecCamera has all the settings we do.  applications
+     * aren't required to call setParameters themselves (only if they
+     * want to change something.
+     */
+    setParameters(p);
 }
 
 CameraHardwareSec::~CameraHardwareSec()

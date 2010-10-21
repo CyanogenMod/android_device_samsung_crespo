@@ -875,7 +875,7 @@ void SecCamera::DeinitCamera()
         }
 
         m_flag_init = 0;
-        usleep(100000); //100 ms delay to allow proper closure of fimc device.
+        usleep(500000); //500 ms delay to allow proper closure of fimc device.
     }
 }
 
