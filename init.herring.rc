@@ -19,6 +19,10 @@ on boot
 # phone
     setprop ro.telephony.call_ring.multiple 0
 
+# change permission for uart_switch
+    chown radio radio /sys/class/sec/uart_switch/UART_SEL/value
+    chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
+
 # create data/gps for GPS demon
     mkdir /data/gps 700 gps system
     chown gps system /data/gps

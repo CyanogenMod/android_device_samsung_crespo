@@ -1627,6 +1627,7 @@ ssize_t AudioStreamInALSA::read(void *buffer, ssize_t bytes)
                 } else {
                     n = status;
                 }
+                frames = snd_pcm_bytes_to_frames(mHandle, bytes);
             } else {
                 n = frames;
             }
@@ -1736,7 +1737,7 @@ status_t AudioStreamInALSA::getNextBuffer(ALSABufferProvider::Buffer* buffer)
                               (uint8_t *)mPcmIn +
                               (mInPcmInBuf * mDefaults->channelCount * sizeof(int16_t)),
                               PERIOD_SZ_CAPTURE - mInPcmInBuf);
-            if (mReadStatus <= 0) {
+            if (mReadStatus < 0) {
                 buffer->raw = NULL;
                 buffer->frameCount = 0;
                 LOGV("resampler read error %d", mReadStatus);
@@ -2452,7 +2453,7 @@ int ALSADownsampler::resample(int16_t* out, size_t *outFrameCount)
     }
 
     if (out == NULL || outFrameCount == NULL) {
-        return mStatus;
+        return BAD_VALUE;
     }
 
     int16_t *outLeft = mTmp2Left;
