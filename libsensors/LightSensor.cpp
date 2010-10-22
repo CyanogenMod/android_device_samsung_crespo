@@ -27,9 +27,17 @@
 
 /*****************************************************************************/
 
+/* The Crespo ADC sends 4 somewhat bogus events after enabling the sensor.
+   This becomes a problem if the phone is turned off in bright light
+   and turned back on in the dark.
+   To avoid this we ignore the first 4 events received after enabling the sensor.
+ */
+#define FIRST_GOOD_EVENT    5
+
 LightSensor::LightSensor()
     : SensorBase(NULL, "lightsensor-level"),
       mEnabled(0),
+      mEventsSinceEnable(0),
       mInputReader(4),
       mHasPendingEvent(false)
 {
@@ -71,6 +79,8 @@ int LightSensor::setDelay(int32_t handle, int64_t ns)
 int LightSensor::enable(int32_t handle, int en)
 {
     int flags = en ? 1 : 0;
+    mEventsSinceEnable = 0;
+    mPreviousLight = -1;
     if (flags != mEnabled) {
         int fd;
         strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
@@ -87,20 +97,9 @@ int LightSensor::enable(int32_t handle, int en)
             err = write(fd, buf, sizeof(buf));
             close(fd);
             mEnabled = flags;
-            setInitialState();
             return 0;
         }
         return -1;
-    }
-    return 0;
-}
-
-int LightSensor::setInitialState() {
-    struct input_absinfo absinfo;
-    if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_LIGHT), &absinfo)) {
-        mPendingEvent.light = indexToValue(absinfo.value);
-        mPreviousLight = mPendingEvent.light;
-        mHasPendingEvent = true;
     }
     return 0;
 }
@@ -133,10 +132,13 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
         if (type == EV_ABS) {
             if (event->code == EVENT_TYPE_LIGHT) {
                 mPendingEvent.light = indexToValue(event->value);
+                if (mEventsSinceEnable < FIRST_GOOD_EVENT)
+                    mEventsSinceEnable++;
             }
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
-            if (mEnabled && (mPendingEvent.light != mPreviousLight)) {
+            if (mEnabled && (mPendingEvent.light != mPreviousLight) &&
+                    mEventsSinceEnable >= FIRST_GOOD_EVENT) {
                 *data++ = mPendingEvent;
                 count--;
                 numEventReceived++;
