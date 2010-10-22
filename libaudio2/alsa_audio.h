@@ -30,6 +30,13 @@ struct pcm;
 #define PCM_8000HZ     0x00200000
 #define PCM_RATE_MASK  0x00F00000
 
+#define PCM_PERIOD_CNT_MIN 2
+#define PCM_PERIOD_CNT_SHIFT 16
+#define PCM_PERIOD_CNT_MASK (0xF << PCM_PERIOD_CNT_SHIFT)
+#define PCM_PERIOD_SZ_MIN 128
+#define PCM_PERIOD_SZ_SHIFT 12
+#define PCM_PERIOD_SZ_MASK (0xF << PCM_PERIOD_SZ_SHIFT)
+
 /* Acquire/release a pcm channel.
  * Returns non-zero on error
  */

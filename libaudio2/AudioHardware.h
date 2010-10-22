@@ -25,6 +25,8 @@
 
 #include <hardware_legacy/AudioHardwareBase.h>
 
+#include "secril-client.h"
+
 extern "C" {
     struct pcm;
     struct mixer;
@@ -32,11 +34,6 @@ extern "C" {
 };
 
 namespace android {
-
-#define CODEC_TYPE_PCM 0
-#define PCM_FILL_BUFFER_COUNT 1
-// Number of buffers in audio driver for output
-#define AUDIO_HW_NUM_OUT_BUF 2
 
 // TODO: determine actual audio DSP and hardware latency
 // Additionnal latency introduced by audio DSP and hardware in ms
@@ -47,27 +44,36 @@ namespace android {
 #define AUDIO_HW_OUT_CHANNELS (AudioSystem::CHANNEL_OUT_STEREO)
 // Default audio output sample format
 #define AUDIO_HW_OUT_FORMAT (AudioSystem::PCM_16_BIT)
-// Default audio output buffer size
-#define AUDIO_HW_OUT_BUFSZ 4096
+// Kernel pcm out buffer size in frames at 44.1kHz
+#define AUDIO_HW_OUT_PERIOD_MULT 8 // (8 * 128 = 1024 frames)
+#define AUDIO_HW_OUT_PERIOD_SZ (PCM_PERIOD_SZ_MIN * AUDIO_HW_OUT_PERIOD_MULT)
+#define AUDIO_HW_OUT_PERIOD_CNT 4
+// Default audio output buffer size in bytes
+#define AUDIO_HW_OUT_PERIOD_BYTES (AUDIO_HW_OUT_PERIOD_SZ * 2 * sizeof(int16_t))
 
-#if 0
 // Default audio input sample rate
 #define AUDIO_HW_IN_SAMPLERATE 8000
 // Default audio input channel mask
 #define AUDIO_HW_IN_CHANNELS (AudioSystem::CHANNEL_IN_MONO)
 // Default audio input sample format
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)
-// Default audio input buffer size
-#define AUDIO_HW_IN_BUFSZ 256
+// Number of buffers in audio driver for input
+#define AUDIO_HW_NUM_IN_BUF 2
+// Kernel pcm in buffer size in frames at 44.1kHz (before resampling)
+#define AUDIO_HW_IN_PERIOD_MULT 16  // (16 * 128 = 2048 frames)
+#define AUDIO_HW_IN_PERIOD_SZ (PCM_PERIOD_SZ_MIN * AUDIO_HW_IN_PERIOD_MULT)
+#define AUDIO_HW_IN_PERIOD_CNT 2
+// Default audio input buffer size in bytes (8kHz mono)
+#define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
-// Maximum voice volume
-#define VOICE_VOLUME_MAX 5
-#endif
+#define VOICE_REC_MODE_KEY "vr_mode"
 
 class AudioHardware : public AudioHardwareBase
 {
     class AudioStreamOutALSA;
+    class AudioStreamInALSA;
 public:
+
     AudioHardware();
     virtual ~AudioHardware();
     virtual status_t initCheck();
@@ -98,17 +104,66 @@ public:
     virtual size_t getInputBufferSize(
         uint32_t sampleRate, int format, int channelCount);
 
-    void clearCurDevice() { }
+            int  mode() { return mMode; }
+            const char *getOutputRouteFromDevice(uint32_t device);
+            const char *getInputRouteFromDevice(uint32_t device);
+            const char *getVoiceRouteFromDevice(uint32_t device);
+
+            status_t setIncallPath(uint32_t device);
+            status_t setIncallPath_l(uint32_t device);
+
+            status_t setVoiceRecognition(bool enable);
+            status_t setVoiceRecognition_l(bool enable);
+
+    static uint32_t    getInputSampleRate(uint32_t sampleRate);
+           AudioStreamInALSA* getActiveInput_l();
+
+           void lock() { mLock.lock(); }
+           void unlock() { mLock.unlock(); }
+
+           struct pcm *openPcmOut();
+           struct pcm *openPcmOut_l();
+           void closePcmOut();
+           void closePcmOut_l();
+
+           struct mixer *openMixer();
+           struct mixer *openMixer_l();
+           void closeMixer();
+           void closeMixer_l();
 
 protected:
     virtual status_t dump(int fd, const Vector<String16>& args);
 
 private:
-    bool mInit;
-    bool  mMicMute;
-    AudioStreamOutALSA *mOutput;
-    Mutex mLock;
-    struct mixer *mMixer;
+
+    bool            mInit;
+    bool            mMicMute;
+    AudioStreamOutALSA*                 mOutput;
+    SortedVector <AudioStreamInALSA*>   mInputs;
+    Mutex           mLock;
+    struct pcm*     mPcm;
+    struct mixer*   mMixer;
+    uint32_t        mPcmOpenCnt;
+    uint32_t        mMixerOpenCnt;
+
+    bool            mVrModeEnabled;
+    bool            mBluetoothNrec;
+    void*           mSecRilLibHandle;
+    HRilClient      mRilClient;
+    bool            mActivatedCP;
+    HRilClient      (*openClientRILD)  (void);
+    int             (*disconnectRILD)  (HRilClient);
+    int             (*closeClientRILD) (HRilClient);
+    int             (*isConnectedRILD) (HRilClient);
+    int             (*connectRILD)     (HRilClient);
+    int             (*setCallVolume)   (HRilClient, SoundType, int);
+    int             (*setCallAudioPath)(HRilClient, AudioPath);
+    int             (*setCallClockSync)(HRilClient, SoundClockCondition);
+    void            loadRILD(void);
+    status_t        connectRILDIfRequired(void);
+
+    static uint32_t         checkInputSampleRate(uint32_t sampleRate);
+    static const uint32_t   inputSamplingRates[];
 
     class AudioStreamOutALSA : public AudioStreamOut
     {
@@ -129,7 +184,7 @@ private:
         virtual int format()
             const { return AUDIO_HW_OUT_FORMAT; }
         virtual uint32_t latency()
-            const { return (1000 * AUDIO_HW_NUM_OUT_BUF *
+            const { return (1000 * AUDIO_HW_OUT_PERIOD_CNT *
                             (bufferSize()/frameSize()))/sampleRate() +
                 AUDIO_HW_OUT_LATENCY_MS; }
         virtual status_t setVolume(float left, float right)
@@ -140,11 +195,14 @@ private:
         bool checkStandby();
         virtual status_t setParameters(const String8& keyValuePairs);
         virtual String8 getParameters(const String8& keys);
-        uint32_t devices()
-        { return mDevices; }
+        uint32_t device() { return mDevices; }
         virtual status_t getRenderPosition(uint32_t *dspFrames);
 
+                void setNextRoute(const char *route) { next_route = route; }
+
     private:
+
+        Mutex mLock;
         AudioHardware* mHardware;
         struct pcm *mPcm;
         struct mixer *mMixer;
@@ -158,6 +216,118 @@ private:
         uint32_t mSampleRate;
         size_t mBufferSize;
     };
+
+    class DownSampler;
+
+    class BufferProvider
+    {
+    public:
+
+        struct Buffer {
+            union {
+                void*       raw;
+                short*      i16;
+                int8_t*     i8;
+            };
+            size_t frameCount;
+        };
+
+        virtual ~BufferProvider() {}
+
+        virtual status_t getNextBuffer(Buffer* buffer) = 0;
+        virtual void releaseBuffer(Buffer* buffer) = 0;
+    };
+
+    class DownSampler {
+    public:
+        DownSampler(uint32_t outSampleRate,
+                  uint32_t channelCount,
+                  uint32_t frameCount,
+                  BufferProvider* provider);
+
+        virtual ~DownSampler();
+
+                void reset();
+                status_t initCheck() { return mStatus; }
+                int resample(int16_t* out, size_t *outFrameCount);
+
+    private:
+        status_t    mStatus;
+        BufferProvider* mProvider;
+        uint32_t mSampleRate;
+        uint32_t mChannelCount;
+        uint32_t mFrameCount;
+        int16_t *mInLeft;
+        int16_t *mInRight;
+        int16_t *mTmpLeft;
+        int16_t *mTmpRight;
+        int16_t *mTmp2Left;
+        int16_t *mTmp2Right;
+        int16_t *mOutLeft;
+        int16_t *mOutRight;
+        int mInInBuf;
+        int mInTmpBuf;
+        int mInTmp2Buf;
+        int mOutBufPos;
+        int mInOutBuf;
+    };
+
+
+    class AudioStreamInALSA : public AudioStreamIn, public BufferProvider
+    {
+
+     public:
+                    AudioStreamInALSA();
+        virtual     ~AudioStreamInALSA();
+        status_t    set(AudioHardware* hw,
+                    uint32_t devices,
+                    int *pFormat,
+                    uint32_t *pChannels,
+                    uint32_t *pRate,
+                    AudioSystem::audio_in_acoustics acoustics);
+        virtual size_t bufferSize() const { return mBufferSize; }
+        virtual uint32_t channels() const { return mChannels; }
+        virtual int format() const { return AUDIO_HW_IN_FORMAT; }
+        virtual uint32_t sampleRate() const { return mSampleRate; }
+        virtual status_t setGain(float gain) { return INVALID_OPERATION; }
+        virtual ssize_t read(void* buffer, ssize_t bytes);
+        virtual status_t dump(int fd, const Vector<String16>& args);
+        virtual status_t standby();
+                bool checkStandby();
+        virtual status_t setParameters(const String8& keyValuePairs);
+        virtual String8 getParameters(const String8& keys);
+        virtual unsigned int getInputFramesLost() const { return 0; }
+                uint32_t device() { return mDevices; }
+                void setNextRoute(const char *route) { next_route = route; }
+
+        static size_t getBufferSize(uint32_t sampleRate, int channelCount);
+
+        // BufferProvider
+        virtual status_t getNextBuffer(BufferProvider::Buffer* buffer);
+        virtual void releaseBuffer(BufferProvider::Buffer* buffer);
+
+    private:
+        Mutex mLock;
+        AudioHardware* mHardware;
+        struct pcm *mPcm;
+        struct mixer *mMixer;
+        struct mixer_ctl *mRouteCtl;
+        struct mixer_ctl *mMicCtl;
+        const char *next_route;
+        int mStartCount;
+        int mRetryCount;
+        bool mStandby;
+        uint32_t mDevices;
+        uint32_t mChannels;
+        uint32_t mChannelCount;
+        uint32_t mSampleRate;
+        size_t mBufferSize;
+        DownSampler *mDownSampler;
+        status_t mReadStatus;
+        size_t mInPcmInBuf;
+        int16_t *mPcmIn;
+    };
+
 };
 
 }; // namespace android
