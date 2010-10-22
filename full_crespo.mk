@@ -19,6 +19,16 @@
 # product configuration (apps).
 #
 
+# NFC is a product-level aspect that is too closely tied
+# to this device to justify putting in a more generic config,
+# but which is also not quite a low-level driver to put in
+# device.mk
+PRODUCT_PACKAGES := \
+        libnfc \
+        libnfc_jni \
+        Nfc \
+        Tag
+
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
 # This is where we'd set a backup provider if we had one

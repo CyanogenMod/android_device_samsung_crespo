@@ -115,13 +115,6 @@ PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw
 
-# NFC
-PRODUCT_PACKAGES += \
-	libnfc \
-	libnfc_jni \
-	Nfc \
-	Tag
-
 # Input device calibration files
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
