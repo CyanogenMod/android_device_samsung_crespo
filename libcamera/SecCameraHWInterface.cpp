@@ -1122,9 +1122,11 @@ int CameraHardwareSec::pictureThread()
                                 &JpegImageSize, JpegHeap->base(), PostviewHeap->base());
 
         }
-        scaleDownYuv422((char *)PostviewHeap->base(), mPostViewWidth, mPostViewHeight,
-                        (char *)ThumbnailHeap->base(), mThumbWidth, mThumbHeight);
+    } else {
+        JpegImageSize = static_cast<int>(output_size);
     }
+    scaleDownYuv422((char *)PostviewHeap->base(), mPostViewWidth, mPostViewHeight,
+                    (char *)ThumbnailHeap->base(), mThumbWidth, mThumbHeight);
 
 #ifdef POSTVIEW_CALLBACK
     sp<MemoryBase> postview = new MemoryBase(PostviewHeap, 0, postviewHeapSize);
@@ -1187,28 +1189,23 @@ PostviewOverlayEnd:
     }
 #endif
     if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-            sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
-            JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(),
-                    (unsigned char *)ThumbnailHeap->base());
+        sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
+        JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(),
+                (unsigned char *)ThumbnailHeap->base());
 
-            LOGE("JpegExifSize=%d", JpegExifSize);
+        LOGV("JpegExifSize=%d", JpegExifSize);
 
-            if (JpegExifSize < 0)
-                return UNKNOWN_ERROR;
+        if (JpegExifSize < 0)
+            return UNKNOWN_ERROR;
 
-            unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
-            unsigned char *ImageStart = ExifStart + JpegExifSize;
+        unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
+        unsigned char *ImageStart = ExifStart + JpegExifSize;
 
-            memmove(ImageStart, ExifStart, JpegImageSize - 2);
-            memcpy(ExifStart, ExifHeap->base(), JpegExifSize);
-            sp<MemoryBase> mem = new MemoryBase(JpegHeap, 0, JpegImageSize + JpegExifSize);
+        memmove(ImageStart, ExifStart, JpegImageSize - 2);
+        memcpy(ExifStart, ExifHeap->base(), JpegExifSize);
+        sp<MemoryBase> mem = new MemoryBase(JpegHeap, 0, JpegImageSize + JpegExifSize);
 
-            mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
-        } else {
-            sp<MemoryBase> mem = new MemoryBase(JpegHeap , 0, output_size);
-            mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
-        }
+        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
     }
 
     LOG_TIME_END(0)

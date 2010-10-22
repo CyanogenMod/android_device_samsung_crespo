@@ -1560,9 +1560,17 @@ void SecCamera::getPostViewConfig(int *width, int *height, int *size)
 
 void SecCamera::getThumbnailConfig(int *width, int *height, int *size)
 {
-    *width = BACK_CAMERA_THUMBNAIL_WIDTH;
-    *height = BACK_CAMERA_THUMBNAIL_HEIGHT;
-    *size = BACK_CAMERA_THUMBNAIL_WIDTH * BACK_CAMERA_THUMBNAIL_HEIGHT * BACK_CAMERA_THUMBNAIL_BPP / 8;
+    if (m_camera_id == CAMERA_ID_BACK) {
+        *width  = BACK_CAMERA_THUMBNAIL_WIDTH;
+        *height = BACK_CAMERA_THUMBNAIL_HEIGHT;
+        *size   = BACK_CAMERA_THUMBNAIL_WIDTH * BACK_CAMERA_THUMBNAIL_HEIGHT
+                    * BACK_CAMERA_THUMBNAIL_BPP / 8;
+    } else {
+        *width  = FRONT_CAMERA_THUMBNAIL_WIDTH;
+        *height = FRONT_CAMERA_THUMBNAIL_HEIGHT;
+        *size   = FRONT_CAMERA_THUMBNAIL_WIDTH * FRONT_CAMERA_THUMBNAIL_HEIGHT
+                    * FRONT_CAMERA_THUMBNAIL_BPP / 8;
+    }
 }
 
 #ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
