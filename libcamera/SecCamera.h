@@ -95,25 +95,25 @@ namespace android {
 #define JOIN_AGAIN(x, y) x ## y
 
 #define FRONT_CAM VGA
-#define BACK_CAM ISX006
+#define BACK_CAM S5K4ECGX
 
 #if !defined (FRONT_CAM) || !defined(BACK_CAM)
 #error "Please define the Camera module"
 #endif
 
-#define ISX006_PREVIEW_WIDTH            640
-#define ISX006_PREVIEW_HEIGHT           480
-#define ISX006_SNAPSHOT_WIDTH           2560
-#define ISX006_SNAPSHOT_HEIGHT          1920
+#define S5K4ECGX_PREVIEW_WIDTH            720
+#define S5K4ECGX_PREVIEW_HEIGHT           480
+#define S5K4ECGX_SNAPSHOT_WIDTH           2560
+#define S5K4ECGX_SNAPSHOT_HEIGHT          1920
 
-#define ISX006_POSTVIEW_WIDTH           640
-#define ISX006_POSTVIEW_WIDE_WIDTH      800
-#define ISX006_POSTVIEW_HEIGHT          480
-#define ISX006_POSTVIEW_BPP             16
+#define S5K4ECGX_POSTVIEW_WIDTH           640
+#define S5K4ECGX_POSTVIEW_WIDE_WIDTH      800
+#define S5K4ECGX_POSTVIEW_HEIGHT          480
+#define S5K4ECGX_POSTVIEW_BPP             16
 
-#define ISX006_THUMBNAIL_WIDTH          320
-#define ISX006_THUMBNAIL_HEIGHT         240
-#define ISX006_THUMBNAIL_BPP            16
+#define S5K4ECGX_THUMBNAIL_WIDTH          320
+#define S5K4ECGX_THUMBNAIL_HEIGHT         240
+#define S5K4ECGX_THUMBNAIL_BPP            16
 
 #define VGA_PREVIEW_WIDTH               640
 #define VGA_PREVIEW_HEIGHT              480
@@ -415,6 +415,7 @@ public:
     int             setGPSLongitude(const char *gps_longitude);
     int             setGPSAltitude(const char *gps_altitude);
     int             setGPSTimeStamp(const char *gps_timestamp);
+    int             setGPSProcessingMethod(const char *gps_timestamp);
     int             cancelAutofocus(void);
     int             setFaceDetectLockUnlock(int facedetect_lockunlock);
     int             setObjectPosition(int x, int y);
@@ -449,7 +450,7 @@ public:
 #endif // ENABLE_ESD_PREVIEW_CHECK
 #endif
 
-    void setFrameRate(int frame_rate);
+    int setFrameRate(int frame_rate);
     unsigned char*  getJpeg(int*, unsigned int*);
     int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
                                         unsigned int *output_size);
