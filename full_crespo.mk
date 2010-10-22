@@ -29,6 +29,10 @@ PRODUCT_PACKAGES := \
         Nfc \
         Tag
 
+# Get the parts that are either non-open-source or depend
+# on non-open-source drivers
+$(call inherit-product-if-exists, vendor/samsung/crespo/full_crespo-trampoline.mk)
+
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
 # This is where we'd set a backup provider if we had one
