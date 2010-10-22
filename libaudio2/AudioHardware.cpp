@@ -56,6 +56,7 @@ AudioHardware::AudioHardware() :
     mMixer(NULL),
     mPcmOpenCnt(0),
     mMixerOpenCnt(0),
+    mInCallAudioMode(false),
     mVrModeEnabled(false),
     mBluetoothNrec(true),
     mSecRilLibHandle(NULL),
@@ -283,7 +284,7 @@ status_t AudioHardware::setMode(int mode)
         // make sure that doAudioRouteOrMute() is called by doRouting()
         // when entering or exiting in call mode even if the new device
         // selected is the same as current one.
-        if ((mMode == AudioSystem::MODE_RINGTONE) || (mMode == AudioSystem::MODE_IN_CALL))
+        if (prevMode == AudioSystem::MODE_NORMAL)
         {
             if ((!mActivatedCP) && (mSecRilLibHandle) && (connectRILDIfRequired() == OK)) {
                 setCallClockSync(mRilClient, SOUND_CLOCK_START);
@@ -291,24 +292,26 @@ status_t AudioHardware::setMode(int mode)
             }
         }
 
-        if (((prevMode != AudioSystem::MODE_IN_CALL) && (mMode == AudioSystem::MODE_IN_CALL)) ||
-            ((prevMode == AudioSystem::MODE_IN_CALL) && (mMode != AudioSystem::MODE_IN_CALL))) {
-            if (mMode == AudioSystem::MODE_IN_CALL) {
-                openPcmOut_l();
-                openMixer_l();
-                setVoiceRecognition_l(false);
-            }
+        if (mMode == AudioSystem::MODE_IN_CALL && !mInCallAudioMode) {
+            LOGV("setMode() openPcmOut_l()");
+            openPcmOut_l();
+            openMixer_l();
+            setVoiceRecognition_l(false);
             setIncallPath_l(mOutput->device());
-            if (mMode != AudioSystem::MODE_IN_CALL) {
-                setVoiceRecognition_l(mVrModeEnabled);
-                closeMixer_l();
-                mOutput->setNextRoute(getOutputRouteFromDevice(mOutput->device()));
-                closePcmOut_l();
-                AudioStreamInALSA *input = getActiveInput_l();
-                if (input != NULL) {
-                    input->setNextRoute(getInputRouteFromDevice(input->device()));
-                }
+            mInCallAudioMode = true;
+        }
+        if (mMode == AudioSystem::MODE_NORMAL && mInCallAudioMode) {
+            setVoiceRecognition_l(mVrModeEnabled);
+            LOGV("setMode() closePcmOut_l()");
+            closeMixer_l();
+            mOutput->setNextRoute(getOutputRouteFromDevice(mOutput->device()));
+            LOGV("setMode() closePcmOut_l()");
+            closePcmOut_l();
+            AudioStreamInALSA *input = getActiveInput_l();
+            if (input != NULL) {
+                input->setNextRoute(getInputRouteFromDevice(input->device()));
             }
+            mInCallAudioMode = false;
         }
 
         if (mMode == AudioSystem::MODE_NORMAL) {
