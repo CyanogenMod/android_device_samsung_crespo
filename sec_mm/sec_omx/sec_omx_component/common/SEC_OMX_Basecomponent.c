@@ -236,18 +236,27 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
             pSECComponent->currentState = OMX_StateInvalid;
             if (pSECComponent->hBufferProcess) {
                 pSECComponent->bExitBufferProcessThread = OMX_TRUE;
-                SEC_OSAL_SignalSet(pSECComponent->pauseEvent);
+
                 for (i = 0; i < ALL_PORT_NUM; i++) {
                     SEC_OSAL_Get_SemaphoreCount(pSECComponent->pSECPort[i].bufferSemID, &countValue);
                     if (countValue == 0)
                         SEC_OSAL_SemaphorePost(pSECComponent->pSECPort[i].bufferSemID);
                 }
+
+                SEC_OSAL_SignalSet(pSECComponent->pauseEvent);
+                SEC_OSAL_ThreadTerminate(pSECComponent->hBufferProcess);
+                pSECComponent->hBufferProcess = NULL;
+
                 for (i = 0; i < ALL_PORT_NUM; i++) {
                     SEC_OSAL_MutexTerminate(pSECComponent->secDataBuffer[i].bufferMutex);
                     pSECComponent->secDataBuffer[i].bufferMutex = NULL;
                 }
-                SEC_OSAL_ThreadTerminate(pSECComponent->hBufferProcess);
-                pSECComponent->hBufferProcess = NULL;
+
+                SEC_OSAL_SignalTerminate(pSECComponent->pauseEvent);
+                for (i = 0; i < ALL_PORT_NUM; i++) {
+                    SEC_OSAL_SemaphoreTerminate(pSECComponent->pSECPort[i].bufferSemID);
+                    pSECComponent->pSECPort[i].bufferSemID = NULL;
+                }
             }
             if (pSECComponent->sec_mfc_componentTerminate != NULL)
                 pSECComponent->sec_mfc_componentTerminate(pOMXComponent);
@@ -266,14 +275,15 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
                     SEC_OSAL_SemaphorePost(pSECComponent->pSECPort[i].bufferSemID);
             }
 
+            SEC_OSAL_SignalSet(pSECComponent->pauseEvent);
+            SEC_OSAL_ThreadTerminate(pSECComponent->hBufferProcess);
+            pSECComponent->hBufferProcess = NULL;
+
             for (i = 0; i < ALL_PORT_NUM; i++) {
                 SEC_OSAL_MutexTerminate(pSECComponent->secDataBuffer[i].bufferMutex);
                 pSECComponent->secDataBuffer[i].bufferMutex = NULL;
             }
 
-            SEC_OSAL_SignalSet(pSECComponent->pauseEvent);
-            SEC_OSAL_ThreadTerminate(pSECComponent->hBufferProcess);
-            pSECComponent->hBufferProcess = NULL;
             SEC_OSAL_SignalTerminate(pSECComponent->pauseEvent);
             for (i = 0; i < ALL_PORT_NUM; i++) {
                 SEC_OSAL_SemaphoreTerminate(pSECComponent->pSECPort[i].bufferSemID);
