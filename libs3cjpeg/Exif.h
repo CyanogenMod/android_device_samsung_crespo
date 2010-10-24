@@ -32,7 +32,7 @@
 
 #define NUM_0TH_IFD_TIFF            10
 #define NUM_0TH_IFD_EXIF            22
-#define NUM_0TH_IFD_GPS             7
+#define NUM_0TH_IFD_GPS             10
 #define NUM_1TH_IFD_TIFF            9
 
 /* Type */
@@ -91,6 +91,9 @@
 #define EXIF_TAG_GPS_LONGITUDE                  0x0004
 #define EXIF_TAG_GPS_ALTITUDE_REF               0x0005
 #define EXIF_TAG_GPS_ALTITUDE                   0x0006
+#define EXIF_TAG_GPS_TIMESTAMP                  0x0007
+#define EXIF_TAG_GPS_PROCESSING_METHOD          0x001B
+#define EXIF_TAG_GPS_DATESTAMP                  0x001D
 
 /* 1th IFD TIFF Tags */
 #define EXIF_TAG_COMPRESSION_SCHEME             0x0103
@@ -216,6 +219,9 @@ typedef struct {
     rational_t gps_latitude[3];
     rational_t gps_longitude[3];
     rational_t gps_altitude;
+    rational_t gps_timestamp[3];
+    unsigned char gps_datestamp[11];
+    unsigned char gps_processing_method[100];
 
     rational_t x_resolution;
     rational_t y_resolution;
