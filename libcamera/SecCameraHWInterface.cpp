@@ -268,6 +268,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         parameterString.append(CameraParameters::FLASH_MODE_OFF);
         parameterString.append(",");
         parameterString.append(CameraParameters::FLASH_MODE_AUTO);
+        parameterString.append(",");
+        parameterString.append(CameraParameters::FLASH_MODE_TORCH);
         p.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES,
               parameterString.string());
         p.set(CameraParameters::KEY_FLASH_MODE,
@@ -1948,6 +1950,8 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                 new_flash_mode = FLASH_MODE_AUTO;
             else if (!strcmp(new_flash_mode_str, CameraParameters::FLASH_MODE_ON))
                 new_flash_mode = FLASH_MODE_ON;
+            else if (!strcmp(new_flash_mode_str, CameraParameters::FLASH_MODE_TORCH))
+                new_flash_mode = FLASH_MODE_TORCH;
             else {
                 LOGE("%s::unmatched flash_mode(%s)", __func__, new_flash_mode_str); //red-eye
                 ret = UNKNOWN_ERROR;

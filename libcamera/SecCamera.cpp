@@ -1009,6 +1009,9 @@ int SecCamera::stopPreview(void)
     /* if auto focus wasn't complete by now, stop it */
     fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_OFF);
 
+    if (m_params->flash_mode == FLASH_MODE_TORCH)
+        setFlashMode(FLASH_MODE_OFF);
+
 #ifdef ENABLE_HDMI_DISPLAY
     hdmi_deinitialize();
     hdmi_gl_streamon(0);
