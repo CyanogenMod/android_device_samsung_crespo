@@ -15,6 +15,9 @@
  */
 
 #include <linux/input.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <string.h>
 
 #include "recovery_ui.h"
 #include "common.h"
@@ -31,6 +34,34 @@ char* MENU_ITEMS[] = { "reboot system now",
                        NULL };
 
 int device_recovery_start() {
+    // recovery can get started before the kernel has created the EMMC
+    // devices, which will make the wipe_data operation fail (trying
+    // to open a device that doesn't exist).  Hold up the start of
+    // recovery for up to 5 seconds waiting for the userdata partition
+    // block device to exist.
+
+    const char* fn = "/dev/block/platform/s3c-sdhci.0/by-name/userdata";
+
+    int tries = 0;
+    int ret;
+    struct stat buf;
+    do {
+        ++tries;
+        ret = stat(fn, &buf);
+        if (ret) {
+            printf("try %d: %s\n", tries, strerror(errno));
+            sleep(1);
+        }
+    } while (ret && tries < 5);
+    if (!ret) {
+        printf("stat() of %s succeeded on try %d\n", fn, tries);
+    } else {
+        printf("failed to stat %s\n", fn);
+    }
+
+    // We let recovery attempt to carry on even if the stat never
+    // succeeded.
+
     return 0;
 }
 
