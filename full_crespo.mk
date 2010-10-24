@@ -29,6 +29,9 @@ PRODUCT_PACKAGES := \
         Nfc \
         Tag
 
+# Get the long list of APNs
+PRODUCT_COPY_FILES := device/sample/etc/apns-full-conf.xml:system/etc/apns-conf.xml
+
 # Get the parts that are either non-open-source or depend
 # on non-open-source drivers
 $(call inherit-product-if-exists, vendor/samsung/crespo/full_crespo-trampoline.mk)
