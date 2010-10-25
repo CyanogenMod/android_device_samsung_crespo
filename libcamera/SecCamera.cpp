@@ -1009,6 +1009,9 @@ int SecCamera::stopPreview(void)
     /* if auto focus wasn't complete by now, stop it */
     fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_OFF);
 
+    if (m_params->flash_mode == FLASH_MODE_TORCH)
+        setFlashMode(FLASH_MODE_OFF);
+
 #ifdef ENABLE_HDMI_DISPLAY
     hdmi_deinitialize();
     hdmi_gl_streamon(0);
@@ -1557,9 +1560,17 @@ void SecCamera::getPostViewConfig(int *width, int *height, int *size)
 
 void SecCamera::getThumbnailConfig(int *width, int *height, int *size)
 {
-    *width = BACK_CAMERA_THUMBNAIL_WIDTH;
-    *height = BACK_CAMERA_THUMBNAIL_HEIGHT;
-    *size = BACK_CAMERA_THUMBNAIL_WIDTH * BACK_CAMERA_THUMBNAIL_HEIGHT * BACK_CAMERA_THUMBNAIL_BPP / 8;
+    if (m_camera_id == CAMERA_ID_BACK) {
+        *width  = BACK_CAMERA_THUMBNAIL_WIDTH;
+        *height = BACK_CAMERA_THUMBNAIL_HEIGHT;
+        *size   = BACK_CAMERA_THUMBNAIL_WIDTH * BACK_CAMERA_THUMBNAIL_HEIGHT
+                    * BACK_CAMERA_THUMBNAIL_BPP / 8;
+    } else {
+        *width  = FRONT_CAMERA_THUMBNAIL_WIDTH;
+        *height = FRONT_CAMERA_THUMBNAIL_HEIGHT;
+        *size   = FRONT_CAMERA_THUMBNAIL_WIDTH * FRONT_CAMERA_THUMBNAIL_HEIGHT
+                    * FRONT_CAMERA_THUMBNAIL_BPP / 8;
+    }
 }
 
 #ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
@@ -1707,7 +1718,17 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     if (jpgEnc.setConfig(JPEG_SET_SAMPING_MODE, outFormat) != JPG_SUCCESS)
         LOGE("[JPEG_SET_SAMPING_MODE] Error\n");
 
-    if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, JPG_QUALITY_LEVEL_2) != JPG_SUCCESS)
+    image_quality_type_t jpegQuality;
+    if (m_jpeg_quality >= 90)
+        jpegQuality = JPG_QUALITY_LEVEL_1;
+    else if (m_jpeg_quality >= 80)
+        jpegQuality = JPG_QUALITY_LEVEL_2;
+    else if (m_jpeg_quality >= 70)
+        jpegQuality = JPG_QUALITY_LEVEL_3;
+    else
+        jpegQuality = JPG_QUALITY_LEVEL_4;
+
+    if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, jpegQuality) != JPG_SUCCESS)
         LOGE("[JPEG_SET_ENCODE_QUALITY] Error\n");
     if (jpgEnc.setConfig(JPEG_SET_ENCODE_WIDTH, m_snapshot_width) != JPG_SUCCESS)
         LOGE("[JPEG_SET_ENCODE_WIDTH] Error\n");
@@ -2450,7 +2471,7 @@ int SecCamera::setJpegQuality(int jpeg_quality)
 
     if (m_jpeg_quality != jpeg_quality) {
         m_jpeg_quality = jpeg_quality;
-        if (m_flag_camera_start) {
+        if (m_flag_camera_start && (m_camera_id == CAMERA_ID_BACK)) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_QUALITY, jpeg_quality) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAM_JPEG_QUALITY", __func__);
                 return -1;

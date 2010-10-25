@@ -29,6 +29,8 @@
 
 #include "JpegEncoder.h"
 
+static const char ExifAsciiPrefix[] = { 0x41, 0x53, 0x43, 0x49, 0x49, 0x0, 0x0, 0x0 };
+
 namespace android {
 JpegEncoder::JpegEncoder() : available(false)
 {
@@ -484,11 +486,16 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
 
         pCur = pIfdStart + LongerTagOffest;
 
-        tmp = NUM_0TH_IFD_GPS;
+        if (exifInfo->gps_processing_method[0] == 0) {
+            // don't create GPS_PROCESSING_METHOD tag if there isn't any
+            tmp = NUM_0TH_IFD_GPS - 1;
+        } else {
+            tmp = NUM_0TH_IFD_GPS;
+        }
         memcpy(pCur, &tmp, NUM_SIZE);
         pCur += NUM_SIZE;
 
-        LongerTagOffest += NUM_SIZE + NUM_0TH_IFD_GPS*IFD_SIZE + OFFSET_SIZE;
+        LongerTagOffest += NUM_SIZE + tmp*IFD_SIZE + OFFSET_SIZE;
 
         writeExifIfd(&pCur, EXIF_TAG_GPS_VERSION_ID, EXIF_TYPE_BYTE,
                      4, exifInfo->gps_version_id);
@@ -504,6 +511,21 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
                      1, exifInfo->gps_altitude_ref);
         writeExifIfd(&pCur, EXIF_TAG_GPS_ALTITUDE, EXIF_TYPE_RATIONAL,
                      1, &exifInfo->gps_altitude, &LongerTagOffest, pIfdStart);
+        writeExifIfd(&pCur, EXIF_TAG_GPS_TIMESTAMP, EXIF_TYPE_RATIONAL,
+                     3, exifInfo->gps_timestamp, &LongerTagOffest, pIfdStart);
+        tmp = strlen((char*)exifInfo->gps_processing_method);
+	if (tmp > 0) {
+            if (tmp > 100) {
+                tmp = 100;
+            }
+            unsigned char tmp_buf[100+sizeof(ExifAsciiPrefix)];
+            memcpy(tmp_buf, ExifAsciiPrefix, sizeof(ExifAsciiPrefix));
+            memcpy(&tmp_buf[sizeof(ExifAsciiPrefix)], exifInfo->gps_processing_method, tmp);
+            writeExifIfd(&pCur, EXIF_TAG_GPS_PROCESSING_METHOD, EXIF_TYPE_UNDEFINED,
+                         tmp+sizeof(ExifAsciiPrefix), tmp_buf, &LongerTagOffest, pIfdStart);
+        }
+        writeExifIfd(&pCur, EXIF_TAG_GPS_DATESTAMP, EXIF_TYPE_ASCII,
+                     11, exifInfo->gps_datestamp, &LongerTagOffest, pIfdStart);
         tmp = 0;
         memcpy(pCur, &tmp, OFFSET_SIZE); // next IFD offset
         pCur += OFFSET_SIZE;

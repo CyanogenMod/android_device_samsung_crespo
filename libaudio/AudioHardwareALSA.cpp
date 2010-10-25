@@ -118,7 +118,7 @@ static const char *deviceSuffix[] = {
     /* ROUTE_EARPIECE       */ "_Earpiece",
     /* ROUTE_SPEAKER        */ "_Speaker",
     /* ROUTE_HEADSET        */ "_Headset",
-    /* ROUTE_HEADPHONE      */ "_Headset",
+    /* ROUTE_HEADPHONE      */ "_Headphone",
     /* ROUTE_BLUETOOTH_SCO  */ "_Bluetooth",
     /* ROUTE_BLUETOOTH_SCO_HEADSET */ "_Bluetooth",
     /* ROUTE_BLUETOOTH_SCO_CARKIT  */ "_Bluetooth", //"_Bluetooth_Carkit"
@@ -333,7 +333,6 @@ status_t AudioHardwareALSA::setVoiceVolume(float volume)
         LOGI("### route(%d) call volume(%f)", routes, volume);
         switch (routes) {
             case AudioSystem::ROUTE_EARPIECE:
-            case AudioSystem::ROUTE_HEADPHONE: // Use receive path with 3 pole headset.
                 LOGI("### earpiece call volume");
                 setCallVolume(mRilClient, SOUND_TYPE_VOICE, int_volume);
                 break;
@@ -352,6 +351,7 @@ status_t AudioHardwareALSA::setVoiceVolume(float volume)
                 break;
 
             case AudioSystem::ROUTE_HEADSET:
+            case AudioSystem::ROUTE_HEADPHONE: // Use receive path with 3 pole headset.
                 LOGI("### headset call volume");
                 setCallVolume(mRilClient, SOUND_TYPE_HEADSET, int_volume);
                 break;
