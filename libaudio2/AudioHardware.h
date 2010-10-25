@@ -109,26 +109,19 @@ public:
             const char *getInputRouteFromDevice(uint32_t device);
             const char *getVoiceRouteFromDevice(uint32_t device);
 
-            status_t setIncallPath(uint32_t device);
             status_t setIncallPath_l(uint32_t device);
 
-            status_t setVoiceRecognition(bool enable);
             status_t setVoiceRecognition_l(bool enable);
 
     static uint32_t    getInputSampleRate(uint32_t sampleRate);
-           AudioStreamInALSA* getActiveInput_l();
+           sp <AudioStreamInALSA> getActiveInput_l();
 
-           void lock() { mLock.lock(); }
-           void unlock() { mLock.unlock(); }
+           Mutex& lock() { return mLock; }
 
-           struct pcm *openPcmOut();
            struct pcm *openPcmOut_l();
-           void closePcmOut();
            void closePcmOut_l();
 
-           struct mixer *openMixer();
            struct mixer *openMixer_l();
-           void closeMixer();
            void closeMixer_l();
 
 protected:
@@ -138,8 +131,8 @@ private:
 
     bool            mInit;
     bool            mMicMute;
-    AudioStreamOutALSA*                 mOutput;
-    SortedVector <AudioStreamInALSA*>   mInputs;
+    sp <AudioStreamOutALSA>                 mOutput;
+    SortedVector < sp<AudioStreamInALSA> >   mInputs;
     Mutex           mLock;
     struct pcm*     mPcm;
     struct mixer*   mMixer;
@@ -166,7 +159,7 @@ private:
     static uint32_t         checkInputSampleRate(uint32_t sampleRate);
     static const uint32_t   inputSamplingRates[];
 
-    class AudioStreamOutALSA : public AudioStreamOut
+    class AudioStreamOutALSA : public AudioStreamOut, public RefBase
     {
     public:
         AudioStreamOutALSA();
@@ -192,14 +185,15 @@ private:
         { return INVALID_OPERATION; }
         virtual ssize_t write(const void* buffer, size_t bytes);
         virtual status_t standby();
+                bool checkStandby();
+
         virtual status_t dump(int fd, const Vector<String16>& args);
-        bool checkStandby();
         virtual status_t setParameters(const String8& keyValuePairs);
         virtual String8 getParameters(const String8& keys);
         uint32_t device() { return mDevices; }
         virtual status_t getRenderPosition(uint32_t *dspFrames);
 
-                void setNextRoute(const char *route) { next_route = route; }
+                void setNextRoute(const char *route) {  AutoMutex lock(mLock); next_route = route; }
 
     private:
 
@@ -274,7 +268,7 @@ private:
     };
 
 
-    class AudioStreamInALSA : public AudioStreamIn, public BufferProvider
+    class AudioStreamInALSA : public AudioStreamIn, public BufferProvider, public RefBase
     {
 
      public:
@@ -299,7 +293,7 @@ private:
         virtual String8 getParameters(const String8& keys);
         virtual unsigned int getInputFramesLost() const { return 0; }
                 uint32_t device() { return mDevices; }
-                void setNextRoute(const char *route) { next_route = route; }
+                void setNextRoute(const char *route) { AutoMutex lock(mLock); next_route = route; }
 
         static size_t getBufferSize(uint32_t sampleRate, int channelCount);
 
@@ -313,7 +307,6 @@ private:
         struct pcm *mPcm;
         struct mixer *mMixer;
         struct mixer_ctl *mRouteCtl;
-        struct mixer_ctl *mMicCtl;
         const char *next_route;
         int mStartCount;
         int mRetryCount;
