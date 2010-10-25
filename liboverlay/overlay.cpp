@@ -794,14 +794,16 @@ static int overlay_setParameter(struct overlay_control_device_t *dev,
             stage->rotation = 270;
             stage->flip = 0;
             break;
+        // FIMC VFLIP = android overlay FLIP_H.
         case OVERLAY_TRANSFORM_FLIP_H:
-            stage->rotation = 0;
-            stage->flip = V4L2_CID_HFLIP;
-            break;
-        case OVERLAY_TRANSFORM_FLIP_V:
             stage->rotation = 0;
             stage->flip = V4L2_CID_VFLIP;
             break;
+        case OVERLAY_TRANSFORM_FLIP_V:
+            stage->rotation = 0;
+            stage->flip = V4L2_CID_HFLIP;
+            break;
+        // FIMC rotates first but android flips first.
         case OVERLAY_TRANSFORM_ROT_90+OVERLAY_TRANSFORM_FLIP_H:
             stage->rotation = 90;
             stage->flip = V4L2_CID_HFLIP;
