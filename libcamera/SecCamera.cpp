@@ -40,17 +40,20 @@ using namespace android;
 //#define PERFORMANCE //Uncomment to measure performance
 //#define DUMP_YUV    //Uncomment to take a dump of YUV frame during capture
 
-#define CHECK(return_value)                                                             \
-            if (return_value < 0) {                                                     \
-                LOGE("%s::%d fail. errno: %s\n", __func__,__LINE__, strerror(errno));   \
-                return -1;                                                              \
-            }
+#define CHECK(return_value)                                          \
+    if (return_value < 0) {                                          \
+        LOGE("%s::%d fail. errno: %s, m_camera_id = %d\n",           \
+             __func__, __LINE__, strerror(errno), m_camera_id);      \
+        return -1;                                                   \
+    }
 
-#define CHECK_PTR(return_value)                                                         \
-            if (return_value < 0) {                                                     \
-                LOGE("%s::%d fail\n", __func__,__LINE__);                               \
-                return NULL;                                                            \
-            }
+
+#define CHECK_PTR(return_value)                                      \
+    if (return_value < 0) {                                          \
+        LOGE("%s::%d fail, errno: %s, m_camera_id = %d\n",           \
+             __func__,__LINE__, strerror(errno), m_camera_id);       \
+        return NULL;                                                 \
+    }
 
 #define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
 #define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
@@ -531,7 +534,8 @@ static int fimc_v4l2_g_ctrl(int fp, unsigned int id)
 
     ret = ioctl(fp, VIDIOC_G_CTRL, &ctrl);
     if (ret < 0) {
-        LOGE("ERR(%s):VIDIOC_G_CTRL(id = 0x%x) failed\n", __func__, id);
+        LOGE("ERR(%s): VIDIOC_G_CTRL(id = 0x%x (%d)) failed, ret = %d\n",
+             __func__, id, id-V4L2_CID_PRIVATE_BASE, ret);
         return ret;
     }
 
@@ -548,8 +552,9 @@ static int fimc_v4l2_s_ctrl(int fp, unsigned int id, unsigned int value)
 
     ret = ioctl(fp, VIDIOC_S_CTRL, &ctrl);
     if (ret < 0) {
-        LOGE("ERR(%s):VIDIOC_S_CTRL failed, ret: %d, value = %d, id = %#x\n",
-             __func__, ret, value, id);
+        LOGE("ERR(%s):VIDIOC_S_CTRL(id = %#x (%d), value = %d) failed ret = %d\n",
+             __func__, id, id-V4L2_CID_PRIVATE_BASE, value, ret);
+
         return ret;
     }
 
@@ -589,11 +594,11 @@ static int fimc_v4l2_g_parm(int fp, struct v4l2_streamparm *streamparm)
         LOGE("ERR(%s):VIDIOC_G_PARM failed\n", __func__);
         return -1;
     }
-/*
-    LOGV("timeperframe: numerator %d, denominator %d\n",
-            stream.parm.capture.timeperframe.numerator,
-            stream.parm.capture.timeperframe.denominator);
-*/
+
+    LOGV("%s : timeperframe: numerator %d, denominator %d\n", __func__,
+            streamparm->parm.capture.timeperframe.numerator,
+            streamparm->parm.capture.timeperframe.denominator);
+
     return 0;
 }
 
@@ -665,7 +670,7 @@ SecCamera::SecCamera() :
 #endif // ENABLE_ESD_PREVIEW_CHECK
 {
     m_params = (struct sec_cam_parm*)&m_streamparm.parm.raw_data;
-	struct v4l2_captureparm capture;
+    struct v4l2_captureparm capture;
     m_params->capture.timeperframe.numerator = 1;
     m_params->capture.timeperframe.denominator = 0;
     m_params->contrast = -1;
@@ -958,17 +963,19 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    m_flag_camera_start = 1;  //Kamat check
+    m_flag_camera_start = 1;
 
     if (m_camera_id == CAMERA_ID_BACK) {
         ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
+	    LOGE("m_params->brightness = %d", m_params->brightness);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS,
                                m_params->brightness);
         CHECK(ret);
         /* Blur setting */
+	    LOGE("m_blur_level = %d", m_blur_level);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
                                m_blur_level);
         CHECK(ret);
@@ -984,7 +991,7 @@ int SecCamera::startPreview(void)
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
 #ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    m_flag_camera_start = 1;  //Kamat check
+    m_flag_camera_start = 1;
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
 #ifdef ENABLE_HDMI_DISPLAY
@@ -1021,7 +1028,7 @@ int SecCamera::stopPreview(void)
 
     int ret = fimc_v4l2_streamoff(m_cam_fd);
 
-    m_flag_camera_start = 0; //Kamat check
+    m_flag_camera_start = 0;
     CHECK(ret);
 
     return ret;
@@ -1048,7 +1055,7 @@ int SecCamera::startRecord(void)
     m_events_c2.fd = m_cam_fd2;
     m_events_c2.events = POLLIN | POLLERR;
 
-    int m_record_v4lformat = V4L2_PIX_FMT_NV12T; //Kamat: set suitably
+    int m_record_v4lformat = V4L2_PIX_FMT_NV12T;
     /* enum_fmt, s_fmt sample */
     int ret = fimc_v4l2_enum_fmt(m_cam_fd2,m_record_v4lformat);
     CHECK(ret);
@@ -1086,7 +1093,7 @@ int SecCamera::startRecord(void)
     ret = fimc_poll(&m_events_c2);
     CHECK(ret);
 
-    m_flag_record_start = 1;  //Kamat check
+    m_flag_record_start = 1;
 
     return 0;
 }
@@ -1107,7 +1114,7 @@ int SecCamera::stopRecord(void)
 
     int ret = fimc_v4l2_streamoff(m_cam_fd2);
 
-    m_flag_record_start = 0; //Kamat check
+    m_flag_record_start = 0;
     CHECK(ret);
 
     return 0;
@@ -1244,9 +1251,9 @@ int SecCamera::getPreview()
     }
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    ret = fimc_v4l2_qbuf(m_cam_fd, index); //Kamat: is it overhead?
+    ret = fimc_v4l2_qbuf(m_cam_fd, index);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
-    int ret = fimc_v4l2_qbuf(m_cam_fd, index); //Kamat: is it overhead?
+    int ret = fimc_v4l2_qbuf(m_cam_fd, index);
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
     CHECK(ret);
@@ -1294,7 +1301,7 @@ int SecCamera::getRecord()
         return -1;
     }
 
-    int ret = fimc_v4l2_qbuf(m_cam_fd2, index); //Kamat: is it overhead?
+    int ret = fimc_v4l2_qbuf(m_cam_fd2, index);
     CHECK(ret);
 
     return index;
@@ -1390,21 +1397,21 @@ int SecCamera::setSnapshotCmd(void)
     int nframe = 1;
 
     ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
-    CHECK_PTR(ret);
+    CHECK(ret);
     ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height, V4L2_PIX_FMT_JPEG);
-    CHECK_PTR(ret);
+    CHECK(ret);
     init_yuv_buffers(m_buffers_c, m_snapshot_width, m_snapshot_height, m_snapshot_v4lformat);
 
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK_PTR(ret);
+    CHECK(ret);
     ret = fimc_v4l2_querybuf(m_cam_fd, m_buffers_c, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK_PTR(ret);
+    CHECK(ret);
 
     ret = fimc_v4l2_qbuf(m_cam_fd, 0);
-    CHECK_PTR(ret);
+    CHECK(ret);
 
     ret = fimc_v4l2_streamon(m_cam_fd);
-    CHECK_PTR(ret);
+    CHECK(ret);
     LOG_TIME_END(1)
 
     return 0;
@@ -1421,32 +1428,8 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
     unsigned char *addr;
 
     LOG_TIME_DEFINE(2)
-    /* kidggang (10.7.5) - Problem - After jpegquality is capture, operation setting is normal.
-
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_QUALITY, m_jpeg_quality);
-    CHECK_PTR(ret);
-    */
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    //exif orient info
-//  ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_ORIENTATION, m_exif_orientation); //kidggang
-//  CHECK_PTR(ret);
-#if  0//def SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    //set gps information
-    ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_GPS_LATITUDE, &m_gps_latitude);
-    CHECK_PTR(ret);
-    ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_GPS_LONGITUDE, &m_gps_longitude);
-    CHECK_PTR(ret);
-    ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_GPS_ALTITUDE, &m_gps_altitude);
-    CHECK_PTR(ret);
-    ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_GPS_TIMESTAMP, &m_gps_timestamp);
-    CHECK_PTR(ret);
-#endif
-
-/* kidggang
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
-    CHECK_PTR(ret);*/
-
     // capture
     ret = fimc_poll(&m_events_c);
     CHECK_PTR(ret);
@@ -1467,8 +1450,8 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
 
     ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     CHECK_PTR(ret);
-    LOGV("\nsnapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
-            index, m_snapshot_width, m_snapshot_height);
+    LOGV("\nsnapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d, size = %d\n\n",
+            index, m_snapshot_width, m_snapshot_height, *jpeg_size);
 
     addr = (unsigned char*)(m_buffers_c[index].start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
@@ -1485,49 +1468,57 @@ int SecCamera::getExif(unsigned char *pExifDst, unsigned char *pThumbSrc)
 {
     JpegEncoder jpgEnc;
 #if ADD_THUMB_IMG
-    int inFormat = JPG_MODESEL_YCBCR;
-    int outFormat = JPG_422;
-    switch (m_snapshot_v4lformat) {
-    case V4L2_PIX_FMT_NV12:
-    case V4L2_PIX_FMT_NV21:
-    case V4L2_PIX_FMT_NV12T:
-    case V4L2_PIX_FMT_YUV420:
-        outFormat = JPG_420;
-        break;
-    case V4L2_PIX_FMT_YUYV:
-    case V4L2_PIX_FMT_UYVY:
-    case V4L2_PIX_FMT_YUV422P:
-        outFormat = JPG_422;
-        break;
+    LOGV("%s : m_jpeg_thumbnail_width = %d, height = %d",
+         __func__, m_jpeg_thumbnail_width, m_jpeg_thumbnail_height);
+    if ((m_jpeg_thumbnail_width > 0) && (m_jpeg_thumbnail_height > 0)) {
+        int inFormat = JPG_MODESEL_YCBCR;
+        int outFormat = JPG_422;
+        switch (m_snapshot_v4lformat) {
+        case V4L2_PIX_FMT_NV12:
+        case V4L2_PIX_FMT_NV21:
+        case V4L2_PIX_FMT_NV12T:
+        case V4L2_PIX_FMT_YUV420:
+            outFormat = JPG_420;
+            break;
+        case V4L2_PIX_FMT_YUYV:
+        case V4L2_PIX_FMT_UYVY:
+        case V4L2_PIX_FMT_YUV422P:
+            outFormat = JPG_422;
+            break;
+        }
+
+        if (jpgEnc.setConfig(JPEG_SET_ENCODE_IN_FORMAT, inFormat) != JPG_SUCCESS)
+            return -1;
+
+        if (jpgEnc.setConfig(JPEG_SET_SAMPING_MODE, outFormat) != JPG_SUCCESS)
+            return -1;
+
+        if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, JPG_QUALITY_LEVEL_2) != JPG_SUCCESS)
+            return -1;
+
+        int thumbWidth, thumbHeight, thumbSrcSize;
+        getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSrcSize);
+        if (jpgEnc.setConfig(JPEG_SET_ENCODE_WIDTH, thumbWidth) != JPG_SUCCESS)
+            return -1;
+
+        if (jpgEnc.setConfig(JPEG_SET_ENCODE_HEIGHT, thumbHeight) != JPG_SUCCESS)
+            return -1;
+
+        char *pInBuf = (char *)jpgEnc.getInBuf(thumbSrcSize);
+        if (pInBuf == NULL)
+            return -1;
+        memcpy(pInBuf, pThumbSrc, thumbSrcSize);
+
+        unsigned int thumbSize;
+
+        jpgEnc.encode(&thumbSize, NULL);
+
+        LOGV("%s : enableThumb set to true", __func__);
+        mExifInfo.enableThumb = true;
+    } else {
+        LOGV("%s : enableThumb set to false", __func__);
+        mExifInfo.enableThumb = false;
     }
-
-    if (jpgEnc.setConfig(JPEG_SET_ENCODE_IN_FORMAT, inFormat) != JPG_SUCCESS)
-        return -1;
-
-    if (jpgEnc.setConfig(JPEG_SET_SAMPING_MODE, outFormat) != JPG_SUCCESS)
-        return -1;
-
-    if (jpgEnc.setConfig(JPEG_SET_ENCODE_QUALITY, JPG_QUALITY_LEVEL_2) != JPG_SUCCESS)
-        return -1;
-
-    int thumbWidth, thumbHeight, thumbSrcSize;
-    getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSrcSize);
-    if (jpgEnc.setConfig(JPEG_SET_ENCODE_WIDTH, thumbWidth) != JPG_SUCCESS)
-        return -1;
-
-    if (jpgEnc.setConfig(JPEG_SET_ENCODE_HEIGHT, thumbHeight) != JPG_SUCCESS)
-        return -1;
-
-    char *pInBuf = (char *)jpgEnc.getInBuf(thumbSrcSize);
-    if (pInBuf == NULL)
-        return -1;
-    memcpy(pInBuf, pThumbSrc, thumbSrcSize);
-
-    unsigned int thumbSize;
-
-    jpgEnc.encode(&thumbSize, NULL);
-
-    mExifInfo.enableThumb = true;
 #else
     mExifInfo.enableThumb = false;
 #endif
@@ -1535,6 +1526,10 @@ int SecCamera::getExif(unsigned char *pExifDst, unsigned char *pThumbSrc)
     unsigned int exifSize;
 
     setExifChangedAttribute();
+
+    LOGV("%s: calling jpgEnc.makeExif, mExifInfo.width set to %d, height to %d\n",
+         __func__, mExifInfo.width, mExifInfo.height);
+
     jpgEnc.makeExif(pExifDst, &mExifInfo, &exifSize, true);
 
     return exifSize;
@@ -1670,7 +1665,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     fimc_poll(&m_events_c);
     index = fimc_v4l2_dqbuf(m_cam_fd);
     fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
-    LOGV("\nsnapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
+    LOGV("\nsnapshot dequeued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
             index, m_snapshot_width, m_snapshot_height);
 
 #ifdef DUMP_YUV
@@ -2008,7 +2003,7 @@ int SecCamera::getRotate(void)
     return m_angle;
 }
 
-void SecCamera::setFrameRate(int frame_rate)
+int SecCamera::setFrameRate(int frame_rate)
 {
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGV("%s(FrameRate(%d))", __func__, frame_rate);
@@ -2019,14 +2014,16 @@ void SecCamera::setFrameRate(int frame_rate)
     if (m_params->capture.timeperframe.denominator != (unsigned)frame_rate) {
         m_params->capture.timeperframe.denominator = frame_rate;
         if (m_flag_camera_start) {
-            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, frame_rate) < 0)
+            if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE, frame_rate) < 0) {
                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_FRAME_RATE", __func__);
+                return -1;
+            }
         }
     }
 #else
     m_params->capture.timeperframe.denominator = frame_rate;
 #endif
-
+    return 0;
 }
 
 // -----------------------------------
@@ -2097,7 +2094,7 @@ int SecCamera::setWhiteBalance(int white_balance)
 
 int SecCamera::getWhiteBalance(void)
 {
-    LOGV("%s : white_balance(%d)", __func__, m_parmas.white_balance);
+    LOGV("%s : white_balance(%d)", __func__, m_params->white_balance);
     return m_params->white_balance;
 }
 
@@ -2796,6 +2793,20 @@ int SecCamera::setGPSTimeStamp(const char *gps_timestamp)
     return 0;
 }
 
+int SecCamera::setGPSProcessingMethod(const char *gps_processing_method)
+{
+    LOGV("%s(gps_processing_method(%s))", __func__, gps_processing_method);
+    memset(mExifInfo.gps_processing_method, 0, sizeof(mExifInfo.gps_processing_method));
+    if (gps_processing_method != NULL) {
+        size_t len = strlen(gps_processing_method);
+        if (len > sizeof(mExifInfo.gps_processing_method)) {
+            len = sizeof(mExifInfo.gps_processing_method);
+        }
+        memcpy(mExifInfo.gps_processing_method, gps_processing_method, len);
+    }
+    return 0;
+}
+
 int SecCamera::setFaceDetectLockUnlock(int facedetect_lockunlock)
 {
     LOGV("%s(facedetect_lockunlock(%d))", __func__, facedetect_lockunlock);
@@ -3173,14 +3184,14 @@ unsigned char* SecCamera::yuv2Jpeg(unsigned char *raw_data, int raw_size, int *j
 
 #endif
 
-    if (raw_size == 0) { //Kamat: This is our code path
+    if (raw_size == 0) {
         unsigned int addr_y;
         int width, height,frame_size;
         getSnapshotSize(&width, &height, &frame_size);
         if (raw_data == NULL) {
             LOGE("%s %d] Raw data is NULL \n", __func__, __LINE__);
             goto YUV2JPEG_END;
-        } else { //Kamat: our path
+        } else {
             addr_y = (unsigned int)raw_data;
         }
 
@@ -3288,7 +3299,7 @@ void SecCamera::setExifFixedAttribute()
     //3 Flash
     mExifInfo.flash = EXIF_DEF_FLASH;
     //3 Lens Focal Length
-    mExifInfo.focal_length.num = EXIF_DEF_FOCAL_LEN_NUM;
+    mExifInfo.focal_length.num = 343; /* focal length of 3.43mm */
     mExifInfo.focal_length.den = EXIF_DEF_FOCAL_LEN_DEN;
     //3 User Comments
     strcpy((char *)mExifInfo.user_comment, EXIF_DEF_USERCOMMENTS);
@@ -3346,11 +3357,27 @@ void SecCamera::setExifChangedAttribute()
     //3 Exposure Time
     int shutterSpeed = fimc_v4l2_g_ctrl(m_cam_fd,
                                             V4L2_CID_CAMERA_GET_SHT_TIME);
+    /* TBD - front camera needs to be fixed to support this g_ctrl,
+       it current returns a negative err value, so avoid putting
+       odd value into exif for now */
+    if (shutterSpeed < 0) {
+        LOGE("%s: error %d getting shutterSpeed, camera_id = %d, using 100",
+             __func__, shutterSpeed, m_camera_id);
+        shutterSpeed = 100;
+    }
     mExifInfo.exposure_time.num = 1;
     mExifInfo.exposure_time.den = 1000.0 / shutterSpeed;   /* ms -> sec */
 
     //3 ISO Speed Rating
     int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
+    /* TBD - front camera needs to be fixed to support this g_ctrl,
+       it current returns a negative err value, so avoid putting
+       odd value into exif for now */
+    if (iso < 0) {
+        LOGE("%s: error %d getting iso, camera_id = %d, using 100",
+             __func__, iso, m_camera_id);
+        iso = 100;
+    }
     if (m_params->iso == ISO_AUTO) {
         mExifInfo.iso_speed_rating = iso;
     } else {
@@ -3478,17 +3505,25 @@ void SecCamera::setExifChangedAttribute()
         mExifInfo.gps_altitude.num = (uint32_t)altitude;
         mExifInfo.gps_altitude.den = 1;
 
+        struct tm tm_data;
+        gmtime_r(&m_gps_timestamp, &tm_data);
+        mExifInfo.gps_timestamp[0].num = tm_data.tm_hour;
+        mExifInfo.gps_timestamp[0].den = 1;
+        mExifInfo.gps_timestamp[1].num = tm_data.tm_min;
+        mExifInfo.gps_timestamp[1].den = 1;
+        mExifInfo.gps_timestamp[2].num = tm_data.tm_sec;
+        mExifInfo.gps_timestamp[2].den = 1;
+        snprintf((char*)mExifInfo.gps_datestamp, sizeof(mExifInfo.gps_datestamp),
+                "%04d:%02d:%02d", tm_data.tm_year, tm_data.tm_mon, tm_data.tm_mday);
+
         mExifInfo.enableGps = true;
     } else {
         mExifInfo.enableGps = false;
     }
 
     //2 1th IFD TIFF Tags
-    int thumbWidth, thumbHeight, thumbSrcSize;
-
-    getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSrcSize);
-    mExifInfo.widthThumb = thumbWidth;
-    mExifInfo.heightThumb = thumbHeight;
+    mExifInfo.widthThumb = m_jpeg_thumbnail_width;
+    mExifInfo.heightThumb = m_jpeg_thumbnail_height;
 }
 
 // ======================================================================
