@@ -56,9 +56,7 @@ OMX_ERRORTYPE SEC_OMX_FlushPort(OMX_COMPONENTTYPE *pOMXComponent, OMX_S32 portIn
     FunctionIn();
 
     pSECPort = &pSECComponent->pSECPort[portIndex];
-    flushNum = SEC_OSAL_GetElemNum(&pSECPort->bufferQ);
-
-    while ((flushNum--) > 0) {
+    while (SEC_OSAL_GetElemNum(&pSECPort->bufferQ) > 0) {
         SEC_OSAL_Get_SemaphoreCount(pSECComponent->pSECPort[portIndex].bufferSemID, &semValue);
         if (semValue == 0)
             SEC_OSAL_SemaphorePost(pSECComponent->pSECPort[portIndex].bufferSemID);
@@ -78,7 +76,10 @@ OMX_ERRORTYPE SEC_OMX_FlushPort(OMX_COMPONENTTYPE *pOMXComponent, OMX_S32 portIn
                 SEC_OSAL_Free(message);
                 message = NULL;
             } else if (CHECK_PORT_TUNNELED(pSECPort) && CHECK_PORT_BUFFER_SUPPLIER(pSECPort)) {
+                SEC_OSAL_Log(SEC_LOG_ERROR, "Tunneled mode is not working, Line:%d", __LINE__);
+                ret = OMX_ErrorNotImplemented;
                 SEC_OSAL_Queue(&pSECPort->bufferQ, pSECPort);
+                goto EXIT;
             } else {
                 if (portIndex == OUTPUT_PORT_INDEX) {
                     pSECComponent->pCallbacks->FillBufferDone(pOMXComponent, pSECComponent->callbackData, bufferHeader);
@@ -171,8 +172,6 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
         else
             portIndex = nPortIndex;
 
-        pSECComponent->pSECPort[portIndex].bIsPortFlushed = OMX_TRUE;
-
         SEC_OSAL_SignalSet(pSECComponent->pauseEvent);
 
         flushBuffer = &pSECComponent->secDataBuffer[portIndex];
@@ -193,8 +192,9 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
 
         if (portIndex == INPUT_PORT_INDEX) {
             pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+            pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;
             SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
-            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
+            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
             pSECComponent->bSaveFlagEOS = OMX_FALSE;
             pSECComponent->reInputData = OMX_FALSE;
@@ -264,8 +264,9 @@ OMX_ERRORTYPE SEC_OMX_BufferFlushProcessNoEvent(OMX_COMPONENTTYPE *pOMXComponent
 
         if (portIndex == INPUT_PORT_INDEX) {
             pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+            pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;
             SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
-            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_TIMESTAMP);
+            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
             pSECComponent->bSaveFlagEOS = OMX_FALSE;
             pSECComponent->remainOutputData = OMX_FALSE;
@@ -477,6 +478,18 @@ OMX_ERRORTYPE SEC_OMX_PortDisableProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
         SEC_OSAL_MutexUnlock(flushBuffer->bufferMutex);
 
         pSECComponent->pSECPort[portIndex].bIsPortFlushed = OMX_FALSE;
+
+        if (portIndex == INPUT_PORT_INDEX) {
+            pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+            pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;
+            SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
+            SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pSECComponent->bSaveFlagEOS = OMX_FALSE;
+            pSECComponent->reInputData = OMX_FALSE;
+        } else if (portIndex == OUTPUT_PORT_INDEX) {
+            pSECComponent->remainOutputData = OMX_FALSE;
+        }
     }
 
     for(i = 0; i < cnt; i++) {
@@ -486,6 +499,7 @@ OMX_ERRORTYPE SEC_OMX_PortDisableProcess(OMX_COMPONENTTYPE *pOMXComponent, OMX_S
             portIndex = nPortIndex;
 
         ret = SEC_OMX_DisablePort(pOMXComponent, portIndex);
+        pSECComponent->pSECPort[portIndex].bIsPortDisabled = OMX_FALSE;
         if (ret == OMX_ErrorNone) {
             pSECComponent->pCallbacks->EventHandler(pOMXComponent,
                             pSECComponent->callbackData,
@@ -564,7 +578,9 @@ OMX_ERRORTYPE SEC_OMX_EmptyThisBuffer(
 
     pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
     if ((!CHECK_PORT_ENABLED(pSECPort)) ||
-       (pSECComponent->transientState == SEC_OMX_TransStateExecutingToIdle &&
+        ((CHECK_PORT_BEING_FLUSHED(pSECPort) || CHECK_PORT_BEING_DISABLED(pSECPort)) &&
+        (!CHECK_PORT_TUNNELED(pSECPort) || !CHECK_PORT_BUFFER_SUPPLIER(pSECPort))) ||
+        ((pSECComponent->transientState == SEC_OMX_TransStateExecutingToIdle) &&
         (CHECK_PORT_TUNNELED(pSECPort) && !CHECK_PORT_BUFFER_SUPPLIER(pSECPort)))) {
         ret = OMX_ErrorIncorrectStateOperation;
         goto EXIT;
@@ -659,7 +675,9 @@ OMX_ERRORTYPE SEC_OMX_FillThisBuffer(
 
     pSECPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
     if ((!CHECK_PORT_ENABLED(pSECPort)) ||
-       (pSECComponent->transientState == SEC_OMX_TransStateExecutingToIdle &&
+        ((CHECK_PORT_BEING_FLUSHED(pSECPort) || CHECK_PORT_BEING_DISABLED(pSECPort)) &&
+        (!CHECK_PORT_TUNNELED(pSECPort) || !CHECK_PORT_BUFFER_SUPPLIER(pSECPort))) ||
+        ((pSECComponent->transientState == SEC_OMX_TransStateExecutingToIdle) &&
         (CHECK_PORT_TUNNELED(pSECPort) && !CHECK_PORT_BUFFER_SUPPLIER(pSECPort)))) {
         ret = OMX_ErrorIncorrectStateOperation;
         goto EXIT;
@@ -771,6 +789,7 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECInputPort->assignedBufferNum = 0;
     pSECInputPort->portState = OMX_StateMax;
     pSECInputPort->bIsPortFlushed = OMX_FALSE;
+    pSECInputPort->bIsPortDisabled = OMX_FALSE;
     pSECInputPort->tunneledComponent = NULL;
     pSECInputPort->tunneledPort = 0;
     pSECInputPort->tunnelBufferNum = 0;
@@ -860,6 +879,7 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECOutputPort->assignedBufferNum = 0;
     pSECOutputPort->portState = OMX_StateMax;
     pSECOutputPort->bIsPortFlushed = OMX_FALSE;
+    pSECOutputPort->bIsPortDisabled = OMX_FALSE;
     pSECOutputPort->tunneledComponent = NULL;
     pSECOutputPort->tunneledPort = 0;
     pSECOutputPort->tunnelBufferNum = 0;

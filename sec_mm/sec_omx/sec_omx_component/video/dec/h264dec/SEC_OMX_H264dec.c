@@ -839,7 +839,10 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     if (Check_H264_StartCode(pInputData->dataBuffer, pInputData->dataLen) == OMX_TRUE) {
         returnCodec = SsbSipMfcDecExe(pH264Dec->hMFCH264Handle.hMFCHandle, oneFrameSize);
     } else {
+        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->nFlags = pInputData->nFlags;
         returnCodec = MFC_RET_OK;
+        goto EXIT;
     }
 
     if (returnCodec == MFC_RET_OK) {
@@ -918,9 +921,9 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         if ((pSECComponent->bSaveFlagEOS == OMX_TRUE) ||
             (pSECComponent->getAllDelayBuffer == OMX_TRUE) ||
             (pInputData->nFlags & OMX_BUFFERFLAG_EOS)) {
-                pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
-                pSECComponent->getAllDelayBuffer = OMX_FALSE;
-                pOutputData->dataLen = 0;
+            pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pOutputData->dataLen = 0;
         }
 
         /* ret = OMX_ErrorUndefined; */ /* ????? */

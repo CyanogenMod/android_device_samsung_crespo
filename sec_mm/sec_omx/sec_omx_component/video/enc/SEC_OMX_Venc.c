@@ -39,7 +39,6 @@
 #define SEC_LOG_OFF
 #include "SEC_OSAL_Log.h"
 
-
 #define ONE_FRAME_OUTPUT  /* only one frame output for Android */
 #define S5PC110_ENCODE_IN_DATA_BUFFER /* for Android s5pc110 0copy*/
 
@@ -468,6 +467,7 @@ OMX_ERRORTYPE SEC_InputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
     SEC_OMX_BASEPORT   *pSECPort = NULL;
     SEC_OMX_DATABUFFER *dataBuffer = NULL;
     SEC_OMX_MESSAGE*    message = NULL;
+    SEC_OMX_DATABUFFER *inputUseBuffer = &pSECComponent->secDataBuffer[INPUT_PORT_INDEX];
 
     FunctionIn();
 
@@ -479,10 +479,12 @@ OMX_ERRORTYPE SEC_InputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
         goto EXIT;
     } else {
         SEC_OSAL_SemaphoreWait(pSECPort->bufferSemID);
+        SEC_OSAL_MutexLock(inputUseBuffer->bufferMutex);
         if (dataBuffer->dataValid != OMX_TRUE) {
             message = (SEC_OMX_MESSAGE *)SEC_OSAL_Dequeue(&pSECPort->bufferQ);
             if (message == NULL) {
                 ret = OMX_ErrorUndefined;
+                SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
                 goto EXIT;
             }
 
@@ -500,6 +502,7 @@ OMX_ERRORTYPE SEC_InputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
 #endif
             SEC_OSAL_Free(message);
         }
+        SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
         ret = OMX_ErrorNone;
     }
 EXIT:
@@ -574,6 +577,7 @@ OMX_ERRORTYPE SEC_OutputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
     SEC_OMX_BASEPORT   *pSECPort = NULL;
     SEC_OMX_DATABUFFER *dataBuffer = NULL;
     SEC_OMX_MESSAGE    *message = NULL;
+    SEC_OMX_DATABUFFER *outputUseBuffer = &pSECComponent->secDataBuffer[OUTPUT_PORT_INDEX];
 
     FunctionIn();
 
@@ -585,10 +589,12 @@ OMX_ERRORTYPE SEC_OutputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
         goto EXIT;
     } else {
         SEC_OSAL_SemaphoreWait(pSECPort->bufferSemID);
+        SEC_OSAL_MutexLock(outputUseBuffer->bufferMutex);
         if (dataBuffer->dataValid != OMX_TRUE) {
             message = (SEC_OMX_MESSAGE *)SEC_OSAL_Dequeue(&pSECPort->bufferQ);
             if (message == NULL) {
                 ret = OMX_ErrorUndefined;
+                SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
                 goto EXIT;
             }
 
@@ -602,6 +608,7 @@ OMX_ERRORTYPE SEC_OutputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
             /* dataBuffer->nTimeStamp = dataBuffer->bufferHeader->nTimeStamp; */
             SEC_OSAL_Free(message);
         }
+        SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
         ret = OMX_ErrorNone;
     }
 EXIT:
@@ -928,18 +935,25 @@ OMX_ERRORTYPE SEC_OMX_BufferProcess(OMX_HANDLETYPE hComponent)
         while (SEC_Check_BufferProcess_State(pSECComponent) && !pSECComponent->bExitBufferProcessThread) {
             SEC_OSAL_SleepMillisec(0);
 
-            if (outputUseBuffer->dataValid != OMX_TRUE) {
+            SEC_OSAL_MutexLock(outputUseBuffer->bufferMutex);
+            if ((outputUseBuffer->dataValid != OMX_TRUE) &&
+                (!CHECK_PORT_BEING_FLUSHED(secOutputPort))) {
+                SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
                 ret = SEC_OutputBufferGetQueue(pSECComponent);
                 if ((ret == OMX_ErrorUndefined) ||
                     (secInputPort->portState != OMX_StateIdle) ||
                     (secOutputPort->portState != OMX_StateIdle)) {
                     break;
                 }
+            } else {
+                SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
             }
+
             if (pSECComponent->remainOutputData == OMX_FALSE) {
                 if (pSECComponent->reInputData == OMX_FALSE) {
                     SEC_OSAL_MutexLock(inputUseBuffer->bufferMutex);
-                    if (SEC_Preprocessor_InputData(pOMXComponent) == OMX_FALSE) {
+                    if ((SEC_Preprocessor_InputData(pOMXComponent) == OMX_FALSE) &&
+                        (!CHECK_PORT_BEING_FLUSHED(secInputPort))) {
                             SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
                             ret = SEC_InputBufferGetQueue(pSECComponent);
                             break;

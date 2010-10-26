@@ -55,6 +55,7 @@
 #define SEC_TUNNEL_IS_SUPPLIER 0x0002
 
 #define CHECK_PORT_BEING_FLUSHED(port)                 (port->bIsPortFlushed == OMX_TRUE)
+#define CHECK_PORT_BEING_DISABLED(port)                (port->bIsPortDisabled == OMX_TRUE)
 #define CHECK_PORT_ENABLED(port)                       (port->portDefinition.bEnabled == OMX_TRUE)
 #define CHECK_PORT_POPULATED(port)                     (port->portDefinition.bPopulated == OMX_TRUE)
 #define CHECK_PORT_TUNNELED(port)                      (port->tunnelFlags & SEC_TUNNEL_ESTABLISHED)
