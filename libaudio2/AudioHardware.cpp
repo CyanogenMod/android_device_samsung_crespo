@@ -310,7 +310,7 @@ status_t AudioHardware::setMode(int mode)
             }
             if (mMode == AudioSystem::MODE_NORMAL && mInCallAudioMode) {
                 setVoiceRecognition_l(mVrModeEnabled);
-                LOGV("setMode() closePcmOut_l()");
+                LOGV("setMode() closeMixer_l()");
                 closeMixer_l();
                 LOGV("setMode() closePcmOut_l()");
                 closePcmOut_l();
@@ -328,6 +328,7 @@ status_t AudioHardware::setMode(int mode)
 
     if (spOut != 0) {
         spOut->setNextRoute(getOutputRouteFromDevice(spOut->device()));
+        spOut->standby();
     }
     if (spIn != 0) {
         spIn->setNextRoute(getInputRouteFromDevice(spIn->device()));
