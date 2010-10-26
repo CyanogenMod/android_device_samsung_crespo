@@ -32,7 +32,6 @@ public:
     virtual sp<IMemoryHeap> getPreviewHeap() const;
     virtual sp<IMemoryHeap> getRawHeap() const;
 
-//Kamat --eclair
     virtual void        setCallbacks(notify_callback notify_cb,
                                      data_callback data_cb,
                                      data_callback_timestamp data_cb_timestamp,
@@ -89,9 +88,6 @@ private:
         Thread(false),
 #endif
         mHardware(hw) { }
-        virtual void onFirstRef() {
-            run("CameraPreviewThread", PRIORITY_URGENT_DISPLAY);
-        }
         virtual bool threadLoop() {
             int ret = mHardware->previewThread();
             // loop until we need to quit
@@ -102,16 +98,45 @@ private:
         }
     };
 
+    class PictureThread : public Thread {
+        CameraHardwareSec *mHardware;
+    public:
+        PictureThread(CameraHardwareSec *hw):
+        Thread(false),
+        mHardware(hw) { }
+        virtual bool threadLoop() {
+            mHardware->pictureThread();
+            return false;
+        }
+    };
+
+    class AutoFocusThread : public Thread {
+        CameraHardwareSec *mHardware;
+    public:
+        AutoFocusThread(CameraHardwareSec *hw): Thread(false), mHardware(hw) { }
+        virtual void onFirstRef() {
+            run("CameraAutoFocusThread", PRIORITY_DEFAULT);
+        }
+        virtual bool threadLoop() {
+            mHardware->autoFocusThread();
+            return true;
+        }
+    };
+
             void        initDefaultParameters(int cameraId);
             void        initHeapLocked();
 
+    sp<PreviewThread>   mPreviewThread;
             int         previewThread();
+            bool        mPreviewRunning;
 
-            static int  beginAutoFocusThread(void *cookie);
+    sp<AutoFocusThread> mAutoFocusThread;
             int         autoFocusThread();
 
-    static  int         beginPictureThread(void *cookie);
+    sp<PictureThread>   mPictureThread;
             int         pictureThread();
+            bool        mCaptureInProgress;
+
             int         save_jpeg(unsigned char *real_jpeg, int jpeg_size);
             void        save_postview(const char *fname, uint8_t *buf,
                                         uint32_t size);
@@ -137,7 +162,13 @@ private:
                                    int *pdwJPEGSize, void *pVideo,
                                    int *pdwVideoSize);
 
-    mutable Mutex       mLock;
+    /* used by auto focus thread to block until it's told to run */
+    mutable Mutex       mFocusLock;
+    mutable Condition   mCondition;
+            bool        mExitAutoFocusThread;
+
+    /* used to guard threading state */
+    mutable Mutex       mStateLock;
 
     CameraParameters    mParameters;
     CameraParameters    mInternalParameters;
@@ -150,7 +181,6 @@ private:
     sp<MemoryBase>      mRecordBuffers[kBufferCountForRecord];
 
             SecCamera   *mSecCamera;
-            bool        mPreviewRunning;
             int         mPreviewFrameSize;
             int         mRawFrameSize;
             int         mPreviewFrameRateMicrosec;
@@ -162,8 +192,6 @@ private:
             int         mOverlayBufferIdx;
 #endif
 
-    // protected by mLock
-    sp<PreviewThread>   mPreviewThread;
     notify_callback     mNotifyCb;
     data_callback       mDataCb;
     data_callback_timestamp mDataCbTimestamp;
@@ -182,7 +210,6 @@ private:
             int         mPostViewSize;
 #endif
 
-            int         mNoHwHandle;
     struct timeval      mTimeStart;
     struct timeval      mTimeStop;
 
