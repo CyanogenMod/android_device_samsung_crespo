@@ -156,6 +156,9 @@ private:
     void            loadRILD(void);
     status_t        connectRILDIfRequired(void);
 
+    //  trace driver operations for dump
+    int             mDriverOp;
+
     static uint32_t         checkInputSampleRate(uint32_t sampleRate);
     static const uint32_t   inputSamplingRates[];
 
@@ -203,13 +206,13 @@ private:
         struct mixer *mMixer;
         struct mixer_ctl *mRouteCtl;
         const char *next_route;
-        int mStartCount;
-        int mRetryCount;
         bool mStandby;
         uint32_t mDevices;
         uint32_t mChannels;
         uint32_t mSampleRate;
         size_t mBufferSize;
+        //  trace driver operations for dump
+        int mDriverOp;
     };
 
     class DownSampler;
@@ -308,8 +311,6 @@ private:
         struct mixer *mMixer;
         struct mixer_ctl *mRouteCtl;
         const char *next_route;
-        int mStartCount;
-        int mRetryCount;
         bool mStandby;
         uint32_t mDevices;
         uint32_t mChannels;
@@ -320,6 +321,8 @@ private:
         status_t mReadStatus;
         size_t mInPcmInBuf;
         int16_t *mPcmIn;
+        //  trace driver operations for dump
+        int mDriverOp;
     };
 
 };
