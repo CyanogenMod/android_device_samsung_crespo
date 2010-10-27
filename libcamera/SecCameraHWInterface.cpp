@@ -633,9 +633,6 @@ status_t CameraHardwareSec::startPreview()
 
     if (ret < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
-        if (mMsgEnabled & CAMERA_MSG_ERROR) {
-                mNotifyCb(CAMERA_MSG_ERROR, -2, 0, mCallbackCookie);
-        }
         return -1; //UNKNOWN_ERROR;
     }
 
