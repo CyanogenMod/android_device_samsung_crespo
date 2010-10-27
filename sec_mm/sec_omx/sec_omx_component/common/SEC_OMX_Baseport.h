@@ -59,6 +59,7 @@ typedef struct _SEC_OMX_BASEPORT
     OMX_HANDLETYPE                 unloadedResource;
 
     OMX_BOOL                       bIsPortFlushed;
+    OMX_BOOL                       bIsPortDisabled;
     OMX_MARKTYPE                   markType;
 
     /* Tunnel Info */
