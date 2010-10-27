@@ -332,6 +332,7 @@ status_t AudioHardware::setMode(int mode)
     }
     if (spIn != 0) {
         spIn->setNextRoute(getInputRouteFromDevice(spIn->device()));
+        spIn->standby();
     }
 
     return status;
@@ -354,6 +355,7 @@ status_t AudioHardware::setMicMute(bool state)
 
     if (spIn != 0) {
         spIn->setNextRoute(getInputRouteFromDevice(spIn->device()));
+        spIn->standby();
     }
 
     return NO_ERROR;
@@ -1083,17 +1085,13 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
         }
 
         if (ret == 0) {
-            if (next_route && mRouteCtl) {
-                LOGV("read() setting route %s", next_route);
-                mixer_ctl_select(mRouteCtl, next_route);
-                next_route = 0;
-            }
             return bytes;
         }
 
         LOGW("read error: %d", ret);
         status = ret;
     }
+
 Error:
 
     standby();
@@ -1114,10 +1112,6 @@ status_t AudioHardware::AudioStreamInALSA::standby()
         AutoMutex hwLock(mHardware->lock());
 
         if (!mStandby) {
-            if (next_route && mRouteCtl) {
-                mixer_ctl_select(mRouteCtl, next_route);
-                next_route = 0;
-            }
             release_wake_lock("AudioInLock");
             mStandby = true;
             LOGI("AudioHardware pcm playback is going to standby.");
@@ -1152,35 +1146,44 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     AudioParameter param = AudioParameter(keyValuePairs);
     status_t status = NO_ERROR;
     int value;
+    bool forceStandby = false;
+
     LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
 
     if (mHardware == NULL) return NO_INIT;
 
-    AutoMutex lock(mLock);
-
-    if (param.getInt(String8(VOICE_REC_MODE_KEY), value) == NO_ERROR) {
-        AutoMutex hwLock(mHardware->lock());
-
-        mHardware->openMixer_l();
-        mHardware->setVoiceRecognition_l((value != 0));
-        mHardware->closeMixer_l();
-
-        param.remove(String8(VOICE_REC_MODE_KEY));
-    }
-
-    if (param.getInt(String8(AudioParameter::keyRouting), value) == NO_ERROR)
     {
-        if (value != 0) {
+        AutoMutex lock(mLock);
+
+        if (param.getInt(String8(VOICE_REC_MODE_KEY), value) == NO_ERROR) {
             AutoMutex hwLock(mHardware->lock());
 
-            if (mDevices != (uint32_t)value) {
-                if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
-                    next_route = mHardware->getInputRouteFromDevice((uint32_t)value);
-                }
-                mDevices = (uint32_t)value;
-            }
+            mHardware->openMixer_l();
+            mHardware->setVoiceRecognition_l((value != 0));
+            mHardware->closeMixer_l();
+
+            param.remove(String8(VOICE_REC_MODE_KEY));
         }
-        param.remove(String8(AudioParameter::keyRouting));
+
+        if (param.getInt(String8(AudioParameter::keyRouting), value) == NO_ERROR)
+        {
+            if (value != 0) {
+                AutoMutex hwLock(mHardware->lock());
+
+                if (mDevices != (uint32_t)value) {
+                    if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
+                        next_route = mHardware->getInputRouteFromDevice((uint32_t)value);
+                        forceStandby = true;
+                    }
+                    mDevices = (uint32_t)value;
+                }
+            }
+            param.remove(String8(AudioParameter::keyRouting));
+        }
+    }
+
+    if (forceStandby) {
+        standby();
     }
 
     if (param.size()) {
