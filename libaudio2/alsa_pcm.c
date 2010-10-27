@@ -40,7 +40,7 @@
 #define __user
 #include "asound.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 /* alsa parameter manipulation cruft */
 
@@ -153,35 +153,35 @@ static void param_dump(struct snd_pcm_hw_params *p)
     for (n = SNDRV_PCM_HW_PARAM_FIRST_MASK;
          n <= SNDRV_PCM_HW_PARAM_LAST_MASK; n++) {
             struct snd_mask *m = param_to_mask(p, n);
-            printf("%s = %08x%08x\n", param_name[n],
+            LOGV("%s = %08x%08x\n", param_name[n],
                    m->bits[1], m->bits[0]);
     }
     for (n = SNDRV_PCM_HW_PARAM_FIRST_INTERVAL;
          n <= SNDRV_PCM_HW_PARAM_LAST_INTERVAL; n++) {
             struct snd_interval *i = param_to_interval(p, n);
-            printf("%s = (%d,%d) omin=%d omax=%d int=%d empty=%d\n",
+            LOGV("%s = (%d,%d) omin=%d omax=%d int=%d empty=%d\n",
                    param_name[n], i->min, i->max, i->openmin,
                    i->openmax, i->integer, i->empty);
     }
-    printf("info = %08x\n", p->info);
-    printf("msbits = %d\n", p->msbits);
-    printf("rate = %d/%d\n", p->rate_num, p->rate_den);
-    printf("fifo = %d\n", (int) p->fifo_size);
+    LOGV("info = %08x\n", p->info);
+    LOGV("msbits = %d\n", p->msbits);
+    LOGV("rate = %d/%d\n", p->rate_num, p->rate_den);
+    LOGV("fifo = %d\n", (int) p->fifo_size);
 }
 
 static void info_dump(struct snd_pcm_info *info)
 {
-    printf("device = %d\n", info->device);
-    printf("subdevice = %d\n", info->subdevice);
-    printf("stream = %d\n", info->stream);
-    printf("card = %d\n", info->card);
-    printf("id = '%s'\n", info->id);
-    printf("name = '%s'\n", info->name);
-    printf("subname = '%s'\n", info->subname);
-    printf("dev_class = %d\n", info->dev_class);
-    printf("dev_subclass = %d\n", info->dev_subclass);
-    printf("subdevices_count = %d\n", info->subdevices_count);
-    printf("subdevices_avail = %d\n", info->subdevices_avail);
+    LOGV("device = %d\n", info->device);
+    LOGV("subdevice = %d\n", info->subdevice);
+    LOGV("stream = %d\n", info->stream);
+    LOGV("card = %d\n", info->card);
+    LOGV("id = '%s'\n", info->id);
+    LOGV("name = '%s'\n", info->name);
+    LOGV("subname = '%s'\n", info->subname);
+    LOGV("dev_class = %d\n", info->dev_class);
+    LOGV("dev_subclass = %d\n", info->dev_subclass);
+    LOGV("subdevices_count = %d\n", info->subdevices_count);
+    LOGV("subdevices_avail = %d\n", info->subdevices_avail);
 }
 #else
 static void param_dump(struct snd_pcm_hw_params *p) {}
