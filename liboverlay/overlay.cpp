@@ -607,6 +607,8 @@ static overlay_t* overlay_createOverlay(struct overlay_control_device_t *dev,
         goto error1;
     }
 
+    v4l2_overlay_init_fimc(fd, &g_s5p_fimc);
+
     overlay = new overlay_object(fd, shared_fd, shared->size,
                                  w, h, format, num);
     if (overlay == NULL) {
@@ -949,57 +951,104 @@ static int overlay_control_close(struct hw_device_t *dev)
     return 0;
 }
 
+static int get_pixel_format_type(unsigned int pixelformat)
+{
+    switch(pixelformat) {
+    case V4L2_PIX_FMT_RGB32:
+    case V4L2_PIX_FMT_RGB565:
+        return PFT_RGB;
+
+    case V4L2_PIX_FMT_NV12:
+    case V4L2_PIX_FMT_NV12T:
+    case V4L2_PIX_FMT_NV21:
+    case V4L2_PIX_FMT_YUV420:
+        return PFT_YUV420;
+
+    case V4L2_PIX_FMT_YUYV:
+    case V4L2_PIX_FMT_UYVY:
+    case V4L2_PIX_FMT_YVYU:
+    case V4L2_PIX_FMT_VYUY:
+    case V4L2_PIX_FMT_NV16:
+    case V4L2_PIX_FMT_NV61:
+    case V4L2_PIX_FMT_YUV422P:
+        return PFT_YUV422;
+
+    default:
+        return PFT_YUV444;
+    }
+}
+
 /* check the constraints of destination image size */
 static int check_fimc_dst_constraints(s5p_fimc_t *s5p_fimc,
                                       unsigned int rotation)
 {
-    int ret = 0;
     int tmp = 0;
-    if((s5p_fimc->params.dst.height > 0) && (s5p_fimc->params.dst.height < 8)) {
+
+    if((s5p_fimc->params.dst.height > 0) && (s5p_fimc->params.dst.height < 8))
         s5p_fimc->params.dst.height = 8;
-        ret = 1;
-    }
-    if(s5p_fimc->params.dst.width %8 != 0) {
-        tmp = s5p_fimc->params.dst.width - (s5p_fimc->params.dst.width%8);
-        if(tmp <= 0) {
-            ret = -1;
-        } else {
-            s5p_fimc->params.dst.width = tmp;
-            ret = 1;
+
+    if(s5p_fimc->hw_ver == 0x50) {
+        if(s5p_fimc->params.dst.width%2 != 0) {
+            tmp = s5p_fimc->params.dst.width - (s5p_fimc->params.dst.width%2);
+            if(tmp <= 0)
+                return -1;
+            else
+                s5p_fimc->params.dst.width = tmp;
+        }
+    } else {
+        if(s5p_fimc->params.dst.width%8 != 0) {
+            tmp = s5p_fimc->params.dst.width - (s5p_fimc->params.dst.width%8);
+            if(tmp <= 0)
+                return -1;
+            else
+                s5p_fimc->params.dst.width = tmp;
         }
     }
-    return ret;
+
+    return 1;
 }
 /* check the constraints of source image size */
 static int check_fimc_src_constraints(s5p_fimc_t *s5p_fimc)
 {
-    int ret = 0;
+    int format_type = 0;
 
     if(s5p_fimc->params.src.full_width < 16 ||
-       s5p_fimc->params.src.full_height < 8 )
-        ret = -1;
+        s5p_fimc->params.src.full_height < 8 )
+        return -1;
+
+    if(s5p_fimc->params.src.full_width%16 != 0)
+        return -1;
 
     if(s5p_fimc->hw_ver == 0x50) {
-        if(s5p_fimc->params.src.color_space == V4L2_PIX_FMT_YUV422P) {
-            if((s5p_fimc->params.src.full_width%2 != 0) ||
-               (s5p_fimc->params.src.full_height%2 != 0))
-                ret = -1;
+        format_type = get_pixel_format_type(s5p_fimc->params.src.color_space);
+        switch (format_type) {
+        case PFT_YUV420:
+            if (s5p_fimc->params.src.height%2 != 0)
+                s5p_fimc->params.src.height = s5p_fimc->params.src.height
+                                      - (s5p_fimc->params.src.height)%2;
+
+            if (s5p_fimc->params.src.width%2 != 0)
+                s5p_fimc->params.src.width = s5p_fimc->params.src.width
+                                      - (s5p_fimc->params.src.width)%2;
+            break;
+
+        case PFT_YUV422:
+            if (s5p_fimc->params.src.width%2 != 0)
+                s5p_fimc->params.src.width = s5p_fimc->params.src.width
+                                      - (s5p_fimc->params.src.width)%2;
         }
     } else {
-        if(s5p_fimc->params.src.full_width%16 != 0)
-            ret = -1;
-
-        if(s5p_fimc->params.src.height < 8) {
+        if (s5p_fimc->params.src.height < 8) {
             s5p_fimc->params.src.height = 8;
-            ret = 1;
         }
-        if(s5p_fimc->params.src.width%16 != 0) {
-            s5p_fimc->params.src.height = s5p_fimc->params.src.height
-                                          - (s5p_fimc->params.src.height)%16;
-            ret = 1;
+
+        if (s5p_fimc->params.src.width%16 != 0) {
+            s5p_fimc->params.src.width = s5p_fimc->params.src.width
+                                          - (s5p_fimc->params.src.width)%16;
         }
     }
-    return ret;
+
+    return 1;
 }
 
 /****************************************************************************
