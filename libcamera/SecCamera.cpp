@@ -968,15 +968,10 @@ int SecCamera::startPreview(void)
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     m_flag_camera_start = 1;
 
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
-        CHECK(ret);
-    } else {    // In case VGA camera
-        /* Brightness setting */
-        LOGV("m_params->brightness = %d", m_params->brightness);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS,
-                               m_params->brightness);
-        CHECK(ret);
+    ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
+    CHECK(ret);
+
+    if (m_camera_id == CAMERA_ID_FRONT) {
         /* Blur setting */
         LOGV("m_blur_level = %d", m_blur_level);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
