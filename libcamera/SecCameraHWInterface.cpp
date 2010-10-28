@@ -1701,6 +1701,23 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
+    // fps range
+    int new_min_fps = 0;
+    int new_max_fps = 0;
+    int current_min_fps, current_max_fps;
+    params.getPreviewFpsRange(&new_min_fps, &new_max_fps);
+    mParameters.getPreviewFpsRange(&current_min_fps, &current_max_fps);
+    /* our fps range is determined by the sensor, reject any request
+     * that isn't exactly what we're already at.
+     */
+    if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
+        LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
+             __func__, new_min_fps, new_max_fps);
+        LOGE("%s : current_min_fps = %d, current_max_fps = %d",
+             __func__, current_min_fps, current_max_fps);
+        ret = UNKNOWN_ERROR;
+    }
+
     // scene mode
     const char *new_scene_mode_str = params.get(CameraParameters::KEY_SCENE_MODE);
 
@@ -1846,23 +1863,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     }
 
     // ---------------------------------------------------------------------------
-
-    // fps range
-    int new_min_fps = 0;
-    int new_max_fps = 0;
-    int current_min_fps, current_max_fps;
-    params.getPreviewFpsRange(&new_min_fps, &new_max_fps);
-    mParameters.getPreviewFpsRange(&current_min_fps, &current_max_fps);
-    /* our fps range is determined by the sensor, reject any request
-     * that isn't exactly what we're already at.
-     */
-    if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
-        LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
-             __func__, new_min_fps, new_max_fps);
-        LOGE("%s : current_min_fps = %d, current_max_fps = %d",
-             __func__, current_min_fps, current_max_fps);
-        ret = UNKNOWN_ERROR;
-    }
 
     // image effect
     const char *new_image_effect_str = params.get(CameraParameters::KEY_EFFECT);
