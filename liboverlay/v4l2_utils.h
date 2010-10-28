@@ -56,6 +56,13 @@ enum {
     HAL_PIXEL_FORMAT_CUSTOM_MAX
 };
 
+enum {
+    PFT_RGB,
+    PFT_YUV420,
+    PFT_YUV422,
+    PFT_YUV444,
+};
+
 struct mapping_data {
     int fd;
     size_t length;

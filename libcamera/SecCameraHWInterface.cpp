@@ -210,7 +210,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     p.setPreviewFormat("yuv420sp_custom");
 #endif
     p.setPreviewSize(preview_max_width, preview_max_height);
-    p.setPreviewFrameRate(30);
 
     p.setPictureFormat(CameraParameters::PIXEL_FORMAT_JPEG);
     p.setPictureSize(snapshot_max_width, snapshot_max_height);
@@ -218,7 +217,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS,
           CameraParameters::PIXEL_FORMAT_YUV420SP);
-    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "30");
     p.set(CameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
           CameraParameters::PIXEL_FORMAT_JPEG);
     p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT,
@@ -242,6 +240,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
               "320x240,0x0");
         p.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "320");
         p.set(CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT, "240");
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "30");
+        p.setPreviewFrameRate(30);
     } else {
         parameterString = CameraParameters::FOCUS_MODE_FIXED;
         p.set(CameraParameters::KEY_SUPPORTED_FOCUS_MODES,
@@ -254,6 +254,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
               "160x120,0x0");
         p.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "160");
         p.set(CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT, "120");
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "15");
+        p.setPreviewFrameRate(15);
     }
 
     parameterString = CameraParameters::EFFECT_NONE;
@@ -310,9 +312,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(15000,30000)");
         p.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "15000,30000");
 
+        p.set(CameraParameters::KEY_FOCAL_LENGTH, "3.43");
     } else {
-        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,30000)");
-        p.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,30000");
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,15000)");
+        p.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,15000");
+
+        p.set(CameraParameters::KEY_FOCAL_LENGTH, "0.9");
     }
 
     parameterString = CameraParameters::WHITE_BALANCE_AUTO;
@@ -358,7 +363,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("image-effects", "original");
 #endif
 
-    p.set(CameraParameters::KEY_FOCAL_LENGTH, "3.43");
 
     p.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "51.2");
     p.set(CameraParameters::KEY_VERTICAL_VIEW_ANGLE, "39.4");
@@ -381,7 +385,10 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     mSecCamera->setContrast(CONTRAST_DEFAULT);
     mSecCamera->setSharpness(SHARPNESS_DEFAULT);
     mSecCamera->setSaturation(SATURATION_DEFAULT);
-    mSecCamera->setFrameRate(30);
+    if (cameraId == SecCamera::CAMERA_ID_BACK)
+        mSecCamera->setFrameRate(30);
+    else
+        mSecCamera->setFrameRate(15);
 }
 
 CameraHardwareSec::~CameraHardwareSec()
@@ -628,9 +635,6 @@ status_t CameraHardwareSec::startPreview()
 
     if (ret < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
-        if (mMsgEnabled & CAMERA_MSG_ERROR) {
-                mNotifyCb(CAMERA_MSG_ERROR, -2, 0, mCallbackCookie);
-        }
         return -1; //UNKNOWN_ERROR;
     }
 
@@ -1699,6 +1703,23 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
+    // fps range
+    int new_min_fps = 0;
+    int new_max_fps = 0;
+    int current_min_fps, current_max_fps;
+    params.getPreviewFpsRange(&new_min_fps, &new_max_fps);
+    mParameters.getPreviewFpsRange(&current_min_fps, &current_max_fps);
+    /* our fps range is determined by the sensor, reject any request
+     * that isn't exactly what we're already at.
+     */
+    if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
+        LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
+             __func__, new_min_fps, new_max_fps);
+        LOGE("%s : current_min_fps = %d, current_max_fps = %d",
+             __func__, current_min_fps, current_max_fps);
+        ret = UNKNOWN_ERROR;
+    }
+
     // scene mode
     const char *new_scene_mode_str = params.get(CameraParameters::KEY_SCENE_MODE);
 
@@ -1844,23 +1865,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     }
 
     // ---------------------------------------------------------------------------
-
-    // fps range
-    int new_min_fps = 0;
-    int new_max_fps = 0;
-    int current_min_fps, current_max_fps;
-    params.getPreviewFpsRange(&new_min_fps, &new_max_fps);
-    mParameters.getPreviewFpsRange(&current_min_fps, &current_max_fps);
-    /* our fps range is determined by the sensor, reject any request
-     * that isn't exactly what we're already at.
-     */
-    if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
-        LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
-             __func__, new_min_fps, new_max_fps);
-        LOGE("%s : current_min_fps = %d, current_max_fps = %d",
-             __func__, current_min_fps, current_max_fps);
-        ret = UNKNOWN_ERROR;
-    }
 
     // image effect
     const char *new_image_effect_str = params.get(CameraParameters::KEY_EFFECT);

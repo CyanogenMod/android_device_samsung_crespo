@@ -827,9 +827,10 @@ int SecCamera::initCamera(int index)
         ret = fimc_v4l2_s_input(m_cam_fd2, index);
         CHECK(ret);
 #endif
+        m_camera_id = index;
+
         setExifFixedAttribute();
 
-        m_camera_id = index;
         m_flag_init = 1;
     }
     return 0;
@@ -1064,8 +1065,13 @@ int SecCamera::startRecord(void)
     LOGE("%s: m_recording_width = %d, m_recording_height = %d\n", __func__, m_recording_width, m_recording_height);
 
     ret = fimc_v4l2_s_fmt(m_cam_fd2, m_recording_width, m_recording_height, m_record_v4lformat, 0);
-
     CHECK(ret);
+
+    if (m_camera_id == CAMERA_ID_BACK) {
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
+                m_params->capture.timeperframe.denominator);
+        CHECK(ret);
+    }
 
     init_yuv_buffers(m_buffers_c2, m_recording_width, m_recording_height, m_record_v4lformat);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
@@ -1113,6 +1119,12 @@ int SecCamera::stopRecord(void)
     }
 
     int ret = fimc_v4l2_streamoff(m_cam_fd2);
+
+    if (m_camera_id == CAMERA_ID_BACK) {
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
+                FRAME_RATE_AUTO);
+        CHECK(ret);
+    }
 
     m_flag_record_start = 0;
     CHECK(ret);
@@ -3271,13 +3283,19 @@ int SecCamera::getJpegThumbnailSize(int *width, int  *height)
 
 void SecCamera::setExifFixedAttribute()
 {
+    char property[PROPERTY_VALUE_MAX];
+
     //2 0th IFD TIFF Tags
     //3 Maker
     strcpy((char *)mExifInfo.maker, EXIF_DEF_MAKER);
     //3 Model
     strcpy((char *)mExifInfo.model, EXIF_DEF_MODEL);
     //3 Software
-    property_get("ro.build.PDA", (char *)mExifInfo.software, EXIF_DEF_SOFTWARE);
+    property_get("ro.build.id", property, EXIF_DEF_SOFTWARE);
+    strncpy((char *)mExifInfo.software, property,
+                sizeof(mExifInfo.software) - 1);
+    mExifInfo.software[sizeof(mExifInfo.software) - 1] = '\0';
+
     //3 YCbCr Positioning
     mExifInfo.ycbcr_positioning = EXIF_DEF_YCBCR_POSITIONING;
 
@@ -3296,10 +3314,12 @@ void SecCamera::setExifFixedAttribute()
     //3 Maximum lens aperture
     mExifInfo.max_aperture.num = mExifInfo.aperture.num;
     mExifInfo.max_aperture.den = mExifInfo.aperture.den;
-    //3 Flash
-    mExifInfo.flash = EXIF_DEF_FLASH;
     //3 Lens Focal Length
-    mExifInfo.focal_length.num = 343; /* focal length of 3.43mm */
+    if (m_camera_id == CAMERA_ID_BACK)
+        mExifInfo.focal_length.num = BACK_CAMERA_FOCAL_LENGTH;
+    else
+        mExifInfo.focal_length.num = FRONT_CAMERA_FOCAL_LENGTH;
+
     mExifInfo.focal_length.den = EXIF_DEF_FOCAL_LEN_DEN;
     //3 User Comments
     strcpy((char *)mExifInfo.user_comment, EXIF_DEF_USERCOMMENTS);
@@ -3376,12 +3396,9 @@ void SecCamera::setExifChangedAttribute()
     if (iso < 0) {
         LOGE("%s: error %d getting iso, camera_id = %d, using 100",
              __func__, iso, m_camera_id);
-        iso = 100;
+        iso = ISO_100;
     }
-    if (m_params->iso == ISO_AUTO) {
-        mExifInfo.iso_speed_rating = iso;
-    } else {
-        switch(m_params->iso) {
+    switch(iso) {
         case ISO_50:
             mExifInfo.iso_speed_rating = 50;
             break;
@@ -3401,18 +3418,17 @@ void SecCamera::setExifChangedAttribute()
             mExifInfo.iso_speed_rating = 1600;
             break;
         default:
-            mExifInfo.iso_speed_rating = iso;
+            mExifInfo.iso_speed_rating = 100;
             break;
-        }
     }
 
     uint32_t av, tv, bv, sv, ev;
     av = APEX_FNUM_TO_APERTURE((double)mExifInfo.fnumber.num / mExifInfo.fnumber.den);
     tv = APEX_EXPOSURE_TO_SHUTTER((double)mExifInfo.exposure_time.num / mExifInfo.exposure_time.den);
-    sv = APEX_ISO_TO_FILMSENSITIVITY(iso);
+    sv = APEX_ISO_TO_FILMSENSITIVITY(mExifInfo.iso_speed_rating);
     bv = av + tv - sv;
     ev = av + tv;
-    LOGD("Shutter speed=%d us, iso=%d\n", shutterSpeed, iso);
+    LOGD("Shutter speed=%d us, iso=%d\n", shutterSpeed, mExifInfo.iso_speed_rating);
     LOGD("AV=%d, TV=%d, SV=%d\n", av, tv, sv);
 
     //3 Shutter Speed
@@ -3444,6 +3460,14 @@ void SecCamera::setExifChangedAttribute()
         mExifInfo.metering_mode = EXIF_METERING_AVERAGE;
         break;
     }
+
+    //3 Flash
+    int flash = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_FLASH_ONOFF);
+    if (flash < 0)
+        mExifInfo.flash = EXIF_DEF_FLASH;
+    else
+        mExifInfo.flash = flash;
+
     //3 White Balance
     if (m_params->white_balance == WHITE_BALANCE_AUTO)
         mExifInfo.white_balance = EXIF_WB_AUTO;
