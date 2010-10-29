@@ -56,6 +56,8 @@ namespace android {
 
 //#define SEND_YUV_RECORD_DATA //Define this to copy YUV data to encoder instead of sharing the physical address.
 
+#define ENABLE_ESD_PREVIEW_CHECK
+
 #define INCLUDE_JPEG_THUMBNAIL 1 //Valid only for on chip JPEG encoder
 
 #if defined PREVIEW_USING_MMAP
