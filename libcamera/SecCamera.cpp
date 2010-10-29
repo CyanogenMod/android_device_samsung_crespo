@@ -1067,13 +1067,8 @@ int SecCamera::startRecord(void)
     LOGE("%s: m_recording_width = %d, m_recording_height = %d\n", __func__, m_recording_width, m_recording_height);
 
     ret = fimc_v4l2_s_fmt(m_cam_fd2, m_recording_width, m_recording_height, m_record_v4lformat, 0);
-    CHECK(ret);
 
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
-                m_params->capture.timeperframe.denominator);
-        CHECK(ret);
-    }
+    CHECK(ret);
 
     init_yuv_buffers(m_buffers_c2, m_recording_width, m_recording_height, m_record_v4lformat);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
@@ -1121,12 +1116,6 @@ int SecCamera::stopRecord(void)
     }
 
     int ret = fimc_v4l2_streamoff(m_cam_fd2);
-
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
-                FRAME_RATE_AUTO);
-        CHECK(ret);
-    }
 
     m_flag_record_start = 0;
     CHECK(ret);
