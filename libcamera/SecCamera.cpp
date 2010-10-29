@@ -186,14 +186,17 @@ static int fimc_poll(struct pollfd *events)
 {
     int ret;
 
-    ret = poll(events, 1, 5000);
+    /* 10 second delay is because sensor can take a long time 
+     * to do auto focus and capture in dark settings
+     */
+    ret = poll(events, 1, 10000);
     if (ret < 0) {
         LOGE("ERR(%s):poll error\n", __func__);
         return ret;
     }
 
     if (ret == 0) {
-        LOGE("ERR(%s):No data in 5 secs..\n", __func__);
+        LOGE("ERR(%s):No data in 10 secs..\n", __func__);
         return ret;
     }
 
@@ -382,7 +385,7 @@ static int fimc_v4l2_enum_fmt(int fp, unsigned int fmt)
 
     while (ioctl(fp, VIDIOC_ENUM_FMT, &fmtdesc) == 0) {
         if (fmtdesc.pixelformat == fmt) {
-            LOGD("passed fmt = %d found pixel format[%d]: %s\n", fmt, fmtdesc.index, fmtdesc.description);
+            LOGV("passed fmt = %#x found pixel format[%d]: %s\n", fmt, fmtdesc.index, fmtdesc.description);
             found = 1;
             break;
         }
@@ -881,7 +884,6 @@ void SecCamera::DeinitCamera()
         }
 
         m_flag_init = 0;
-        usleep(500000); //500 ms delay to allow proper closure of fimc device.
     }
 }
 
@@ -971,12 +973,12 @@ int SecCamera::startPreview(void)
         CHECK(ret);
     } else {    // In case VGA camera
         /* Brightness setting */
-	    LOGE("m_params->brightness = %d", m_params->brightness);
+        LOGV("m_params->brightness = %d", m_params->brightness);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS,
                                m_params->brightness);
         CHECK(ret);
         /* Blur setting */
-	    LOGE("m_blur_level = %d", m_blur_level);
+        LOGV("m_blur_level = %d", m_blur_level);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
                                m_blur_level);
         CHECK(ret);
@@ -988,7 +990,7 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGE("%s: get the first frame of the preview\n", __func__);
+    LOGV("%s: get the first frame of the preview\n", __func__);
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
 #ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
@@ -1010,7 +1012,7 @@ int SecCamera::stopPreview(void)
     close_buffers(m_buffers_c);
 
     if (m_flag_camera_start == 0) {
-        LOGE("%s: m_flag_camera_start is zero", __func__);
+        LOGV("%s: doing nothing because m_flag_camera_start is zero", __func__);
         return 0;
     }
 
