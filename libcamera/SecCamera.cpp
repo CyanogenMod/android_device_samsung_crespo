@@ -186,7 +186,7 @@ static int fimc_poll(struct pollfd *events)
 {
     int ret;
 
-    /* 10 second delay is because sensor can take a long time 
+    /* 10 second delay is because sensor can take a long time
      * to do auto focus and capture in dark settings
      */
     ret = poll(events, 1, 10000);
@@ -859,20 +859,28 @@ void SecCamera::DeinitCamera()
             m_jpeg_fd = 0;
         }
 #endif
+
+#ifdef DUAL_PORT_RECORDING
+        stopRecord();
+#endif
+
+	/* close m_cam_fd after stopRecord() because stopRecord()
+	 * uses m_cam_fd to change frame rate
+	 */
         LOGE("DeinitCamera: m_cam_fd(%d)", m_cam_fd);
         if (m_cam_fd > -1) {
             close(m_cam_fd);
             m_cam_fd = -1;
         }
-#ifdef DUAL_PORT_RECORDING
-        stopRecord();
 
+#ifdef DUAL_PORT_RECORDING
         LOGE("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
         if (m_cam_fd2 > -1) {
             close(m_cam_fd2);
             m_cam_fd2 = -1;
         }
 #endif
+
         if (m_cam_fd_temp != -1) {
             close(m_cam_fd_temp);
             m_cam_fd_temp = -1;
@@ -985,7 +993,7 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGV("%s: get the first frame of the preview\n", __func__);
+    LOGV("%s: got the first frame of the preview\n", __func__);
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
 #ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
