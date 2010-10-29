@@ -1155,6 +1155,14 @@ int CameraHardwareSec::pictureThread()
     unsigned int index = 0;
     unsigned int offset = ((mPostViewWidth*mPostViewHeight*3/2) + 16) * index;
     unsigned int overlay_header[4];
+
+    // Only show postview image if size is VGA since sensor cannot deliver
+    // any other sizes.
+    int previewWidth, previewHeight, previewSize;
+    mSecCamera->getPreviewSize(&previewWidth, &previewHeight, &previewSize);
+    if ((previewWidth != 640) || (previewHeight != 480))
+        goto PostviewOverlayEnd;
+
     mOverlayBufferIdx ^= 1;
     overlay_header[0]= mSecCamera->getPhyAddrY(index);
     overlay_header[1]= overlay_header[0] + mPostViewWidth*mPostViewHeight;
