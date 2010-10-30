@@ -1,24 +1,22 @@
-# dev files for 3D
+
 /dev/pvrsrvkm             0666   system     system
-/dev/video0               0664   system     camera
-/dev/video1               0664   system     camera
-/dev/video2               0664   system     camera
+/dev/video0               0660   system     camera
+/dev/video1               0660   system     camera
+/dev/video2               0660   system     camera
 /dev/s3c-jpg              0660   system     camera
-/dev/pmem_gpu1            0664   system     graphics
-/dev/s3c-mem              0664   system     system
-/dev/s3c_bc               0664   system     system
-/dev/s3c-mfc              0664   system     graphics
-/dev/onedram              0664   radio      radio
+/dev/s3c-mem              0660   system     system
+/dev/s3c-mfc              0660   system     graphics
 
 /dev/modem_ctl            0660   radio      radio
 /dev/modem_fmt            0660   radio      radio
 /dev/modem_rfs            0660   radio      radio
 /dev/s3c2410_serial3      0660   radio      radio
 /dev/block/mtdblock5      0660   radio      radio
+/dev/mtd/mtd5ro           0660   radio      radio
 
 # for Sensor HAL
-/dev/akm8973		0660	system	system
-/dev/accelerometer	0660	system	system
+/dev/akm8973              0660   system     system
+/dev/accelerometer        0660   system     system
 
 # for GPS
-/dev/s3c2410_serial1    0600    gps     gps
+/dev/s3c2410_serial1      0600   gps        gps
