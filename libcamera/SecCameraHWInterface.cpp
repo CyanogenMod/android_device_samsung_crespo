@@ -320,8 +320,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
         p.set(CameraParameters::KEY_FOCAL_LENGTH, "3.43");
     } else {
-        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,15000)");
-        p.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,15000");
+        p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,30000)");
+        p.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,30000");
 
         p.set(CameraParameters::KEY_FOCAL_LENGTH, "0.9");
     }
@@ -1087,7 +1087,7 @@ int CameraHardwareSec::pictureThread()
                 mStateLock.lock();
                 mCaptureInProgress = false;
                 mStateLock.unlock();
-                return UNKNOWN_ERROR; 
+                return UNKNOWN_ERROR;
             }
             LOGI("snapshotandjpeg done\n");
         }
@@ -1097,7 +1097,7 @@ int CameraHardwareSec::pictureThread()
             mStateLock.lock();
             mCaptureInProgress = false;
             mStateLock.unlock();
-            return UNKNOWN_ERROR; 
+            return UNKNOWN_ERROR;
         }
 
         jpeg_data = mSecCamera->yuv2Jpeg((unsigned char*)phyAddr, 0, &jpeg_size,
@@ -1222,7 +1222,7 @@ PostviewOverlayEnd:
         LOGV("JpegExifSize=%d", JpegExifSize);
 
         if (JpegExifSize < 0) {
-            return UNKNOWN_ERROR; 
+            return UNKNOWN_ERROR;
         }
 
         unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
@@ -1670,8 +1670,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     /* ignore any fps request, we're determine fps automatically based
      * on scene mode.  don't return an error because it causes CTS failure.
      */
-    if (new_frame_rate != 30) {
-        LOGW("WARN(%s): request for frame rate setting (%d) not allowed\n", __func__, new_frame_rate);
+    if (new_frame_rate != mParameters.getPreviewFrameRate()) {
+        LOGW("WARN(%s): request for preview frame %d not allowed, != %d\n",
+             __func__, new_frame_rate, mParameters.getPreviewFrameRate());
     }
 
     // rotation
