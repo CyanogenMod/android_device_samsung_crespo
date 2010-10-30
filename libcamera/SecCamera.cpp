@@ -186,7 +186,7 @@ static int fimc_poll(struct pollfd *events)
 {
     int ret;
 
-    /* 10 second delay is because sensor can take a long time 
+    /* 10 second delay is because sensor can take a long time
      * to do auto focus and capture in dark settings
      */
     ret = poll(events, 1, 10000);
@@ -859,20 +859,28 @@ void SecCamera::DeinitCamera()
             m_jpeg_fd = 0;
         }
 #endif
+
+#ifdef DUAL_PORT_RECORDING
+        stopRecord();
+#endif
+
+	/* close m_cam_fd after stopRecord() because stopRecord()
+	 * uses m_cam_fd to change frame rate
+	 */
         LOGE("DeinitCamera: m_cam_fd(%d)", m_cam_fd);
         if (m_cam_fd > -1) {
             close(m_cam_fd);
             m_cam_fd = -1;
         }
-#ifdef DUAL_PORT_RECORDING
-        stopRecord();
 
+#ifdef DUAL_PORT_RECORDING
         LOGE("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
         if (m_cam_fd2 > -1) {
             close(m_cam_fd2);
             m_cam_fd2 = -1;
         }
 #endif
+
         if (m_cam_fd_temp != -1) {
             close(m_cam_fd_temp);
             m_cam_fd_temp = -1;
@@ -968,15 +976,10 @@ int SecCamera::startPreview(void)
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     m_flag_camera_start = 1;
 
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
-        CHECK(ret);
-    } else {    // In case VGA camera
-        /* Brightness setting */
-        LOGV("m_params->brightness = %d", m_params->brightness);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS,
-                               m_params->brightness);
-        CHECK(ret);
+    ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
+    CHECK(ret);
+
+    if (m_camera_id == CAMERA_ID_FRONT) {
         /* Blur setting */
         LOGV("m_blur_level = %d", m_blur_level);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
@@ -990,7 +993,7 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    LOGV("%s: get the first frame of the preview\n", __func__);
+    LOGV("%s: got the first frame of the preview\n", __func__);
 #endif  /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
 
 #ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
@@ -1067,13 +1070,8 @@ int SecCamera::startRecord(void)
     LOGE("%s: m_recording_width = %d, m_recording_height = %d\n", __func__, m_recording_width, m_recording_height);
 
     ret = fimc_v4l2_s_fmt(m_cam_fd2, m_recording_width, m_recording_height, m_record_v4lformat, 0);
-    CHECK(ret);
 
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
-                m_params->capture.timeperframe.denominator);
-        CHECK(ret);
-    }
+    CHECK(ret);
 
     init_yuv_buffers(m_buffers_c2, m_recording_width, m_recording_height, m_record_v4lformat);
 #else   /* SWP1_CAMERA_ADD_ADVANCED_FUNCTION */
@@ -1121,12 +1119,6 @@ int SecCamera::stopRecord(void)
     }
 
     int ret = fimc_v4l2_streamoff(m_cam_fd2);
-
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
-                FRAME_RATE_AUTO);
-        CHECK(ret);
-    }
 
     m_flag_record_start = 0;
     CHECK(ret);
