@@ -716,11 +716,13 @@ static int overlay_setPosition(struct overlay_control_device_t *dev,
      * the display.
      */
 
-    /*quire a minimum size */
-    if (temp_w < 16 || temp_h < 16) {
-        /* Return an error */
-        rc = -1;
-    } else if (!shared->controlReady) {
+    /* Require a minimum size */
+    if (temp_x < 8)
+        temp_x = 8;
+    if (temp_y < 8)
+        temp_y = 8;
+
+    if (!shared->controlReady) {
         if ( temp_x < 0 ) temp_x = 0;
         if ( temp_y < 0 ) temp_y = 0;
         if ( temp_w > shared->dispW ) temp_w = shared->dispW;
@@ -989,7 +991,7 @@ static int check_fimc_dst_constraints(s5p_fimc_t *s5p_fimc,
 
     if(s5p_fimc->hw_ver == 0x50) {
         if(s5p_fimc->params.dst.width%2 != 0) {
-            tmp = s5p_fimc->params.dst.width - (s5p_fimc->params.dst.width%2);
+            tmp = s5p_fimc->params.dst.width + (s5p_fimc->params.dst.width%2);
             if(tmp <= 0)
                 return -1;
             else
@@ -997,7 +999,7 @@ static int check_fimc_dst_constraints(s5p_fimc_t *s5p_fimc,
         }
     } else {
         if(s5p_fimc->params.dst.width%8 != 0) {
-            tmp = s5p_fimc->params.dst.width - (s5p_fimc->params.dst.width%8);
+            tmp = s5p_fimc->params.dst.width + (s5p_fimc->params.dst.width%8);
             if(tmp <= 0)
                 return -1;
             else
@@ -1025,17 +1027,17 @@ static int check_fimc_src_constraints(s5p_fimc_t *s5p_fimc)
         case PFT_YUV420:
             if (s5p_fimc->params.src.height%2 != 0)
                 s5p_fimc->params.src.height = s5p_fimc->params.src.height
-                                      - (s5p_fimc->params.src.height)%2;
+                                      + (s5p_fimc->params.src.height)%2;
 
             if (s5p_fimc->params.src.width%2 != 0)
                 s5p_fimc->params.src.width = s5p_fimc->params.src.width
-                                      - (s5p_fimc->params.src.width)%2;
+                                      + (s5p_fimc->params.src.width)%2;
             break;
 
         case PFT_YUV422:
             if (s5p_fimc->params.src.width%2 != 0)
                 s5p_fimc->params.src.width = s5p_fimc->params.src.width
-                                      - (s5p_fimc->params.src.width)%2;
+                                      + (s5p_fimc->params.src.width)%2;
         }
     } else {
         if (s5p_fimc->params.src.height < 8) {
@@ -1044,7 +1046,7 @@ static int check_fimc_src_constraints(s5p_fimc_t *s5p_fimc)
 
         if (s5p_fimc->params.src.width%16 != 0) {
             s5p_fimc->params.src.width = s5p_fimc->params.src.width
-                                          - (s5p_fimc->params.src.width)%16;
+                                          + (s5p_fimc->params.src.width)%16;
         }
     }
 
