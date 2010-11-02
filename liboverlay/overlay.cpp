@@ -717,10 +717,10 @@ static int overlay_setPosition(struct overlay_control_device_t *dev,
      */
 
     /* Require a minimum size */
-    if (temp_x < 8)
-        temp_x = 8;
-    if (temp_y < 8)
-        temp_y = 8;
+    if (temp_w < 8)
+        temp_w = 8;
+    if (temp_h < 8)
+        temp_h = 8;
 
     if (!shared->controlReady) {
         if ( temp_x < 0 ) temp_x = 0;
