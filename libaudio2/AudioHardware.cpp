@@ -332,9 +332,6 @@ status_t AudioHardware::setMode(int mode)
                 openPcmOut_l();
                 openMixer_l();
                 setVoiceRecognition_l(false);
-                if (mOutput != 0) {
-                    setIncallPath_l(mOutput->device());
-                }
                 mInCallAudioMode = true;
             }
             if (mMode == AudioSystem::MODE_NORMAL && mInCallAudioMode) {
