@@ -735,6 +735,11 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         goto EXIT;
     }
 
+    if ((pInputData->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
+        (pSECComponent->bUseFlagEOF == OMX_FALSE)) {
+        pSECComponent->bUseFlagEOF = OMX_TRUE;
+    }
+
     pSECComponent->timeStamp[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
     pSECComponent->nFlags[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcEncSetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pH264Enc->hMFCH264Handle.indexTimestamp));
