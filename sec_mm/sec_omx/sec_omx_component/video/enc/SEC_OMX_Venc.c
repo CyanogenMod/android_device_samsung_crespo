@@ -794,10 +794,14 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
             flagEOF = OMX_FALSE;
         }
 
-        if (inputUseBuffer->remainDataLen == 0)
+        if (inputUseBuffer->remainDataLen == 0) {
+#ifdef S5PC110_ENCODE_IN_DATA_BUFFER
+            if(flagEOF == OMX_FALSE)
+#endif
             SEC_InputBufferReturn(pOMXComponent);
-        else
+        } else {
             inputUseBuffer->dataValid = OMX_TRUE;
+        }
     }
 
     if (flagEOF == OMX_TRUE) {
@@ -965,6 +969,12 @@ OMX_ERRORTYPE SEC_OMX_BufferProcess(OMX_HANDLETYPE hComponent)
                 SEC_OSAL_MutexLock(inputUseBuffer->bufferMutex);
                 SEC_OSAL_MutexLock(outputUseBuffer->bufferMutex);
                 ret = pSECComponent->sec_mfc_bufferProcess(pOMXComponent, inputData, outputData);
+#ifdef S5PC110_ENCODE_IN_DATA_BUFFER
+                if (inputUseBuffer->remainDataLen == 0)
+                    SEC_InputBufferReturn(pOMXComponent);
+                else
+                    inputUseBuffer->dataValid = OMX_TRUE;
+#endif
                 SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
                 SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
 
