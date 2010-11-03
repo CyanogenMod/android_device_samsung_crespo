@@ -78,7 +78,7 @@ void initPulse(struct pulse_s * pulse, int pulseType) {
             pulse->dy = scale;
         } else {
             // Bottom
-            pulse->originY = State->height;
+            pulse->originY = State->height / scale;
             pulse->dy = -scale;
         }
     } else {
@@ -90,7 +90,7 @@ void initPulse(struct pulse_s * pulse, int pulseType) {
             pulse->dx = scale;
         } else {
             // Right
-            pulse->originX = State->width * 2;
+            pulse->originX = State->width * 2 / scale;
             pulse->dx = -scale;
         }
     }
@@ -117,6 +117,17 @@ void initPulses() {
         p->pulseType = PULSE_EXTRA;
         p->active = 0;
     }
+}
+
+void drawBackground(int width, int height) {
+	bindProgramFragment(NAMED_PFTextureBG);
+    bindTexture(NAMED_PFTextureBG, 0, NAMED_TBackground);
+    color(1.0f, 1.0f, 1.0f, 1.0f);
+    if (State->rotate) {
+        drawRect(0.0f, 0.0f, height*2, width, 0.0f);
+    } else {
+    	drawRect(0.0f, 0.0f, width*2, height, 0.0f);
+   	}
 }
 
 void drawPulses(struct pulse_s * pulseSet, int setSize) {
@@ -167,7 +178,6 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	            }
 	        } else if (p->dx > 0) {
 				x += PULSE_SIZE; // need to start on the other side of this cell
-	            matrixRotate(matrix, 180.0f, 0.0f, 0.0f, 1.0f);
 	            vpLoadTextureMatrix(matrix);
 	            float xx = x - (TRAIL_SIZE * PULSE_SIZE);
 	 	        if (xx >= State->width * 2) {
@@ -175,7 +185,7 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	            } else {
 	                setColor(p->color);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);
-	                drawRect(xx, y, x, y + PULSE_SIZE, 0.0f);
+	                drawRect(x, y, xx, y + PULSE_SIZE, 0.0f);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x - HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
@@ -184,15 +194,14 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                    0.0f);
 	            }
 	        } else if (p->dy < 0) {
-	            matrixRotate(matrix, -90.0f, 0.0f, 0.0f, 1.0f);
 	            vpLoadTextureMatrix(matrix);
 	            float yy = y + (TRAIL_SIZE * PULSE_SIZE);
 	            if (yy <= 0) {
 	               initPulse(p, p->pulseType);
 	            } else {
 	                setColor(p->color);
-	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);
-	                drawRect(x, y, x + PULSE_SIZE, yy, 0.0f);
+	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulseVert);
+	                drawRect(x, yy, x + PULSE_SIZE, y, 0.0f);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
@@ -202,14 +211,13 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	            }
 	        } else if (p->dy > 0) {
 				y += PULSE_SIZE; // need to start on the other side of this cell
-	            matrixRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
 	            vpLoadTextureMatrix(matrix);
 	            float yy = y - (TRAIL_SIZE * PULSE_SIZE);
 	            if (yy >= State->height) {
 	               initPulse(p, p->pulseType);
 	            } else {
 	                setColor(p->color);
-	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);
+	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulseVert);
 	                drawRect(x, yy, x + PULSE_SIZE, y, 0.0f);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
@@ -283,6 +291,20 @@ int main(int index) {
 
     int width = State->width;
     int height = State->height;
+
+    float matrix[16];
+    matrixLoadIdentity(matrix);
+    if (State->rotate) {
+        //matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
+        //matrixTranslate(matrix, 0.0f, -height, 1.0f);
+        // XXX: HAX: do not slide display in landscape
+    } else {
+         matrixTranslate(matrix, -(State->xOffset * width), 0, 0);
+    }
+
+    vpLoadModelMatrix(matrix);
+
+    drawBackground(width, height);
 
     drawPulses(gPulses, MAX_PULSES);
     drawPulses(gExtras, MAX_EXTRAS);
