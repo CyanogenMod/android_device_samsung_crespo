@@ -1845,6 +1845,10 @@ int SecCamera::getSnapshotPixelFormat(void)
     return m_snapshot_v4lformat;
 }
 
+int SecCamera::cancelPicture(void)
+{
+    return close_buffers(m_buffers_c);
+}
 
 // ======================================================================
 // Settings
