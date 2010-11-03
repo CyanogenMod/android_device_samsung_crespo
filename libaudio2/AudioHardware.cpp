@@ -601,7 +601,6 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                     break;
 
                 case AudioSystem::DEVICE_OUT_SPEAKER:
-                case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE :
                     LOGI("### incall mode speaker route");
                     path = SOUND_AUDIO_PATH_SPEAKER;
                     break;
@@ -615,6 +614,11 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                     } else {
                         path = SOUND_AUDIO_PATH_BLUETOOTH_NO_NR;
                     }
+                    break;
+
+                case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE :
+                    LOGI("### incall mode headphone route");
+                    path = SOUND_AUDIO_PATH_HEADPHONE;
                     break;
 
                 case AudioSystem::DEVICE_OUT_WIRED_HEADSET :
