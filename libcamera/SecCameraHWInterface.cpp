@@ -732,6 +732,9 @@ void CameraHardwareSec::stopPreview()
 {
     LOGV("%s :", __func__);
 
+    if (!previewEnabled())
+        return;
+
     /* request that the preview thread exit. we can wait because we're
      * called by CameraServices with a lock but it has disabled all preview
      * related callbacks so previewThread should not invoke any callbacks.
@@ -1129,11 +1132,12 @@ int CameraHardwareSec::pictureThread()
         if(isLSISensor) {
             LOGI("== Camera Sensor Detect %s - Samsung LSI SOC 5M ==\n", mCameraSensorName);
             // LSI 5M SOC
-            SplitFrame(jpeg_data, SecCamera::getInterleaveDataSize(),
+            if (!SplitFrame(jpeg_data, SecCamera::getInterleaveDataSize(),
                        SecCamera::getJpegLineLength(),
                        mPostViewWidth * 2, mPostViewWidth,
                        JpegHeap->base(), &JpegImageSize,
-                       PostviewHeap->base(), &mPostViewSize);
+                       PostviewHeap->base(), &mPostViewSize))
+                return UNKNOWN_ERROR;
         } else {
             LOGI("== Camera Sensor Detect %s Sony SOC 5M ==\n", mCameraSensorName);
             decodeInterleaveData(jpeg_data, SecCamera::getInterleaveDataSize(), mPostViewWidth, mPostViewHeight,
@@ -1265,6 +1269,10 @@ status_t CameraHardwareSec::takePicture()
 
 status_t CameraHardwareSec::cancelPicture()
 {
+    mPictureThread->requestExitAndWait();
+
+    mSecCamera->cancelPicture();
+
     LOGW("%s : not supported, just returning NO_ERROR", __func__);
     return NO_ERROR;
 }
@@ -1347,14 +1355,22 @@ bool CameraHardwareSec::SplitFrame(unsigned char *pFrame, int dwSize,
     while (pSrc < pSrcEnd) {
         // Check video start marker
         if (CheckVideoStartMarker(pSrc)) {
+            int copyLength;
+
+            if (pSrc + dwVideoLineLength <= pSrcEnd)
+                copyLength = dwVideoLineLength;
+            else
+                copyLength = pSrcEnd - pSrc - VIDEO_COMMENT_MARKER_LENGTH;
+
             // Copy video data
             if (pV) {
-                memcpy(pV, pSrc + VIDEO_COMMENT_MARKER_LENGTH, dwVideoLineLength);
-                pV += dwVideoLineLength;
-                dwVSize += dwVideoLineLength;
+                memcpy(pV, pSrc + VIDEO_COMMENT_MARKER_LENGTH, copyLength);
+                pV += copyLength;
+                dwVSize += copyLength;
             }
-            pSrc += dwVideoLineLength + VIDEO_COMMENT_MARKER_LENGTH;
-       } else {
+
+            pSrc += copyLength + VIDEO_COMMENT_MARKER_LENGTH;
+        } else {
             // Copy pure JPEG data
             int size = 0;
             int dwCopyBufLen = dwJPEGLineLength <= pSrcEnd-pSrc ? dwJPEGLineLength : pSrcEnd - pSrc;
@@ -1379,7 +1395,6 @@ bool CameraHardwareSec::SplitFrame(unsigned char *pFrame, int dwSize,
             pJ += dwCopyBufLen;
             pSrc += dwCopyBufLen;
         }
-
         if (isFinishJpeg)
             break;
     }
