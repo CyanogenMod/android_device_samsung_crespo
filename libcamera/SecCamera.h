@@ -328,6 +328,7 @@ public:
     unsigned int    getRecPhyAddrY(int);
     unsigned int    getRecPhyAddrC(int);
 #endif
+    int             cancelPicture(void);
     int             flagPreviewStart(void);
     int             getPreview(void);
     int             setPreviewSize(int width, int height, int pixel_format);

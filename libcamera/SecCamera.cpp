@@ -1845,6 +1845,10 @@ int SecCamera::getSnapshotPixelFormat(void)
     return m_snapshot_v4lformat;
 }
 
+int SecCamera::cancelPicture(void)
+{
+    return close_buffers(m_buffers_c);
+}
 
 // ======================================================================
 // Settings
@@ -3281,9 +3285,15 @@ void SecCamera::setExifFixedAttribute()
 
     //2 0th IFD TIFF Tags
     //3 Maker
-    strcpy((char *)mExifInfo.maker, EXIF_DEF_MAKER);
+    property_get("ro.product.brand", property, EXIF_DEF_MAKER);
+    strncpy((char *)mExifInfo.maker, property,
+                sizeof(mExifInfo.maker) - 1);
+    mExifInfo.maker[sizeof(mExifInfo.maker) - 1] = '\0';
     //3 Model
-    strcpy((char *)mExifInfo.model, EXIF_DEF_MODEL);
+    property_get("ro.product.model", property, EXIF_DEF_MODEL);
+    strncpy((char *)mExifInfo.model, property,
+                sizeof(mExifInfo.model) - 1);
+    mExifInfo.model[sizeof(mExifInfo.model) - 1] = '\0';
     //3 Software
     property_get("ro.build.id", property, EXIF_DEF_SOFTWARE);
     strncpy((char *)mExifInfo.software, property,
