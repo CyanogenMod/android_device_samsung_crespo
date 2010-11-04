@@ -39,6 +39,7 @@ public:
             size_t displayWidth, size_t displayHeight,
             size_t decodedWidth, size_t decodedHeight,
             OMX_COLOR_FORMATTYPE colorFormat,
+            int32_t rotationDegrees,
             bool fromHardwareDecoder);
 
     virtual ~SecHardwareRenderer();

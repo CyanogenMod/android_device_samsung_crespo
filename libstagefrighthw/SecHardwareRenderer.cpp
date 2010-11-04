@@ -43,6 +43,7 @@ SecHardwareRenderer::SecHardwareRenderer(
         size_t displayWidth, size_t displayHeight,
         size_t decodedWidth, size_t decodedHeight,
         OMX_COLOR_FORMATTYPE colorFormat,
+        int32_t rotationDegrees,
         bool fromHardwareDecoder)
     : mISurface(surface),
       mDisplayWidth(displayWidth),
@@ -67,18 +68,28 @@ SecHardwareRenderer::SecHardwareRenderer(
         return;
     }
 
+    uint32_t orientation;
+    switch (rotationDegrees) {
+        case 0: orientation = ISurface::BufferHeap::ROT_0; break;
+        case 90: orientation = ISurface::BufferHeap::ROT_90; break;
+        case 180: orientation = ISurface::BufferHeap::ROT_180; break;
+        case 270: orientation = ISurface::BufferHeap::ROT_270; break;
+        default: orientation = ISurface::BufferHeap::ROT_0; break;
+    }
+
     sp<OverlayRef> ref;
 
 #if defined (USE_ZERO_COPY)
     if (fromHardwareDecoder) {
         ref = mISurface->createOverlay(
                 mDecodedWidth, mDecodedHeight,
-                HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP, 0);
+                HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP, orientation);
         mCustomFormat = true;
     } else
 #else
     ref = mISurface->createOverlay(
-            mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_P, 0);
+            mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_P,
+            orientation);
 #endif
 
     if (ref.get() == NULL) {
