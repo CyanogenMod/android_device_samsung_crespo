@@ -275,7 +275,6 @@ int pcm_read(struct pcm *pcm, void *data, unsigned count)
             if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_START))
                 return oops(pcm, errno, "cannot start channel");
             pcm->running = 1;
-            return 0;
         }
         if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_READI_FRAMES, &x)) {
             pcm->running = 0;
