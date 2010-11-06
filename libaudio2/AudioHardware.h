@@ -66,7 +66,7 @@ namespace android {
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
-#define VOICE_REC_MODE_KEY "vr_mode"
+#define INPUT_SOURCE_KEY "Input Source"
 
 class AudioHardware : public AudioHardwareBase
 {
@@ -111,7 +111,7 @@ public:
 
             status_t setIncallPath_l(uint32_t device);
 
-            status_t setVoiceRecognition_l(bool enable);
+            status_t setInputSource_l(String8 source);
 
     static uint32_t    getInputSampleRate(uint32_t sampleRate);
            sp <AudioStreamInALSA> getActiveInput_l();
@@ -140,7 +140,7 @@ private:
     uint32_t        mMixerOpenCnt;
     bool            mInCallAudioMode;
 
-    bool            mVrModeEnabled;
+    String8         mInputSource;
     bool            mBluetoothNrec;
     void*           mSecRilLibHandle;
     HRilClient      mRilClient;
