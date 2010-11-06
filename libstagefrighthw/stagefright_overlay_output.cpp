@@ -22,12 +22,13 @@ using android::sp;
 using android::ISurface;
 using android::VideoRenderer;
 
-VideoRenderer *createRenderer(
+VideoRenderer *createRendererWithRotation(
         const sp<ISurface> &surface,
         const char *componentName,
         OMX_COLOR_FORMATTYPE colorFormat,
         size_t displayWidth, size_t displayHeight,
-        size_t decodedWidth, size_t decodedHeight) {
+        size_t decodedWidth, size_t decodedHeight,
+        int32_t rotationDegrees) {
     using android::SecHardwareRenderer;
 
     bool fromHardwareDecoder = !strncmp(componentName, "OMX.SEC.", 8);
@@ -37,6 +38,7 @@ VideoRenderer *createRenderer(
                 surface, displayWidth, displayHeight,
                 decodedWidth, decodedHeight,
                 colorFormat,
+                rotationDegrees,
                 fromHardwareDecoder);
 
     if (renderer->initCheck() != android::OK) {
