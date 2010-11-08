@@ -84,6 +84,8 @@ __BEGIN_DECLS
 #define NUMOFACCDATA                8
 
 // conversion of acceleration data to SI units (m/s^2)
+#define RANGE_A                     (2*GRAVITY_EARTH)
+#define RESOLUTION_A                (RANGE_A/(256*NUMOFACCDATA))
 #define CONVERT_A                   (GRAVITY_EARTH / LSG / NUMOFACCDATA)
 #define CONVERT_A_X                 (CONVERT_A)
 #define CONVERT_A_Y                 (-CONVERT_A)
@@ -102,6 +104,7 @@ __BEGIN_DECLS
 #define CONVERT_O_R                 (-CONVERT_O)
 
 // conversion of gyro data to SI units (radian/sec)
+#define RANGE_GYRO                  (2000.0f*(float)M_PI/180.0f)
 #define CONVERT_GYRO                ((70.0f / 1000.0f) * ((float)M_PI / 180.0f))
 #define CONVERT_GYRO_X              (CONVERT_GYRO)
 #define CONVERT_GYRO_Y              (-CONVERT_GYRO)
