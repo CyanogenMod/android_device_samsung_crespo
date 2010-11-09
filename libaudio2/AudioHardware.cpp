@@ -80,7 +80,7 @@ AudioHardware::AudioHardware() :
     mPcmOpenCnt(0),
     mMixerOpenCnt(0),
     mInCallAudioMode(false),
-    mVrModeEnabled(false),
+    mInputSource("Default"),
     mBluetoothNrec(true),
     mSecRilLibHandle(NULL),
     mRilClient(0),
@@ -331,11 +331,11 @@ status_t AudioHardware::setMode(int mode)
                 LOGV("setMode() openPcmOut_l()");
                 openPcmOut_l();
                 openMixer_l();
-                setVoiceRecognition_l(false);
+                setInputSource_l(String8("Default"));
                 mInCallAudioMode = true;
             }
             if (mMode == AudioSystem::MODE_NORMAL && mInCallAudioMode) {
-                setVoiceRecognition_l(mVrModeEnabled);
+                setInputSource_l(mInputSource);
                 LOGV("setMode() closeMixer_l()");
                 closeMixer_l();
                 LOGV("setMode() closePcmOut_l()");
@@ -549,8 +549,7 @@ status_t AudioHardware::dump(int fd, const Vector<String16>& args)
     snprintf(buffer, SIZE, "\tIn Call Audio Mode %s\n",
              (mInCallAudioMode) ? "ON" : "OFF");
     result.append(buffer);
-    snprintf(buffer, SIZE, "\tVr Mode %s\n",
-             (mVrModeEnabled) ? "Enabled" : "Disabled");
+    snprintf(buffer, SIZE, "\tInput source %s\n", mInputSource.string());
     result.append(buffer);
     snprintf(buffer, SIZE, "\tmSecRilLibHandle: %p\n", mSecRilLibHandle);
     result.append(buffer);
@@ -705,7 +704,10 @@ struct mixer *AudioHardware::openMixer_l()
         TRACE_DRIVER_IN(DRV_MIXER_OPEN)
         mMixer = mixer_open();
         TRACE_DRIVER_OUT
-        LOGE_IF(mMixer == NULL, "openMixer_l() cannot open mixer");
+        if (mMixer == NULL) {
+            LOGE("openMixer_l() cannot open mixer");
+            mMixerOpenCnt--;
+        }
     }
     return mMixer;
 }
@@ -822,27 +824,25 @@ sp <AudioHardware::AudioStreamInALSA> AudioHardware::getActiveInput_l()
     return spIn;
 }
 
-status_t AudioHardware::setVoiceRecognition_l(bool enable)
+status_t AudioHardware::setInputSource_l(String8 source)
 {
-     LOGV("setVoiceRecognition_l(%d)", enable);
-     if (enable != mVrModeEnabled) {
-         if (!(enable && (mMode == AudioSystem::MODE_IN_CALL))) {
+     LOGV("setInputSource_l(%s)", source.string());
+     if (source != mInputSource) {
+         if ((source == "Default") || (mMode != AudioSystem::MODE_IN_CALL)) {
              if (mMixer) {
                  TRACE_DRIVER_IN(DRV_MIXER_GET)
-                 struct mixer_ctl *ctl= mixer_get_control(mMixer, "Recognition Control", 0);
+                 struct mixer_ctl *ctl= mixer_get_control(mMixer, "Input Source", 0);
                  TRACE_DRIVER_OUT
                  if (ctl == NULL) {
-                     closeMixer_l();
                      return NO_INIT;
                  }
-                 const char *mode = enable ? "RECOGNITION_ON" : "RECOGNITION_OFF";
-                 LOGV("mixer_ctl_select, Recognition Control, (%s)", mode);
+                 LOGV("mixer_ctl_select, Input Source, (%s)", source.string());
                  TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                 mixer_ctl_select(ctl, mode);
+                 mixer_ctl_select(ctl, source.string());
                  TRACE_DRIVER_OUT
              }
          }
-         mVrModeEnabled = enable;
+         mInputSource = source;
      }
 
      return NO_ERROR;
@@ -934,9 +934,11 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
             if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
                 next_route = mHardware->getOutputRouteFromDevice(mDevices);
                 LOGV("write() wakeup setting route %s", next_route);
-                TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                mixer_ctl_select(mRouteCtl, next_route);
-                TRACE_DRIVER_OUT
+                if (next_route && mRouteCtl) {
+                    TRACE_DRIVER_IN(DRV_MIXER_SEL)
+                    mixer_ctl_select(mRouteCtl, next_route);
+                    TRACE_DRIVER_OUT
+                }
             }
             next_route = 0;
             acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioOutLock");
@@ -965,7 +967,7 @@ Error:
     standby();
 
     // Simulate audio output timing in case of error
-    usleep(bytes * 1000000 / frameSize() / sampleRate());
+    usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
 
     return status;
 }
@@ -1230,9 +1232,11 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
                 next_route = mHardware->getInputRouteFromDevice(mDevices);
                 LOGV("read() wakeup setting route %s", next_route);
-                TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                mixer_ctl_select(mRouteCtl, next_route);
-                TRACE_DRIVER_OUT
+                if (next_route && mRouteCtl) {
+                    TRACE_DRIVER_IN(DRV_MIXER_SEL)
+                    mixer_ctl_select(mRouteCtl, next_route);
+                    TRACE_DRIVER_OUT
+                }
             }
             next_route = 0;
 
@@ -1273,7 +1277,7 @@ Error:
     standby();
 
     // Simulate audio output timing in case of error
-    usleep(bytes * 1000000 / frameSize() / sampleRate());
+    usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
 
     return status;
 }
@@ -1358,6 +1362,7 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     AudioParameter param = AudioParameter(keyValuePairs);
     status_t status = NO_ERROR;
     int value;
+    String8 source;
     bool forceStandby = false;
 
     LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
@@ -1367,14 +1372,14 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     {
         AutoMutex lock(mLock);
 
-        if (param.getInt(String8(VOICE_REC_MODE_KEY), value) == NO_ERROR) {
+        if (param.get(String8(INPUT_SOURCE_KEY), source) == NO_ERROR) {
             AutoMutex hwLock(mHardware->lock());
 
             mHardware->openMixer_l();
-            mHardware->setVoiceRecognition_l((value != 0));
+            mHardware->setInputSource_l(source);
             mHardware->closeMixer_l();
 
-            param.remove(String8(VOICE_REC_MODE_KEY));
+            param.remove(String8(INPUT_SOURCE_KEY));
         }
 
         if (param.getInt(String8(AudioParameter::keyRouting), value) == NO_ERROR)
