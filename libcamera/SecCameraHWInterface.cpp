@@ -68,6 +68,9 @@ struct addrs_cap {
     unsigned int height;
 };
 
+static const int INITIAL_SKIP_FRAME = 3;
+static const int EFFECT_SKIP_FRAME = 1;
+
 CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
           mPreviewRunning(false),
@@ -82,6 +85,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mRawFrameSize(0),
           mPreviewFrameRateMicrosec(33000),
           mCameraSensorName(NULL),
+          mSkipFrame(0),
 #if defined(BOARD_USES_OVERLAY)
           mUseOverlay(false),
           mOverlayBufferIdx(0),
@@ -447,6 +451,14 @@ bool CameraHardwareSec::msgTypeEnabled(int32_t msgType)
 }
 
 // ---------------------------------------------------------------------------
+void CameraHardwareSec::setSkipFrame(int frame)
+{
+    Mutex::Autolock lock(mSkipFrameLock);
+    if (frame < mSkipFrame)
+        return;
+
+    mSkipFrame = frame;
+}
 
 int CameraHardwareSec::previewThread()
 {
@@ -457,6 +469,13 @@ int CameraHardwareSec::previewThread()
         LOGE("ERR(%s):Fail on SecCamera->getPreview()", __func__);
         return UNKNOWN_ERROR;
     }
+    mSkipFrameLock.lock();
+    if (mSkipFrame > 0) {
+        mSkipFrame--;
+        mSkipFrameLock.unlock();
+        return NO_ERROR;
+    }
+    mSkipFrameLock.unlock();
 
     nsecs_t timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
 
@@ -618,6 +637,8 @@ status_t CameraHardwareSec::startPreview()
     memset(&mTimeStop, 0, sizeof(mTimeStop));
 
     mSecCamera->stopPreview();
+
+    setSkipFrame(INITIAL_SKIP_FRAME);
 
     ret  = mSecCamera->startPreview();
     LOGV("%s : mSecCamera->startPreview() returned %d", __func__, ret);
@@ -1944,6 +1965,14 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                 LOGE("ERR(%s):Fail on mSecCamera->setImageEffect(effect(%d))", __func__, new_image_effect);
                 ret = UNKNOWN_ERROR;
             } else {
+                const char *old_image_effect_str = mParameters.get(CameraParameters::KEY_EFFECT);
+
+                if (old_image_effect_str) {
+                    if (strcmp(old_image_effect_str, new_image_effect_str)) {
+                        setSkipFrame(EFFECT_SKIP_FRAME);
+                    }
+                }
+
                 mParameters.set(CameraParameters::KEY_EFFECT, new_image_effect_str);
             }
         }

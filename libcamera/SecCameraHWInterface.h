@@ -161,7 +161,7 @@ private:
                                    int dwVideoHeight, void *pJPEG,
                                    int *pdwJPEGSize, void *pVideo,
                                    int *pdwVideoSize);
-
+            void        setSkipFrame(int frame);
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mCondition;
@@ -185,6 +185,9 @@ private:
             int         mRawFrameSize;
             int         mPreviewFrameRateMicrosec;
             const __u8  *mCameraSensorName;
+
+    mutable Mutex       mSkipFrameLock;
+            int         mSkipFrame;
 
 #if defined(BOARD_USES_OVERLAY)
             sp<Overlay> mOverlay;
