@@ -74,8 +74,8 @@ __BEGIN_DECLS
 #define EVENT_TYPE_PROXIMITY        ABS_DISTANCE
 #define EVENT_TYPE_LIGHT            ABS_MISC
 
-#define EVENT_TYPE_GYRO_X           ABS_RX
-#define EVENT_TYPE_GYRO_Y           ABS_RY
+#define EVENT_TYPE_GYRO_X           ABS_RY
+#define EVENT_TYPE_GYRO_Y           ABS_RX
 #define EVENT_TYPE_GYRO_Z           ABS_RZ
 
 
@@ -104,7 +104,7 @@ __BEGIN_DECLS
 // conversion of gyro data to SI units (radian/sec)
 #define CONVERT_GYRO                ((70.0f / 1000.0f) * ((float)M_PI / 180.0f))
 #define CONVERT_GYRO_X              (CONVERT_GYRO)
-#define CONVERT_GYRO_Y              (CONVERT_GYRO)
+#define CONVERT_GYRO_Y              (-CONVERT_GYRO)
 #define CONVERT_GYRO_Z              (CONVERT_GYRO)
 
 #define SENSOR_STATE_MASK           (0x7FFF)
