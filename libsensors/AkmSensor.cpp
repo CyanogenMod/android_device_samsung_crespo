@@ -245,7 +245,7 @@ int AkmSensor::readEvents(sensors_event_t* data, int count)
 
     while (count && mInputReader.readEvent(&event)) {
         int type = event->type;
-        if (type == EV_ABS) {
+        if (type == EV_REL) {
             processEvent(event->code, event->value);
             mInputReader.next();
         } else if (type == EV_SYN) {

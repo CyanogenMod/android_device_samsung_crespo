@@ -54,29 +54,26 @@ __BEGIN_DECLS
 
 #define AKM_DEVICE_NAME     "/dev/akm8973_aot"
 
-#define EVENT_TYPE_ACCEL_X          ABS_Y
-#define EVENT_TYPE_ACCEL_Y          ABS_X
-#define EVENT_TYPE_ACCEL_Z          ABS_Z
-#define EVENT_TYPE_ACCEL_STATUS     ABS_WHEEL
+#define EVENT_TYPE_ACCEL_X          REL_Y
+#define EVENT_TYPE_ACCEL_Y          REL_X
+#define EVENT_TYPE_ACCEL_Z          REL_Z
 
-#define EVENT_TYPE_YAW              ABS_RX
-#define EVENT_TYPE_PITCH            ABS_RY
-#define EVENT_TYPE_ROLL             ABS_RZ
-#define EVENT_TYPE_ORIENT_STATUS    ABS_RUDDER
+#define EVENT_TYPE_YAW              REL_RX
+#define EVENT_TYPE_PITCH            REL_RY
+#define EVENT_TYPE_ROLL             REL_RZ
+#define EVENT_TYPE_ORIENT_STATUS    REL_WHEEL
 
 /* For AK8973iB */
-#define EVENT_TYPE_MAGV_X           ABS_HAT0Y
-#define EVENT_TYPE_MAGV_Y           ABS_HAT0X
-#define EVENT_TYPE_MAGV_Z           ABS_BRAKE
-#define EVENT_TYPE_TEMPERATURE      ABS_THROTTLE
-#define EVENT_TYPE_STEP_COUNT       ABS_GAS
+#define EVENT_TYPE_MAGV_X           REL_DIAL
+#define EVENT_TYPE_MAGV_Y           REL_HWHEEL
+#define EVENT_TYPE_MAGV_Z           REL_MISC
 
 #define EVENT_TYPE_PROXIMITY        ABS_DISTANCE
 #define EVENT_TYPE_LIGHT            ABS_MISC
 
-#define EVENT_TYPE_GYRO_X           ABS_RY
-#define EVENT_TYPE_GYRO_Y           ABS_RX
-#define EVENT_TYPE_GYRO_Z           ABS_RZ
+#define EVENT_TYPE_GYRO_X           REL_RY
+#define EVENT_TYPE_GYRO_Y           REL_RX
+#define EVENT_TYPE_GYRO_Z           REL_RZ
 
 
 // 720 LSG = 1G

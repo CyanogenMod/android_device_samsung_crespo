@@ -143,7 +143,7 @@ again:
 #endif
     while (count && mInputReader.readEvent(&event)) {
         int type = event->type;
-        if (type == EV_ABS) {
+        if (type == EV_REL) {
             float value = event->value;
             if (event->code == EVENT_TYPE_GYRO_X) {
                 mPendingEvent.data[0] = value * CONVERT_GYRO_X;
