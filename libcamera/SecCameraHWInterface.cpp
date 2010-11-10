@@ -1753,6 +1753,10 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
+    // scene mode
+    const char *new_scene_mode_str = params.get(CameraParameters::KEY_SCENE_MODE);
+    const char *current_scene_mode_str = mParameters.get(CameraParameters::KEY_SCENE_MODE);
+
     // fps range
     int new_min_fps = 0;
     int new_max_fps = 0;
@@ -1761,19 +1765,24 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     mParameters.getPreviewFpsRange(&current_min_fps, &current_max_fps);
     /* our fps range is determined by the sensor, reject any request
      * that isn't exactly what we're already at.
+     * but the check is performed when requesting only changing fps range
      */
-    if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
-        LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
-             __func__, new_min_fps, new_max_fps);
-        LOGE("%s : current_min_fps = %d, current_max_fps = %d",
-             __func__, current_min_fps, current_max_fps);
+    if (new_scene_mode_str && current_scene_mode_str) {
+        if (!strcmp(new_scene_mode_str, current_scene_mode_str)) {
+            if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
+                LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
+                        __func__, new_min_fps, new_max_fps);
+                LOGE("%s : current_min_fps = %d, current_max_fps = %d",
+                        __func__, current_min_fps, current_max_fps);
+                ret = UNKNOWN_ERROR;
+            }
+        }
+    } else {
+        /* Check basic validation if scene mode is different */
+        if ((new_min_fps > new_max_fps) ||
+            (new_min_fps < 0) || (new_max_fps < 0))
         ret = UNKNOWN_ERROR;
     }
-
-    // scene mode
-    const char *new_scene_mode_str = params.get(CameraParameters::KEY_SCENE_MODE);
-
-    LOGV("%s : new_scene_mode_str %s", __func__, new_scene_mode_str);
 
     if (new_scene_mode_str != NULL) {
         int  new_scene_mode = -1;
@@ -1781,11 +1790,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         const char *new_flash_mode_str = params.get(CameraParameters::KEY_FLASH_MODE);
         const char *new_focus_mode_str;
 
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-            new_focus_mode_str = params.get(CameraParameters::KEY_FOCUS_MODE);
-        } else {
-            new_focus_mode_str = NULL;
-        }
+        new_focus_mode_str = params.get(CameraParameters::KEY_FOCUS_MODE);
+        // fps range is (15000,30000) by default.
+        mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(15000,30000)");
+        mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE,
+                "15000,30000");
 
         if (!strcmp(new_scene_mode_str, CameraParameters::SCENE_MODE_AUTO)) {
             new_scene_mode = SCENE_MODE_NONE;
@@ -1795,9 +1804,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                 new_focus_mode_str = CameraParameters::FOCUS_MODE_AUTO;
             }
             new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
-            mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(15000,30000)");
-            mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE,
-                            "15000,30000");
 
             if (!strcmp(new_scene_mode_str,
                        CameraParameters::SCENE_MODE_PORTRAIT)) {
