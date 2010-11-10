@@ -43,6 +43,10 @@ on fs
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
 
+# We chown/chmod /efs because mount is run as root + defaults
+    chown radio radio /efs
+    chmod 0775 /efs
+
 # permissions for NFC
     setprop ro.nfc.port "I2C"
     chmod 0600 /dev/pn544
