@@ -1006,7 +1006,9 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
             open_l();
 
             if (spIn != 0) {
-                spIn->open_l();
+                if (spIn->open_l() != NO_ERROR) {
+                    spIn->doStandby_l();
+                }
                 spIn->unlock();
             }
             if (mPcm == NULL) {
@@ -1324,7 +1326,9 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
 
             // open output before input
             if (spOut != 0) {
-                spOut->open_l();
+                if (spOut->open_l() != NO_ERROR) {
+                    spOut->doStandby_l();
+                }
                 spOut->unlock();
             }
 
@@ -1432,7 +1436,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     mPcm = pcm_open(flags);
     TRACE_DRIVER_OUT
     if (!pcm_ready(mPcm)) {
-        LOGE("cannot open pcm_out driver: %s\n", pcm_error(mPcm));
+        LOGE("cannot open pcm_in driver: %s\n", pcm_error(mPcm));
         TRACE_DRIVER_IN(DRV_PCM_CLOSE)
         pcm_close(mPcm);
         TRACE_DRIVER_OUT
@@ -1574,6 +1578,7 @@ status_t AudioHardware::AudioStreamInALSA::getNextBuffer(AudioHardware::BufferPr
     if (mPcm == NULL) {
         buffer->raw = NULL;
         buffer->frameCount = 0;
+        mReadStatus = NO_INIT;
         return NO_INIT;
     }
 
