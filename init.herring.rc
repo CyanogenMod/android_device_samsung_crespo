@@ -58,7 +58,7 @@ on fs
 service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
     socket gps seqpacket 0660 gps system
     user gps
-    group inet
+    group system inet
 
 # create filesystems if necessary
 service setup_fs /system/bin/setup_fs /dev/block/platform/s3c-sdhci.0/by-name/userdata
