@@ -24,6 +24,7 @@
 #include <utils/SortedVector.h>
 
 #include <hardware_legacy/AudioHardwareBase.h>
+#include <media/mediarecorder.h>
 
 #include "secril-client.h"
 
@@ -66,13 +67,17 @@ namespace android {
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
-#define INPUT_SOURCE_KEY "Input Source"
 
 class AudioHardware : public AudioHardwareBase
 {
     class AudioStreamOutALSA;
     class AudioStreamInALSA;
 public:
+
+    // input path names used to translate from input sources to driver paths
+    static const char *inputPathNameDefault;
+    static const char *inputPathNameCamcorder;
+    static const char *inputPathNameVoiceRecognition;
 
     AudioHardware();
     virtual ~AudioHardware();
@@ -111,7 +116,7 @@ public:
 
             status_t setIncallPath_l(uint32_t device);
 
-            status_t setInputSource_l(String8 source);
+            status_t setInputSource_l(audio_source source);
 
     static uint32_t    getInputSampleRate(uint32_t sampleRate);
            sp <AudioStreamInALSA> getActiveInput_l();
@@ -142,7 +147,7 @@ private:
     uint32_t        mMixerOpenCnt;
     bool            mInCallAudioMode;
 
-    String8         mInputSource;
+    audio_source    mInputSource;
     bool            mBluetoothNrec;
     void*           mSecRilLibHandle;
     HRilClient      mRilClient;
