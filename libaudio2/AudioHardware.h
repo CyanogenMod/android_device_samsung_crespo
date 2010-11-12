@@ -124,6 +124,8 @@ public:
            struct mixer *openMixer_l();
            void closeMixer_l();
 
+           sp <AudioStreamOutALSA>  output() { return mOutput; }
+
 protected:
     virtual status_t dump(int fd, const Vector<String16>& args);
 
@@ -196,7 +198,13 @@ private:
         uint32_t device() { return mDevices; }
         virtual status_t getRenderPosition(uint32_t *dspFrames);
 
-                void setNextRoute(const char *route) {  AutoMutex lock(mLock); next_route = route; }
+                void doStandby_l();
+                void close_l();
+                status_t open_l();
+                int standbyCnt() { return mStandbyCnt; }
+
+                void lock() { mLock.lock(); }
+                void unlock() { mLock.unlock(); }
 
     private:
 
@@ -213,6 +221,7 @@ private:
         size_t mBufferSize;
         //  trace driver operations for dump
         int mDriverOp;
+        int mStandbyCnt;
     };
 
     class DownSampler;
@@ -296,13 +305,19 @@ private:
         virtual String8 getParameters(const String8& keys);
         virtual unsigned int getInputFramesLost() const { return 0; }
                 uint32_t device() { return mDevices; }
-                void setNextRoute(const char *route) { AutoMutex lock(mLock); next_route = route; }
+                void doStandby_l();
+                void close_l();
+                status_t open_l();
+                int standbyCnt() { return mStandbyCnt; }
 
         static size_t getBufferSize(uint32_t sampleRate, int channelCount);
 
         // BufferProvider
         virtual status_t getNextBuffer(BufferProvider::Buffer* buffer);
         virtual void releaseBuffer(BufferProvider::Buffer* buffer);
+
+        void lock() { mLock.lock(); }
+        void unlock() { mLock.unlock(); }
 
     private:
         Mutex mLock;
@@ -323,6 +338,7 @@ private:
         int16_t *mPcmIn;
         //  trace driver operations for dump
         int mDriverOp;
+        int mStandbyCnt;
     };
 
 };
