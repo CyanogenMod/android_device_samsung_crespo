@@ -85,11 +85,14 @@ SecHardwareRenderer::SecHardwareRenderer(
                 mDecodedWidth, mDecodedHeight,
                 HAL_PIXEL_FORMAT_CUSTOM_YCbCr_420_SP, orientation);
         mCustomFormat = true;
-    } else
+    }
 #else
-    ref = mISurface->createOverlay(
-            mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_P,
-            orientation);
+    else
+    {
+        ref = mISurface->createOverlay(
+                mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_P,
+                orientation);
+    }
 #endif
 
     if (ref.get() == NULL) {
