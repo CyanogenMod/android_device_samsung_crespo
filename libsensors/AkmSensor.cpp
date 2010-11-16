@@ -34,7 +34,7 @@
 int (*akm_is_sensor_enabled)(uint32_t sensor_type);
 int (*akm_enable_sensor)(uint32_t sensor_type);
 int (*akm_disable_sensor)(uint32_t sensor_type);
-int (*akm_set_delay)(uint32_t sensor_type, uint64_t delay);
+int (*akm_set_delay)(uint64_t delay);
 
 int stub_is_sensor_enabled(uint32_t sensor_type) {
     return 0;
@@ -44,7 +44,7 @@ int stub_enable_disable_sensor(uint32_t sensor_type) {
     return -ENODEV;
 }
 
-int stub_set_delay(uint32_t sensor_type, uint64_t delay) {
+int stub_set_delay(uint64_t delay) {
     return -ENODEV;
 }
 
@@ -78,6 +78,9 @@ AkmSensor::AkmSensor()
     mPendingEvents[Orientation  ].sensor = ID_O;
     mPendingEvents[Orientation  ].type = SENSOR_TYPE_ORIENTATION;
     mPendingEvents[Orientation  ].orientation.status = SENSOR_STATUS_ACCURACY_HIGH;
+
+    for (int i=0 ; i<numSensors ; i++)
+        mDelays[i] = 200000000; // 200 ms by default
 
     // read the actual value of all sensors if they're enabled already
     struct input_absinfo absinfo;
@@ -167,6 +170,7 @@ int AkmSensor::enable(int32_t handle, int en)
         if (!err) {
             mEnabled &= ~(1<<what);
             mEnabled |= (uint32_t(flags)<<what);
+            update_delay();
         }
     }
     return err;
@@ -174,21 +178,36 @@ int AkmSensor::enable(int32_t handle, int en)
 
 int AkmSensor::setDelay(int32_t handle, int64_t ns)
 {
-    uint32_t sensor_type = 0;
+    int what = -1;
+    switch (handle) {
+        case ID_A: what = Accelerometer; break;
+        case ID_M: what = MagneticField; break;
+        case ID_O: what = Orientation;   break;
+    }
+
+    if (uint32_t(what) >= numSensors)
+        return -EINVAL;
 
     if (ns < 0)
         return -EINVAL;
 
-    switch (handle) {
-        case ID_A: sensor_type = SENSOR_TYPE_ACCELEROMETER; break;
-        case ID_M: sensor_type = SENSOR_TYPE_MAGNETIC_FIELD; break;
-        case ID_O: sensor_type = SENSOR_TYPE_ORIENTATION; break;
+    mDelays[what] = ns;
+    return update_delay();
+}
+
+int AkmSensor::update_delay()
+{
+    if (mEnabled) {
+        uint64_t wanted = -1LLU;
+        for (int i=0 ; i<numSensors ; i++) {
+            if (mEnabled & (1<<i)) {
+                uint64_t ns = mDelays[i];
+                wanted = wanted < ns ? wanted : ns;
+            }
+        }
+        return akm_set_delay(int64_t(wanted));
     }
-
-    if (sensor_type == 0)
-        return -EINVAL;
-
-    return akm_set_delay(sensor_type, ns);
+    return 0;
 }
 
 int AkmSensor::loadAKMLibrary()

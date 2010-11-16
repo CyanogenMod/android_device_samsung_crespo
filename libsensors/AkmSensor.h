@@ -49,12 +49,14 @@ public:
     void processEvent(int code, int value);
 
 private:
+    int update_delay();
     int loadAKMLibrary();
     void *mLibAKM;
     uint32_t mEnabled;
     uint32_t mPendingMask;
     InputEventCircularReader mInputReader;
     sensors_event_t mPendingEvents[numSensors];
+    uint64_t mDelays[numSensors];
 };
 
 /*****************************************************************************/
