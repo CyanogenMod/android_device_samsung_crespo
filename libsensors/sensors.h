@@ -76,16 +76,17 @@ __BEGIN_DECLS
 #define EVENT_TYPE_GYRO_Z           REL_RZ
 
 
-// 64 LSB = 1G for KR3DM
-#define LSB                         (64.0f)
-#define NUMOFACCDATA                (8.0f)
+// 720 LSG = 1G
+#define LSG                         (720.0f)
+#define NUMOFACCDATA                8
 
 // conversion of acceleration data to SI units (m/s^2)
 #define RANGE_A                     (2*GRAVITY_EARTH)
-#define CONVERT_A                   (GRAVITY_EARTH / LSB / NUMOFACCDATA)
+#define RESOLUTION_A                (RANGE_A/(256*NUMOFACCDATA))
+#define CONVERT_A                   (GRAVITY_EARTH / LSG / NUMOFACCDATA)
 #define CONVERT_A_X                 (CONVERT_A)
-#define CONVERT_A_Y                 (CONVERT_A)
-#define CONVERT_A_Z                 (CONVERT_A)
+#define CONVERT_A_Y                 (-CONVERT_A)
+#define CONVERT_A_Z                 (-CONVERT_A)
 
 // conversion of magnetic data to uT units
 #define CONVERT_M                   (1.0f/16.0f)
