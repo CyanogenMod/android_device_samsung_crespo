@@ -51,16 +51,16 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/init.herring.rc:root/init.herring.rc \
 	device/samsung/crespo/ueventd.herring.rc:root/ueventd.herring.rc
 
-# Prebuilt kl keymaps
+# Prebuilt kl and kcm keymaps
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
+	device/samsung/crespo/s3c-keypad.kcm:system/usr/keychars/s3c-keypad.kcm \
+	device/samsung/crespo/crespo-keypad.kl:system/usr/keylayout/crespo-keypad.kl \
+	device/samsung/crespo/crespo-keypad.kcm:system/usr/keychars/crespo-keypad.kcm \
 	device/samsung/crespo/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
-	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl
-
-# Generated kcm keymaps
-PRODUCT_PACKAGES := \
-	s3c-keypad.kcm \
-	cypress-touchkey.kcm
+	device/samsung/crespo/cypress-touchkey.kcm:system/usr/keychars/cypress-touchkey.kcm \
+	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
+	device/samsung/crespo/sec_jack.kcm:system/usr/keychars/sec_jack.kcm
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
