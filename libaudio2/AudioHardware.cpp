@@ -28,6 +28,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 
@@ -311,8 +312,13 @@ status_t AudioHardware::setMode(int mode)
     sp<AudioStreamInALSA> spIn;
     status_t status;
 
+    // bump thread priority to speed up mutex acquisition
+    int  priority = getpriority(PRIO_PROCESS, 0);
+    setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_URGENT_AUDIO);
+
     // Mutex acquisition order is always out -> in -> hw
     AutoMutex lock(mLock);
+
     spOut = mOutput;
     while (spOut != 0) {
         if (!spOut->checkStandby()) {
@@ -348,6 +354,8 @@ status_t AudioHardware::setMode(int mode)
         spIn = getActiveInput_l();
     }
     // spIn is not 0 here only if the input is active
+
+    setpriority(PRIO_PROCESS, 0, priority);
 
     int prevMode = mMode;
     status = AudioHardwareBase::setMode(mode);
