@@ -31,5 +31,6 @@
         <item>wallpaper_mountains</item>
         <item>wallpaper_sunset</item>
         <item>wallpaper_goldengate</item>
+	<item>wallpaper_shuttle</item>
     </string-array>
 </resources>
