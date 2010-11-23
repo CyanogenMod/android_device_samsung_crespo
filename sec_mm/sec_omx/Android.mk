@@ -14,8 +14,9 @@ include $(SEC_OMX_TOP)/sec_omx_core/Android.mk
 
 include $(SEC_CODECS)/Android.mk
 include $(SEC_OMX_COMPONENT)/common/Android.mk
+include $(SEC_OMX_COMPONENT)/video/dec/Android.mk
 include $(SEC_OMX_COMPONENT)/video/dec/h264dec/Android.mk
 include $(SEC_OMX_COMPONENT)/video/dec/mpeg4dec/Android.mk
+include $(SEC_OMX_COMPONENT)/video/enc/Android.mk
 include $(SEC_OMX_COMPONENT)/video/enc/h264enc/Android.mk
 include $(SEC_OMX_COMPONENT)/video/enc/mpeg4enc/Android.mk
-

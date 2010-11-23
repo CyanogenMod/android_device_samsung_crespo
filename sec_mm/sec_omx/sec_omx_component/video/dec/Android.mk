@@ -1,21 +1,12 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_MODULE_TAGS := optional
-
 LOCAL_SRC_FILES := \
-	SEC_OMX_Mpeg4dec.c \
-	library_register.c
+	SEC_OMX_Vdec.c
 
-LOCAL_PRELINK_MODULE := false
-LOCAL_MODULE := libOMX.SEC.M4V.Decoder
-
-LOCAL_CFLAGS :=
-
+LOCAL_MODULE := libSEC_OMX_Vdec
 LOCAL_ARM_MODE := arm
-
-LOCAL_STATIC_LIBRARIES := libSEC_OMX_Vdec libsecosal libsecbasecomponent libsecmfcdecapi
-LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
 	$(SEC_OMX_INC)/sec \
@@ -26,4 +17,4 @@ LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
 
 LOCAL_C_INCLUDES += $(SEC_OMX_TOP)/sec_codecs/video/mfc_c110/include
 
-include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_STATIC_LIBRARY)
