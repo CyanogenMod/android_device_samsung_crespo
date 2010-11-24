@@ -4,7 +4,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SRC_FILES := \
-	../SEC_OMX_Venc.c \
 	SEC_OMX_Mpeg4enc.c \
 	library_register.c
 
@@ -15,7 +14,7 @@ LOCAL_CFLAGS :=
 
 LOCAL_ARM_MODE := arm
 
-LOCAL_STATIC_LIBRARIES := libsecosal libsecbasecomponent libsecmfcencapi
+LOCAL_STATIC_LIBRARIES := libSEC_OMX_Venc libsecosal libsecbasecomponent libsecmfcencapi
 LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
