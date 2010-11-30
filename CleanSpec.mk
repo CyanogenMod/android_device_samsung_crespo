@@ -57,3 +57,4 @@ $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/bin/alsa_*
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/etc/asound.conf)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/usr/share/alsa)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/PACKAGING/systemimage_intermediates)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRARIES/libaudio_intermediates)
