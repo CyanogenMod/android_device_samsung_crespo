@@ -3542,7 +3542,7 @@ void SecCamera::setExifChangedAttribute()
         mExifInfo.gps_timestamp[2].num = tm_data.tm_sec;
         mExifInfo.gps_timestamp[2].den = 1;
         snprintf((char*)mExifInfo.gps_datestamp, sizeof(mExifInfo.gps_datestamp),
-                "%04d:%02d:%02d", tm_data.tm_year, tm_data.tm_mon, tm_data.tm_mday);
+                "%04d:%02d:%02d", tm_data.tm_year + 1900, tm_data.tm_mon, tm_data.tm_mday);
 
         mExifInfo.enableGps = true;
     } else {
