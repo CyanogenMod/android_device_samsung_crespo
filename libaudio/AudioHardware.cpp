@@ -1771,16 +1771,17 @@ void resample_441_320(int16_t* input, int16_t* output, int* num_samples_in, int*
         }
 
         const float step_float = (float)RESAMPLE_16KHZ_SAMPLES_IN / (float)RESAMPLE_16KHZ_SAMPLES_OUT;
+        const uint32_t step = (uint32_t)(step_float * 32768.0f + 0.5f);  // 17.15 fixed point
 
-        uint32_t in_sample_num = 0;   // 16.16 fixed point
-        const uint32_t step = (uint32_t)(step_float * 65536.0f + 0.5f);  // 16.16 fixed point
+        uint32_t in_sample_num = 0;   // 17.15 fixed point
         for (int j = 0; j < RESAMPLE_16KHZ_SAMPLES_OUT; ++j, in_sample_num += step) {
-            const uint32_t whole = in_sample_num >> 16;
-            const uint32_t frac = (in_sample_num & 0xffff);  // 0.16 fixed point
+            const uint32_t whole = in_sample_num >> 15;
+            const uint32_t frac = (in_sample_num & 0x7fff);  // 0.15 fixed point
             const int32_t s1 = tmp[whole];
             const int32_t s2 = tmp[whole + 1];
-            *output++ = clip(s1 + (((s2 - s1) * (int32_t)frac) >> 16));
+            *output++ = clip(s1 + (((s2 - s1) * (int32_t)frac) >> 15));
         }
+
     }
 
     const int samples_consumed = num_blocks * RESAMPLE_16KHZ_SAMPLES_IN;
