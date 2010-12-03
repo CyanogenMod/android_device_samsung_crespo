@@ -991,6 +991,8 @@ int SecCamera::startPreview(void)
     // It is a delay for a new frame, not to show the previous bigger ugly picture frame.
     ret = fimc_poll(&m_events_c);
     CHECK(ret);
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_RETURN_FOCUS, 0);
+    CHECK(ret);
 
 #ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGV("%s: got the first frame of the preview\n", __func__);
