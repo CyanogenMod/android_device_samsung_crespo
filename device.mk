@@ -55,8 +55,8 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
 	device/samsung/crespo/s3c-keypad.kcm:system/usr/keychars/s3c-keypad.kcm \
-	device/samsung/crespo/crespo-keypad.kl:system/usr/keylayout/crespo-keypad.kl \
-	device/samsung/crespo/crespo-keypad.kcm:system/usr/keychars/crespo-keypad.kcm \
+	device/samsung/crespo/herring-keypad.kl:system/usr/keylayout/herring-keypad.kl \
+	device/samsung/crespo/herring-keypad.kcm:system/usr/keychars/herring-keypad.kcm \
 	device/samsung/crespo/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
 	device/samsung/crespo/cypress-touchkey.kcm:system/usr/keychars/cypress-touchkey.kcm \
 	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
