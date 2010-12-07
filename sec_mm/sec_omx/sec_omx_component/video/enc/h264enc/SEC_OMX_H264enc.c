@@ -966,7 +966,7 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
         INIT_SET_SIZE_VERSION(&pH264Enc->AVCComponent[i], OMX_VIDEO_PARAM_AVCTYPE);
         pH264Enc->AVCComponent[i].nPortIndex = i;
         pH264Enc->AVCComponent[i].eProfile   = OMX_VIDEO_AVCProfileBaseline;
-        pH264Enc->AVCComponent[i].eLevel     = OMX_VIDEO_AVCLevel4;
+        pH264Enc->AVCComponent[i].eLevel     = OMX_VIDEO_AVCLevel31;
     }
 
     pOMXComponent->GetParameter      = &SEC_MFC_H264Enc_GetParameter;
