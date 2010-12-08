@@ -1235,6 +1235,28 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeSetParameter(
         ret = OMX_ErrorNone;
     }
         break;
+    case OMX_IndexParamPortDefinition:
+    {
+        OMX_PARAM_PORTDEFINITIONTYPE *pPortDefinition =
+                (OMX_PARAM_PORTDEFINITIONTYPE *)ComponentParameterStructure;
+        ret = SEC_OMX_SetParameter(hComponent, nIndex, ComponentParameterStructure);
+        if (ret != OMX_ErrorNone) {
+            goto EXIT;
+        }
+
+        if (pPortDefinition->nPortIndex == INPUT_PORT_INDEX) {
+            SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
+            OMX_U32 width = pSECInputPort->portDefinition.format.video.nFrameWidth;
+            OMX_U32 height = pSECInputPort->portDefinition.format.video.nFrameHeight;
+            SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
+            pSECOutputPort->portDefinition.format.video.nFrameWidth = width;
+            pSECOutputPort->portDefinition.format.video.nFrameHeight = height;
+            pSECOutputPort->portDefinition.nBufferSize = (width * height * 3) / 2;
+            SEC_OSAL_Log(SEC_LOG_TRACE, "pSECOutputPort->portDefinition.nBufferSize: %d",
+                            pSECOutputPort->portDefinition.nBufferSize);
+        }
+    }
+        break;
     default:
     {
         ret = SEC_OMX_SetParameter(hComponent, nIndex, ComponentParameterStructure);
