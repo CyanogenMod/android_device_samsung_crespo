@@ -3392,7 +3392,8 @@ void SecCamera::setExifChangedAttribute()
         shutterSpeed = 100;
     }
     mExifInfo.exposure_time.num = 1;
-    mExifInfo.exposure_time.den = 1000.0 / shutterSpeed;   /* ms -> sec */
+    // x us -> 1/x s */
+    mExifInfo.exposure_time.den = (uint32_t)(1000000 / shutterSpeed);
 
     //3 ISO Speed Rating
     int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
