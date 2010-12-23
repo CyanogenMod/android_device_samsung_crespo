@@ -124,9 +124,9 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
        wifi.interface=eth0 \
-       wifi.supplicant_scan_interval=15 \
-       dalvik.vm.heapstartsize=5m \
-       dalvik.vm.heapsize=32m
+       wifi.supplicant_scan_interval=15
+       
+include frameworks/base/build/phone-hdpi-512-dalvik-heap.mk
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
