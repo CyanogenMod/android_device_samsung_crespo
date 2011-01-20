@@ -73,6 +73,11 @@ enum {
 
 // ----------------------------------------------------------------------------
 
+const char *AudioHardware::inputPathNameDefault = "Default";
+const char *AudioHardware::inputPathNameCamcorder = "Camcorder";
+const char *AudioHardware::inputPathNameVoiceRecognition = "Voice Recognition";
+const char *AudioHardware::inputPathNameVoiceCommunication = "Voice Communication";
+
 AudioHardware::AudioHardware() :
     mInit(false),
     mMicMute(false),
@@ -81,7 +86,7 @@ AudioHardware::AudioHardware() :
     mPcmOpenCnt(0),
     mMixerOpenCnt(0),
     mInCallAudioMode(false),
-    mInputSource("Default"),
+    mInputSource(AUDIO_SOURCE_DEFAULT),
     mBluetoothNrec(true),
     mSecRilLibHandle(NULL),
     mRilClient(0),
@@ -377,7 +382,7 @@ status_t AudioHardware::setMode(int mode)
             LOGV("setMode() openPcmOut_l()");
             openPcmOut_l();
             openMixer_l();
-            setInputSource_l(String8("Default"));
+            setInputSource_l(AUDIO_SOURCE_DEFAULT);
             mInCallAudioMode = true;
         }
         if (mMode == AudioSystem::MODE_NORMAL && mInCallAudioMode) {
@@ -609,7 +614,7 @@ status_t AudioHardware::dump(int fd, const Vector<String16>& args)
     snprintf(buffer, SIZE, "\tIn Call Audio Mode %s\n",
              (mInCallAudioMode) ? "ON" : "OFF");
     result.append(buffer);
-    snprintf(buffer, SIZE, "\tInput source %s\n", mInputSource.string());
+    snprintf(buffer, SIZE, "\tInput source %d\n", mInputSource);
     result.append(buffer);
     snprintf(buffer, SIZE, "\tmSecRilLibHandle: %p\n", mSecRilLibHandle);
     result.append(buffer);
@@ -885,11 +890,11 @@ sp <AudioHardware::AudioStreamInALSA> AudioHardware::getActiveInput_l()
     return spIn;
 }
 
-status_t AudioHardware::setInputSource_l(String8 source)
+status_t AudioHardware::setInputSource_l(audio_source source)
 {
-     LOGV("setInputSource_l(%s)", source.string());
+     LOGV("setInputSource_l(%d)", source);
      if (source != mInputSource) {
-         if ((source == "Default") || (mMode != AudioSystem::MODE_IN_CALL)) {
+         if ((source == AUDIO_SOURCE_DEFAULT) || (mMode != AudioSystem::MODE_IN_CALL)) {
              if (mMixer) {
                  TRACE_DRIVER_IN(DRV_MIXER_GET)
                  struct mixer_ctl *ctl= mixer_get_control(mMixer, "Input Source", 0);
@@ -897,9 +902,30 @@ status_t AudioHardware::setInputSource_l(String8 source)
                  if (ctl == NULL) {
                      return NO_INIT;
                  }
-                 LOGV("mixer_ctl_select, Input Source, (%s)", source.string());
+                 const char* sourceName;
+                 switch (source) {
+                     case AUDIO_SOURCE_DEFAULT: // intended fall-through
+                     case AUDIO_SOURCE_MIC:
+                         sourceName = inputPathNameDefault;
+                         break;
+                     case AUDIO_SOURCE_VOICE_COMMUNICATION:
+                         sourceName = inputPathNameVoiceCommunication;
+                         break;
+                     case AUDIO_SOURCE_CAMCORDER:
+                         sourceName = inputPathNameCamcorder;
+                         break;
+                     case AUDIO_SOURCE_VOICE_RECOGNITION:
+                         sourceName = inputPathNameVoiceRecognition;
+                         break;
+                     case AUDIO_SOURCE_VOICE_UPLINK:   // intended fall-through
+                     case AUDIO_SOURCE_VOICE_DOWNLINK: // intended fall-through
+                     case AUDIO_SOURCE_VOICE_CALL:     // intended fall-through
+                     default:
+                         return NO_INIT;
+                 }
+                 LOGV("mixer_ctl_select, Input Source, (%s)", sourceName);
                  TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                 mixer_ctl_select(ctl, source.string());
+                 mixer_ctl_select(ctl, sourceName);
                  TRACE_DRIVER_OUT
              }
          }
@@ -1547,7 +1573,6 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     AudioParameter param = AudioParameter(keyValuePairs);
     status_t status = NO_ERROR;
     int value;
-    String8 source;
 
     LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
 
@@ -1556,14 +1581,14 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     {
         AutoMutex lock(mLock);
 
-        if (param.get(String8(INPUT_SOURCE_KEY), source) == NO_ERROR) {
+        if (param.getInt(String8(AudioParameter::keyInputSource), value) == NO_ERROR) {
             AutoMutex hwLock(mHardware->lock());
 
             mHardware->openMixer_l();
-            mHardware->setInputSource_l(source);
+            mHardware->setInputSource_l((audio_source)value);
             mHardware->closeMixer_l();
 
-            param.remove(String8(INPUT_SOURCE_KEY));
+            param.remove(String8(AudioParameter::keyInputSource));
         }
 
         if (param.getInt(String8(AudioParameter::keyRouting), value) == NO_ERROR)
