@@ -510,6 +510,7 @@ int CameraHardwareSec::previewThread()
         mDataCb(CAMERA_MSG_PREVIEW_FRAME, buffer, mCallbackCookie);
     }
 
+    Mutex::Autolock lock(mRecordLock);
     if (mRecordRunning == true) {
         index = mSecCamera->getRecordFrame();
         if (index < 0) {
@@ -684,6 +685,8 @@ status_t CameraHardwareSec::startRecording()
 {
     LOGV("%s :", __func__);
 
+    Mutex::Autolock lock(mRecordLock);
+
     if (mRecordRunning == false) {
         if (mSecCamera->startRecord() < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->startRecord()", __func__);
@@ -697,6 +700,8 @@ status_t CameraHardwareSec::startRecording()
 void CameraHardwareSec::stopRecording()
 {
     LOGV("%s :", __func__);
+
+    Mutex::Autolock lock(mRecordLock);
 
     if (mRecordRunning == true) {
         if (mSecCamera->stopRecord() < 0) {
