@@ -208,8 +208,9 @@ private:
                 status_t open_l();
                 int standbyCnt() { return mStandbyCnt; }
 
-                void lock() { mLock.lock(); }
-                void unlock() { mLock.unlock(); }
+                int prepareLock();
+                void lock();
+                void unlock();
 
     private:
 
@@ -227,6 +228,7 @@ private:
         //  trace driver operations for dump
         int mDriverOp;
         int mStandbyCnt;
+        bool mSleepReq;
     };
 
     class DownSampler;
@@ -321,8 +323,9 @@ private:
         virtual status_t getNextBuffer(BufferProvider::Buffer* buffer);
         virtual void releaseBuffer(BufferProvider::Buffer* buffer);
 
-        void lock() { mLock.lock(); }
-        void unlock() { mLock.unlock(); }
+        int prepareLock();
+        void lock();
+        void unlock();
 
     private:
         Mutex mLock;
@@ -344,6 +347,7 @@ private:
         //  trace driver operations for dump
         int mDriverOp;
         int mStandbyCnt;
+        bool mSleepReq;
     };
 
 };
