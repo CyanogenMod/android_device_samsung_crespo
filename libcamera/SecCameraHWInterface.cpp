@@ -32,15 +32,6 @@
 #define ALL_BUFFERS_FLUSHED     -66
 #endif
 
-#ifdef SEND_YUV_RECORD_DATA
-#define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
-#define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
-#define ALIGN_TO_8KB(x)   ((((x) + (1 << 13) - 1) >> 13) << 13)
-#define RECORD_HEAP_SIZE (ALIGN_TO_8KB(ALIGN_TO_128B(1280) *        \
-            ALIGN_TO_32B(720)) + ALIGN_TO_8KB(ALIGN_TO_128B(1280) * \
-            ALIGN_TO_32B(720 / 2)))
-#endif
-
 #define VIDEO_COMMENT_MARKER_H          0xFFBE
 #define VIDEO_COMMENT_MARKER_L          0xFFBF
 #define VIDEO_COMMENT_MARKER_LENGTH     4
@@ -81,9 +72,6 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mRecordHeap(0),
           mJpegHeap(0),
           mSecCamera(NULL),
-          mPreviewFrameSize(0),
-          mRawFrameSize(0),
-          mPreviewFrameRateMicrosec(33000),
           mCameraSensorName(NULL),
           mSkipFrame(0),
 #if defined(BOARD_USES_OVERLAY)
@@ -95,14 +83,10 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mDataCbTimestamp(0),
           mCallbackCookie(0),
           mMsgEnabled(0),
-          mCurrentPreviewFrame(0),
-          mRecordRunning(false)
-#ifdef JPEG_FROM_SENSOR
-          ,
+          mRecordRunning(false),
           mPostViewWidth(0),
           mPostViewHeight(0),
           mPostViewSize(0)
-#endif
 {
     LOGV("%s :", __func__);
     int ret = 0;
@@ -122,22 +106,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
         LOGE("ERR(%s):Fail on mSecCamera->flagCreate()", __func__);
     }
 
-#ifndef PREVIEW_USING_MMAP
-    int previewHeapSize = sizeof(struct addrs) * kBufferCount;
-
-    LOGV("mPreviewHeap : MemoryHeapBase(previewHeapSize(%d))", previewHeapSize);
-    mPreviewHeap = new MemoryHeapBase(previewHeapSize);
-    if (mPreviewHeap->getHeapID() < 0) {
-        LOGE("ERR(%s): Preview heap creation fail", __func__);
-        mPreviewHeap.clear();
-    }
-#endif
-
-#ifdef SEND_YUV_RECORD_DATA
-    int recordHeapSize = RECORD_HEAP_SIZE;
-#else
     int recordHeapSize = sizeof(struct addrs) * kBufferCount;
-#endif
     LOGV("mRecordHeap : MemoryHeapBase(recordHeapSize(%d))", recordHeapSize);
     mRecordHeap = new MemoryHeapBase(recordHeapSize);
     if (mRecordHeap->getHeapID() < 0) {
@@ -145,17 +114,11 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
         mRecordHeap.clear();
     }
 
-#ifdef JPEG_FROM_SENSOR
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
     LOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
             mPostViewWidth,mPostViewHeight,mPostViewSize);
-#endif
 
-#ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
     int rawHeapSize = mPostViewSize;
-#else
-    int rawHeapSize = sizeof(struct addrs_cap);
-#endif
     LOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
     mRawHeap = new MemoryHeapBase(rawHeapSize);
     if (mRawHeap->getHeapID() < 0) {
@@ -214,17 +177,13 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         LOGE("getSnapshotMaxSize fail (%d / %d) \n",
              snapshot_max_width, snapshot_max_height);
 
-#ifdef PREVIEW_USING_MMAP
     p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP);
-#else
-    p.setPreviewFormat("yuv420sp_custom");
-#endif
     p.setPreviewSize(preview_max_width, preview_max_height);
 
     p.setPictureFormat(CameraParameters::PIXEL_FORMAT_JPEG);
     p.setPictureSize(snapshot_max_width, snapshot_max_height);
     p.set(CameraParameters::KEY_JPEG_QUALITY, "100"); // maximum quality
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
     p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS,
           CameraParameters::PIXEL_FORMAT_YUV420SP);
     p.set(CameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
@@ -348,13 +307,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("saturation-max", 4);
     ip.set("contrast-min", 0);
     ip.set("contrast-max", 4);
-#endif
 
     p.set(CameraParameters::KEY_JPEG_THUMBNAIL_QUALITY, "100");
 
     p.set(CameraParameters::KEY_ROTATION, 0);
     p.set(CameraParameters::KEY_WHITE_BALANCE, CameraParameters::WHITE_BALANCE_AUTO);
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
     p.set(CameraParameters::KEY_EFFECT, CameraParameters::EFFECT_NONE);
 
     ip.set("sharpness", SHARPNESS_DEFAULT);
@@ -369,10 +327,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         ip.set("vtmode", 0);
         ip.set("blur", 0);
     }
-#else
-    ip.set("image-effects", "original");
-#endif
-
 
     p.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "51.2");
     p.set(CameraParameters::KEY_VERTICAL_VIEW_ANGLE, "39.4");
@@ -484,7 +438,6 @@ int CameraHardwareSec::previewThread()
 
     nsecs_t timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
 
-#ifdef PREVIEW_USING_MMAP
     int width, height, frame_size, offset;
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
@@ -533,42 +486,12 @@ int CameraHardwareSec::previewThread()
 OverlayEnd:
 #endif
 
-#else
-    unsigned int phyYAddr = mSecCamera->getPhyAddrY(index);
-    unsigned int phyCAddr = mSecCamera->getPhyAddrC(index);
-
-    if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
-        LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
-        return UNKNOWN_ERROR;
-    }
-    struct addrs *addrs = (struct addrs *)mPreviewHeap->base();
-
-    sp<MemoryBase> buffer = new MemoryBase(mPreviewHeap, index * sizeof(struct addrs), sizeof(struct addrs));
-    addrs[index].addr_y = phyYAddr;
-    addrs[index].addr_cbcr = phyCAddr;
-#endif //PREVIEW_USING_MMAP
-
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
         mDataCb(CAMERA_MSG_PREVIEW_FRAME, buffer, mCallbackCookie);
     }
 
     if (mRecordRunning == true) {
-#ifdef SEND_YUV_RECORD_DATA
-        int width, height, frame_size;
-        unsigned char *virYAddr;
-        unsigned char *virCAddr;
-
-        mSecCamera->getPreviewSize(&width, &height, &frame_size);
-        mSecCamera->getYUVBuffers(&virYAddr, &virCAddr, index);
-        sp<MemoryBase> buffer = new MemoryBase(mRecordHeap, 0, frame_size);
-        //memcpy(mRecordHeap->base(), (void*)virYAddr, width * height);
-        //memcpy(mRecordHeap->base() + (width*height),(void*)virCAddr, width * height * 0.5);
-        memcpy(mRecordHeap->base(), (void*)virYAddr, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)));
-        memcpy(mRecordHeap->base() + ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)),
-                (void*)virCAddr, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height / 2)));
-#else
-#ifdef DUAL_PORT_RECORDING
         int index = mSecCamera->getRecord();
 
         if (index < 0) {
@@ -583,38 +506,22 @@ OverlayEnd:
             LOGE("ERR(%s):Fail on SecCamera getRectPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
             return UNKNOWN_ERROR;
         }
-#endif//DUAL_PORT_RECORDING
         struct addrs *addrs = (struct addrs *)mRecordHeap->base();
 
         sp<MemoryBase> buffer = new MemoryBase(mRecordHeap, index * sizeof(struct addrs), sizeof(struct addrs));
         addrs[index].addr_y = phyYAddr;
         addrs[index].addr_cbcr = phyCAddr;
-#endif
+
         // Notify the client of a new frame.
         if (mMsgEnabled & CAMERA_MSG_VIDEO_FRAME) {
             //nsecs_t timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
             mDataCbTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, buffer, mCallbackCookie);
         }
-#ifdef DUAL_PORT_RECORDING
     } else if (mRecordRunning == false) {
         if (mSecCamera->stopRecord() < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->stopRecord()", __func__);
             return UNKNOWN_ERROR;
         }
-#endif
-    }
-
-    // Wait for it...
-    if (mTimeStart.tv_sec == 0 && mTimeStart.tv_usec == 0) {
-        gettimeofday(&mTimeStart, NULL);
-    } else {
-        gettimeofday(&mTimeStop, NULL);
-        long time = measure_time(&mTimeStart, &mTimeStop);
-        int delay = (mPreviewFrameRateMicrosec > time) ? mPreviewFrameRateMicrosec - time : 0;
-
-        usleep(delay);
-        //LOG_CAMERA_PREVIEW("delay = %d time = %ld us\n ", delay, time);
-        gettimeofday(&mTimeStart, NULL);
     }
 
     return NO_ERROR;
@@ -638,9 +545,6 @@ status_t CameraHardwareSec::startPreview()
         return INVALID_OPERATION;
     }
 
-    memset(&mTimeStart, 0, sizeof(mTimeStart));
-    memset(&mTimeStop, 0, sizeof(mTimeStop));
-
     mSecCamera->stopPreview();
 
     setSkipFrame(INITIAL_SKIP_FRAME);
@@ -653,7 +557,6 @@ status_t CameraHardwareSec::startPreview()
         return -1; //UNKNOWN_ERROR;
     }
 
-#ifdef PREVIEW_USING_MMAP
     if (mPreviewHeap != NULL)
         mPreviewHeap.clear();
 
@@ -665,24 +568,9 @@ status_t CameraHardwareSec::startPreview()
 
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))", (int)mSecCamera->getCameraFd(), (size_t)(previewHeapSize), width, height);
     mPreviewHeap = new MemoryHeapBase((int)mSecCamera->getCameraFd(), (size_t)(previewHeapSize), (uint32_t)0);
-#endif
 
-#ifdef JPEG_FROM_SENSOR
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
     LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",mPostViewWidth,mPostViewHeight,mPostViewSize);
-#endif
-
-#ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
-    int rawHeapSize = mPostViewSize;
-#else
-    int rawHeapSize = sizeof(struct addrs_cap);
-#endif
-    LOGV("CameraHardwareSec: mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
-    mRawHeap = new MemoryHeapBase(rawHeapSize);
-    if (mRawHeap->getHeapID() < 0) {
-        LOGE("ERR(%s): Raw heap creation fail", __func__);
-        mRawHeap.clear();
-    }
 
     mPreviewRunning = true;
     mPreviewThread->run("CameraPreviewThread", PRIORITY_URGENT_DISPLAY);
@@ -781,14 +669,13 @@ status_t CameraHardwareSec::startRecording()
 {
     LOGV("%s :", __func__);
 
-#ifdef DUAL_PORT_RECORDING
+    if (mRecordRunning == false) {
         if (mSecCamera->startRecord() < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->startRecord()", __func__);
             return UNKNOWN_ERROR;
         }
-#endif
-
-    mRecordRunning = true;
+        mRecordRunning = true;
+    }
     return NO_ERROR;
 }
 
@@ -823,10 +710,8 @@ void CameraHardwareSec::releaseRecordingFrame(const sp<IMemory>& mem)
 
 int CameraHardwareSec::autoFocusThread()
 {
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     int count =0;
     int af_status =0 ;
-#endif
 
     LOGV("%s : starting", __func__);
 
@@ -850,7 +735,6 @@ int CameraHardwareSec::autoFocusThread()
         return UNKNOWN_ERROR;
     }
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     af_status = mSecCamera->getAutoFocusResult();
 
     if (af_status == 0x01) {
@@ -872,10 +756,6 @@ int CameraHardwareSec::autoFocusThread()
         if (mMsgEnabled & CAMERA_MSG_FOCUS)
             mNotifyCb(CAMERA_MSG_FOCUS, false, 0, mCallbackCookie);
     }
-#else
-    if (mMsgEnabled & CAMERA_MSG_FOCUS)
-        mNotifyCb(CAMERA_MSG_FOCUS, true, 0, mCallbackCookie);
-#endif
 
     return NO_ERROR;
 }
@@ -891,14 +771,12 @@ status_t CameraHardwareSec::autoFocus()
 /* 2009.10.14 by icarus for added interface */
 status_t CameraHardwareSec::cancelAutoFocus()
 {
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     LOGV("%s :", __func__);
 
     if (mSecCamera->cancelAutofocus() < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->cancelAutofocus()", __func__);
         return UNKNOWN_ERROR;
     }
-#endif
 
     return NO_ERROR;
 }
@@ -1060,21 +938,13 @@ int CameraHardwareSec::pictureThread()
 
     LOG_TIME_DEFINE(0)
     LOG_TIME_START(0)
-#ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
     sp<MemoryBase> buffer = new MemoryBase(mRawHeap, 0, mPostViewSize + 8);
-#else
-    sp<MemoryBase> buffer = new MemoryBase(mRawHeap, 0, sizeof(struct addrs_cap));
-#endif
 
     struct addrs_cap *addrs = (struct addrs_cap *)mRawHeap->base();
 
-#ifdef JPEG_FROM_SENSOR
     addrs[0].width = mPostViewWidth;
     addrs[0].height = mPostViewHeight;
     LOGV("[5B] mPostViewWidth = %d mPostViewHeight = %d\n",mPostViewWidth,mPostViewHeight);
-#else
-    mParameters.getPictureSize((int*)&addrs[0].width, (int*)&addrs[0].height);
-#endif
 
     sp<MemoryHeapBase> JpegHeap = new MemoryHeapBase(mJpegHeapSize);
     sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
@@ -1089,15 +959,13 @@ int CameraHardwareSec::pictureThread()
         int picture_format = mSecCamera->getSnapshotPixelFormat();
 
         unsigned int phyAddr;
-#ifdef JPEG_FROM_SENSOR
+
         // Modified the shutter sound timing for Jpeg capture
         if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
             mSecCamera->setSnapshotCmd();
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
         if (mMsgEnabled & CAMERA_MSG_SHUTTER) {
             mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
         }
-#endif
 
         if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK){
             jpeg_data = mSecCamera->getJpeg(&jpeg_size, &phyAddr);
@@ -1115,23 +983,6 @@ int CameraHardwareSec::pictureThread()
             }
             LOGI("snapshotandjpeg done\n");
         }
-#else
-        phyAddr = mSecCamera->getSnapshotAndJpeg();
-        if (phyAddr < 0) {
-            mStateLock.lock();
-            mCaptureInProgress = false;
-            mStateLock.unlock();
-            return UNKNOWN_ERROR;
-        }
-
-        jpeg_data = mSecCamera->yuv2Jpeg((unsigned char*)phyAddr, 0, &jpeg_size,
-                                        picture_width, picture_height, picture_format);
-#endif
-
-#ifndef DIRECT_DELIVERY_OF_POSTVIEW_DATA
-
-        addrs[0].addr_y = phyAddr;
-#endif
 
         LOG_TIME_END(1)
         LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
@@ -1171,9 +1022,6 @@ int CameraHardwareSec::pictureThread()
     scaleDownYuv422((char *)PostviewHeap->base(), mPostViewWidth, mPostViewHeight,
                     (char *)ThumbnailHeap->base(), mThumbWidth, mThumbHeight);
 
-#ifdef POSTVIEW_CALLBACK
-    sp<MemoryBase> postview = new MemoryBase(PostviewHeap, 0, postviewHeapSize);
-#endif
     memcpy(mRawHeap->base(),PostviewHeap->base(), postviewHeapSize);
 
 #if defined(BOARD_USES_OVERLAY)
@@ -1225,20 +1073,6 @@ PostviewOverlayEnd:
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
         mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
     }
-#ifdef POSTVIEW_CALLBACK
-    if (mMsgEnabled & CAMERA_MSG_POSTVIEW_FRAME) {
-        int postviewHeapSize = mPostViewSize;
-        sp<MemoryHeapBase> mPostviewHeap = new MemoryHeapBase(postviewHeapSize);
-
-        postview_data = jpeg_data + postview_offset;
-        sp<MemoryBase> postview = new MemoryBase(mPostviewHeap, 0, postviewHeapSize);
-
-        if (postview_data != NULL)
-            memcpy(mPostviewHeap->base(), postview_data, postviewHeapSize);
-
-        mDataCb(CAMERA_MSG_POSTVIEW_FRAME, postview, mCallbackCookie);
-    }
-#endif
     if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
         sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
         JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(),
@@ -1538,7 +1372,7 @@ status_t CameraHardwareSec::dump(int fd, const Vector<String16>& args) const
         mSecCamera->dump(fd, args);
         mParameters.dump(fd, args);
         mInternalParameters.dump(fd, args);
-        snprintf(buffer, 255, " preview frame(%d), size (%d), running(%s)\n", mCurrentPreviewFrame, mPreviewFrameSize, mPreviewRunning?"true": "false");
+        snprintf(buffer, 255, " preview running(%s)\n", mPreviewRunning?"true": "false");
         result.append(buffer);
     } else {
         result.append("No camera client yet.\n");
@@ -1647,9 +1481,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_str_picture_format, "uyv422i")) //Non-zero copy UYVY format
             new_picture_format = V4L2_PIX_FMT_UYVY;
         else if (!strcmp(new_str_picture_format, CameraParameters::PIXEL_FORMAT_JPEG))
-#ifdef JPEG_FROM_SENSOR
             new_picture_format = V4L2_PIX_FMT_YUYV;
-#endif
         else if (!strcmp(new_str_picture_format, "yuv422p"))
             new_picture_format = V4L2_PIX_FMT_YUV422P;
         else
@@ -1663,7 +1495,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     //JPEG image quality
     int new_jpeg_quality = params.getInt(CameraParameters::KEY_JPEG_QUALITY);
     LOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
@@ -1676,17 +1507,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             mParameters.set(CameraParameters::KEY_JPEG_QUALITY, new_jpeg_quality);
         }
     }
-#else
-    //JPEG image quality
-    int new_jpeg_quality = params.getInt(CameraParameters::KEY_JPEG_QUALITY);
-    LOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
-    if (new_jpeg_quality < 0) {
-        LOGW("JPEG-image quality is not specified or is negative, defaulting to 100");
-        new_jpeg_quality = 100;
-        mParameters.set(CameraParameters::KEY_JPEG_QUALITY, "100");
-    }
-    mSecCamera->setJpegQuality(new_jpeg_quality);
-#endif
 
     // JPEG thumbnail size
     int new_jpeg_thumbnail_width = params.getInt(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH);
