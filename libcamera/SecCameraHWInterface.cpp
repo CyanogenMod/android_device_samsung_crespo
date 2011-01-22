@@ -64,7 +64,6 @@ static const int EFFECT_SKIP_FRAME = 1;
 
 CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
-          mPreviewRunning(false),
           mCaptureInProgress(false),
           mParameters(),
           mPreviewHeap(0),
@@ -129,6 +128,11 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
     initDefaultParameters(cameraId);
 
     mExitAutoFocusThread = false;
+    mExitPreviewThread = false;
+    /* whether the PreviewThread is active in preview or stopped.  we
+     * create the thread but it is initially in stopped state.
+     */
+    mPreviewRunning = false;
     mPreviewThread = new PreviewThread(this);
     mAutoFocusThread = new AutoFocusThread(this);
     mPictureThread = new PictureThread(this);
@@ -419,9 +423,37 @@ void CameraHardwareSec::setSkipFrame(int frame)
     mSkipFrame = frame;
 }
 
+int CameraHardwareSec::previewThreadWrapper()
+{
+    LOGI("%s: starting", __func__);
+    while (1) {
+        mPreviewLock.lock();
+        while (!mPreviewRunning) {
+            LOGI("%s: calling mSecCamera->stopPreview() and waiting", __func__);
+            mSecCamera->stopPreview();
+            /* signal that we're stopping */
+            mPreviewStoppedCondition.signal();
+            mPreviewCondition.wait(mPreviewLock);
+            LOGI("%s: return from wait", __func__);
+        }
+        mPreviewLock.unlock();
+
+        if (mExitPreviewThread) {
+            LOGI("%s: exiting", __func__);
+            mSecCamera->stopPreview();
+            return 0;
+        }
+        previewThread();
+    }
+}
+
 int CameraHardwareSec::previewThread()
 {
     int index;
+    nsecs_t timestamp;
+    unsigned int phyYAddr;
+    unsigned int phyCAddr;
+    struct addrs *addrs;
 
     index = mSecCamera->getPreview();
     if (index < 0) {
@@ -436,7 +468,15 @@ int CameraHardwareSec::previewThread()
     }
     mSkipFrameLock.unlock();
 
-    nsecs_t timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
+    timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
+
+    phyYAddr = mSecCamera->getPhyAddrY(index);
+    phyCAddr = mSecCamera->getPhyAddrC(index);
+
+    if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
+        LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
+        return UNKNOWN_ERROR;
+     }
 
     int width, height, frame_size, offset;
 
@@ -445,45 +485,29 @@ int CameraHardwareSec::previewThread()
     offset = (frame_size + 16) * index;
     sp<MemoryBase> buffer = new MemoryBase(mPreviewHeap, offset, frame_size);
 
-    unsigned int phyYAddr = mSecCamera->getPhyAddrY(index);
-    unsigned int phyCAddr = mSecCamera->getPhyAddrC(index);
-
-    if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
-        LOGE("ERR(%s):Fail on SecCamera. Invalid PhyAddr, Y addr = %0x C addr = %0x",
-                __func__, phyYAddr, phyCAddr);
-        return UNKNOWN_ERROR;
-    }
     memcpy(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size    ), &phyYAddr, 4);
     memcpy(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size + 4), &phyCAddr, 4);
 
 #if defined(BOARD_USES_OVERLAY)
     if (mUseOverlay) {
         int ret;
+        overlay_buffer_t overlay_buffer;
+
         mOverlayBufferIdx ^= 1;
         memcpy(static_cast<unsigned char*>(mPreviewHeap->base()) + offset + frame_size + sizeof(phyYAddr) + sizeof(phyCAddr),
-                    &mOverlayBufferIdx, sizeof(mOverlayBufferIdx));
+                &mOverlayBufferIdx, sizeof(mOverlayBufferIdx));
 
         ret = mOverlay->queueBuffer((void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size)));
 
-        if (ret == ALL_BUFFERS_FLUSHED) {
-            goto OverlayEnd;
-        } else if (ret == -1) {
+        if (ret == -1 ) {
             LOGE("ERR(%s):overlay queueBuffer fail", __func__);
-            goto OverlayEnd;
-        }
-
-        overlay_buffer_t overlay_buffer;
-        ret = mOverlay->dequeueBuffer(&overlay_buffer);
-
-        if (ret == ALL_BUFFERS_FLUSHED) {
-            goto OverlayEnd;
-        } else if (ret == -1) {
-            LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
-            goto OverlayEnd;
-        }
-    }
-
-OverlayEnd:
+        } else if (ret != ALL_BUFFERS_FLUSHED) {
+            ret = mOverlay->dequeueBuffer(&overlay_buffer);
+            if (ret == -1) {
+                LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
+            }
+         }
+     }
 #endif
 
     // Notify the client of a new frame.
@@ -492,35 +516,32 @@ OverlayEnd:
     }
 
     if (mRecordRunning == true) {
-        int index = mSecCamera->getRecord();
-
+        index = mSecCamera->getRecordFrame();
         if (index < 0) {
             LOGE("ERR(%s):Fail on SecCamera->getRecord()", __func__);
             return UNKNOWN_ERROR;
         }
 
-        unsigned int phyYAddr = mSecCamera->getRecPhyAddrY(index);
-        unsigned int phyCAddr = mSecCamera->getRecPhyAddrC(index);
+        phyYAddr = mSecCamera->getRecPhyAddrY(index);
+        phyCAddr = mSecCamera->getRecPhyAddrC(index);
 
         if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
             LOGE("ERR(%s):Fail on SecCamera getRectPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
             return UNKNOWN_ERROR;
         }
-        struct addrs *addrs = (struct addrs *)mRecordHeap->base();
+
+        addrs = (struct addrs *)mRecordHeap->base();
 
         sp<MemoryBase> buffer = new MemoryBase(mRecordHeap, index * sizeof(struct addrs), sizeof(struct addrs));
         addrs[index].addr_y = phyYAddr;
         addrs[index].addr_cbcr = phyCAddr;
+        addrs[index].buf_index = index;
 
         // Notify the client of a new frame.
         if (mMsgEnabled & CAMERA_MSG_VIDEO_FRAME) {
-            //nsecs_t timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
             mDataCbTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, buffer, mCallbackCookie);
-        }
-    } else if (mRecordRunning == false) {
-        if (mSecCamera->stopRecord() < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->stopRecord()", __func__);
-            return UNKNOWN_ERROR;
+        } else {
+            mSecCamera->releaseRecordFrame(index);
         }
     }
 
@@ -534,18 +555,18 @@ status_t CameraHardwareSec::startPreview()
     LOGV("%s :", __func__);
 
     Mutex::Autolock lock(mStateLock);
-    if (mPreviewRunning) {
-        // already running
-        LOGE("%s : preview thread already running", __func__);
-        return INVALID_OPERATION;
-    }
-
     if (mCaptureInProgress) {
         LOGE("%s : capture in progress, not allowed", __func__);
         return INVALID_OPERATION;
     }
 
-    mSecCamera->stopPreview();
+    mPreviewLock.lock();
+    if (mPreviewRunning) {
+        // already running
+        LOGE("%s : preview thread already running", __func__);
+        mPreviewLock.unlock();
+        return INVALID_OPERATION;
+    }
 
     setSkipFrame(INITIAL_SKIP_FRAME);
 
@@ -573,7 +594,8 @@ status_t CameraHardwareSec::startPreview()
     LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",mPostViewWidth,mPostViewHeight,mPostViewSize);
 
     mPreviewRunning = true;
-    mPreviewThread->run("CameraPreviewThread", PRIORITY_URGENT_DISPLAY);
+    mPreviewCondition.signal();
+    mPreviewLock.unlock();
 
     return NO_ERROR;
 }
@@ -641,24 +663,22 @@ void CameraHardwareSec::stopPreview()
 {
     LOGV("%s :", __func__);
 
-    if (!previewEnabled())
-        return;
-
-    /* request that the preview thread exit. we can wait because we're
-     * called by CameraServices with a lock but it has disabled all preview
-     * related callbacks so previewThread should not invoke any callbacks.
-     */
-    mPreviewThread->requestExitAndWait();
-
-    if (mSecCamera->stopPreview() < 0)
-        LOGE("ERR(%s):Fail on mSecCamera->stopPreview()", __func__);
-
-    mPreviewRunning = false;
+    /* request that the preview thread stop. */
+    mPreviewLock.lock();
+    if (mPreviewRunning) {
+        mPreviewRunning = false;
+        mPreviewCondition.signal();
+        /* wait until preview thread is stopped */
+        mPreviewStoppedCondition.wait(mPreviewLock);
+    } else {
+        LOGI("%s : preview not running, doing nothing", __func__);
+    }
+    mPreviewLock.unlock();
 }
 
 bool CameraHardwareSec::previewEnabled()
 {
-    Mutex::Autolock lock(mStateLock);
+    Mutex::Autolock lock(mPreviewLock);
     LOGV("%s : %d", __func__, mPreviewRunning);
     return mPreviewRunning;
 }
@@ -683,7 +703,13 @@ void CameraHardwareSec::stopRecording()
 {
     LOGV("%s :", __func__);
 
-    mRecordRunning = false;
+    if (mRecordRunning == true) {
+        if (mSecCamera->stopRecord() < 0) {
+            LOGE("ERR(%s):Fail on mSecCamera->stopRecord()", __func__);
+            return;
+        }
+        mRecordRunning = false;
+    }
 }
 
 bool CameraHardwareSec::recordingEnabled()
@@ -695,15 +721,11 @@ bool CameraHardwareSec::recordingEnabled()
 
 void CameraHardwareSec::releaseRecordingFrame(const sp<IMemory>& mem)
 {
-    LOG_CAMERA_PREVIEW("%s :", __func__);
+    ssize_t offset;
+    sp<IMemoryHeap> heap = mem->getMemory(&offset, NULL);
+    struct addrs *addrs = (struct addrs *)((uint8_t *)heap->base() + offset);
 
-//    ssize_t offset; size_t size;
-//    sp<MemoryBase>       mem1 = mem;
-//    sp<MemoryHeapBase> heap = mem->getMemory(&offset, &size);
-//    sp<IMemoryHeap> heap = mem->getMemory(&offset, &size);
-
-//    mem1.clear();
-//    heap.clear();
+    mSecCamera->releaseRecordFrame(addrs->buf_index);
 }
 
 // ---------------------------------------------------------------------------
@@ -722,12 +744,20 @@ int CameraHardwareSec::autoFocusThread()
      * in CameraServices layer.
      */
     mFocusLock.lock();
-    mCondition.wait(mFocusLock);
-    mFocusLock.unlock();
-
     /* check early exit request */
-    if (mExitAutoFocusThread)
+    if (mExitAutoFocusThread) {
+        mFocusLock.unlock();
+        LOGV("%s : exiting on request0", __func__);
         return NO_ERROR;
+    }
+    mFocusCondition.wait(mFocusLock);
+    /* check early exit request */
+    if (mExitAutoFocusThread) {
+        mFocusLock.unlock();
+        LOGV("%s : exiting on request1", __func__);
+        return NO_ERROR;
+    }
+    mFocusLock.unlock();
 
     LOGV("%s : calling setAutoFocus", __func__);
     if (mSecCamera->setAutofocus() < 0) {
@@ -757,6 +787,7 @@ int CameraHardwareSec::autoFocusThread()
             mNotifyCb(CAMERA_MSG_FOCUS, false, 0, mCallbackCookie);
     }
 
+    LOGV("%s : exiting with no error", __func__);
     return NO_ERROR;
 }
 
@@ -764,7 +795,7 @@ status_t CameraHardwareSec::autoFocus()
 {
     LOGV("%s :", __func__);
     /* signal autoFocusThread to run once */
-    mCondition.signal();
+    mFocusCondition.signal();
     return NO_ERROR;
 }
 
@@ -988,14 +1019,6 @@ int CameraHardwareSec::pictureThread()
         LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
     }
 
-    /* the capture is done at this point so we can allow sensor commands
-     * again, we still need to do jpeg and thumbnail processing, but the
-     * sensor is available for something else
-     */
-    mStateLock.lock();
-    mCaptureInProgress = false;
-    mStateLock.unlock();
-
     int JpegImageSize, JpegExifSize;
     bool isLSISensor = false;
 
@@ -1051,21 +1074,14 @@ int CameraHardwareSec::pictureThread()
     ret = mOverlay->queueBuffer((void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset +
                                 (mPostViewWidth*mPostViewHeight * 3 / 2)));
 
-    if (ret == ALL_BUFFERS_FLUSHED) {
-        goto PostviewOverlayEnd;
-    } else if (ret == -1) {
+    if (ret == -1) {
         LOGE("ERR(%s):overlay queueBuffer fail", __func__);
-        goto PostviewOverlayEnd;
-    }
-
-    overlay_buffer_t overlay_buffer;
-    ret = mOverlay->dequeueBuffer(&overlay_buffer);
-
-    if (ret == ALL_BUFFERS_FLUSHED) {
-        goto PostviewOverlayEnd;
-    } else if (ret == -1) {
-        LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
-        goto PostviewOverlayEnd;
+    } else if (ret != ALL_BUFFERS_FLUSHED) {
+        overlay_buffer_t overlay_buffer;
+        ret = mOverlay->dequeueBuffer(&overlay_buffer);
+        if (ret == -1) {
+            LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
+        }
     }
 
 PostviewOverlayEnd:
@@ -1081,7 +1097,8 @@ PostviewOverlayEnd:
         LOGV("JpegExifSize=%d", JpegExifSize);
 
         if (JpegExifSize < 0) {
-            return UNKNOWN_ERROR;
+            ret = UNKNOWN_ERROR;
+            goto out;
         }
 
         unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
@@ -1098,6 +1115,12 @@ PostviewOverlayEnd:
     LOG_CAMERA("pictureThread interval: %lu us", LOG_TIME(0));
 
     LOGV("%s : pictureThread end", __func__);
+
+out:
+    mStateLock.lock();
+    mCaptureInProgress = false;
+    mStateLock.unlock();
+
     return ret;
 }
 
@@ -1126,9 +1149,6 @@ status_t CameraHardwareSec::cancelPicture()
 {
     mPictureThread->requestExitAndWait();
 
-    mSecCamera->cancelPicture();
-
-    LOGW("%s : not supported, just returning NO_ERROR", __func__);
     return NO_ERROR;
 }
 
@@ -2043,6 +2063,14 @@ void CameraHardwareSec::release()
      * for ourself to exit, which is a deadlock.
      */
     if (mPreviewThread != NULL) {
+        /* this thread is normally already in it's threadLoop but blocked
+         * on the condition variable or running.  signal it so it wakes
+         * up and can exit.
+         */
+        mPreviewThread->requestExit();
+        mExitPreviewThread = true;
+        mPreviewRunning = true; /* let it run so it can exit */
+        mPreviewCondition.signal();
         mPreviewThread->requestExitAndWait();
         mPreviewThread.clear();
     }
@@ -2050,9 +2078,11 @@ void CameraHardwareSec::release()
         /* this thread is normally already in it's threadLoop but blocked
          * on the condition variable.  signal it so it wakes up and can exit.
          */
+        mFocusLock.lock();
         mAutoFocusThread->requestExit();
         mExitAutoFocusThread = true;
-        mCondition.signal();
+        mFocusCondition.signal();
+        mFocusLock.unlock();
         mAutoFocusThread->requestExitAndWait();
         mAutoFocusThread.clear();
     }
@@ -2066,8 +2096,11 @@ void CameraHardwareSec::release()
     if (mJpegHeap != NULL)
         mJpegHeap.clear();
 
-    if (mPreviewHeap != NULL)
+    if (mPreviewHeap != NULL) {
+        LOGI("%s: calling mPreviewHeap.dispose()", __func__);
+        mPreviewHeap->dispose();
         mPreviewHeap.clear();
+    }
 
     if (mRecordHeap != NULL)
         mRecordHeap.clear();

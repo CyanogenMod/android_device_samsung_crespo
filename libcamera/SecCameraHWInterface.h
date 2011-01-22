@@ -83,13 +83,12 @@ private:
         PreviewThread(CameraHardwareSec *hw):
         Thread(false),
         mHardware(hw) { }
+        virtual void onFirstRef() {
+            run("CameraPreviewThread", PRIORITY_URGENT_DISPLAY);
+        }
         virtual bool threadLoop() {
-            int ret = mHardware->previewThread();
-            // loop until we need to quit
-            if(ret == NO_ERROR)
-                return true;
-            else
-                return false;
+            mHardware->previewThreadWrapper();
+            return false;
         }
     };
 
@@ -101,6 +100,7 @@ private:
         mHardware(hw) { }
         virtual bool threadLoop() {
             mHardware->pictureThread();
+            mHardware->mSecCamera->endSnapshot();
             return false;
         }
     };
@@ -123,7 +123,7 @@ private:
 
     sp<PreviewThread>   mPreviewThread;
             int         previewThread();
-            bool        mPreviewRunning;
+            int         previewThreadWrapper();
 
     sp<AutoFocusThread> mAutoFocusThread;
             int         autoFocusThread();
@@ -159,8 +159,15 @@ private:
             void        setSkipFrame(int frame);
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
-    mutable Condition   mCondition;
+    mutable Condition   mFocusCondition;
             bool        mExitAutoFocusThread;
+
+    /* used by preview thread to block until it's told to run */
+    mutable Mutex       mPreviewLock;
+    mutable Condition   mPreviewCondition;
+    mutable Condition   mPreviewStoppedCondition;
+            bool        mPreviewRunning;
+            bool        mExitPreviewThread;
 
     /* used to guard threading state */
     mutable Mutex       mStateLock;
