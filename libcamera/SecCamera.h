@@ -292,11 +292,11 @@ public:
 
     int             startRecord(void);
     int             stopRecord(void);
-    int             getRecord(void);
+    int             getRecordFrame(void);
+    int             releaseRecordFrame(int index);
     unsigned int    getRecPhyAddrY(int);
     unsigned int    getRecPhyAddrC(int);
 
-    int             cancelPicture(void);
     int             getPreview(void);
     int             setPreviewSize(int width, int height, int pixel_format);
     int             getPreviewSize(int *width, int *height, int *frame_size);
@@ -410,6 +410,7 @@ public:
     int             setExifOrientationInfo(int orientationInfo);
     int             setBatchReflection(void);
     int             setSnapshotCmd(void);
+    int             endSnapshot(void);
     int             setCameraSensorReset(void);
     int             setSensorMode(int sensor_mode); /* Camcorder fix fps */
     int             setShotMode(int shot_mode);     /* Shot mode */
@@ -424,6 +425,7 @@ public:
     int             setDefultIMEI(int imei);
     int             getDefultIMEI(void);
     const __u8*     getCameraSensorName(void);
+    int             previewPoll(bool preview);
 #ifdef ENABLE_ESD_PREVIEW_CHECK
     int             getCameraSensorESDStatus(void);
 #endif // ENABLE_ESD_PREVIEW_CHECK
@@ -495,7 +497,6 @@ private:
     int             m_cam_fd2;
     struct pollfd   m_events_c2;
     int             m_flag_record_start;
-    struct          fimc_buffer m_buffers_c2[MAX_BUFFERS];
 
     int             m_preview_v4lformat;
     int             m_preview_width;
@@ -553,7 +554,7 @@ private:
 
     exif_attribute_t mExifInfo;
 
-    struct fimc_buffer m_buffers_c[MAX_BUFFERS];
+    struct fimc_buffer m_capture_buf;
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);
