@@ -81,13 +81,7 @@ private:
         CameraHardwareSec *mHardware;
     public:
         PreviewThread(CameraHardwareSec *hw):
-#ifdef SINGLE_PROCESS
-        // In single process mode this thread needs to be a java thread,
-        // since we won't be calling through the binder.
-        Thread(true),
-#else
         Thread(false),
-#endif
         mHardware(hw) { }
         virtual bool threadLoop() {
             int ret = mHardware->previewThread();
@@ -182,9 +176,6 @@ private:
     sp<MemoryBase>      mRecordBuffers[kBufferCountForRecord];
 
             SecCamera   *mSecCamera;
-            int         mPreviewFrameSize;
-            int         mRawFrameSize;
-            int         mPreviewFrameRateMicrosec;
             const __u8  *mCameraSensorName;
 
     mutable Mutex       mSkipFrameLock;
@@ -203,20 +194,10 @@ private:
 
             int32_t     mMsgEnabled;
 
-            // only used from PreviewThread
-            int         mCurrentPreviewFrame;
-            int         mCurrentRecordFrame;
-
             bool        mRecordRunning;
-#ifdef JPEG_FROM_SENSOR
             int         mPostViewWidth;
             int         mPostViewHeight;
             int         mPostViewSize;
-#endif
-
-    struct timeval      mTimeStart;
-    struct timeval      mTimeStop;
-
 };
 
 }; // namespace android
