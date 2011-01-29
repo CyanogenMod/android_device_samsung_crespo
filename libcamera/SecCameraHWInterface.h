@@ -202,6 +202,7 @@ private:
             int32_t     mMsgEnabled;
 
             bool        mRecordRunning;
+    mutable Mutex       mRecordLock;
             int         mPostViewWidth;
             int         mPostViewHeight;
             int         mPostViewSize;
