@@ -929,6 +929,10 @@ int SecCamera::startRecord(void)
                           m_recording_height, V4L2_PIX_FMT_NV12T, 0);
     CHECK(ret);
 
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
+                            m_params->capture.timeperframe.denominator);
+    CHECK(ret);
+
     ret = fimc_v4l2_reqbufs(m_cam_fd2, V4L2_BUF_TYPE_VIDEO_CAPTURE, MAX_BUFFERS);
     CHECK(ret);
 
@@ -972,6 +976,10 @@ int SecCamera::stopRecord(void)
     m_flag_record_start = 0;
 
     ret = fimc_v4l2_streamoff(m_cam_fd2);
+    CHECK(ret);
+
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FRAME_RATE,
+                            FRAME_RATE_AUTO);
     CHECK(ret);
 
     return 0;
