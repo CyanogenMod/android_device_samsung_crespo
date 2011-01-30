@@ -34,39 +34,15 @@
 #include <sys/stat.h>
 
 #include <linux/videodev2.h>
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
 #include <videodev2_samsung.h>
-#endif
 
 #include "JpegEncoder.h"
-
-#ifdef ENABLE_HDMI_DISPLAY
-#include "hdmi_lib.h"
-#endif
 
 #include <camera/CameraHardwareInterface.h>
 
 namespace android {
-//Define this if the preview data is to be shared using memory mapped technique instead of passing physical address.
-#define PREVIEW_USING_MMAP
-//Define this if the JPEG images are obtained directly from camera sensor. Else on chip JPEG encoder will be used.
-#define JPEG_FROM_SENSOR
-
-//#define DUAL_PORT_RECORDING //Define this if 2 fimc ports are needed for recording.
-
-//#define SEND_YUV_RECORD_DATA //Define this to copy YUV data to encoder instead of sharing the physical address.
 
 #define ENABLE_ESD_PREVIEW_CHECK
-
-#define INCLUDE_JPEG_THUMBNAIL 1 //Valid only for on chip JPEG encoder
-
-#if defined PREVIEW_USING_MMAP
-#define DUAL_PORT_RECORDING
-#endif
-
-#if defined JPEG_FROM_SENSOR
-#define DIRECT_DELIVERY_OF_POSTVIEW_DATA //Define this if postview data is needed in buffer instead of zero copy.
-#endif
 
 #if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
 #define LOG_CAMERA LOGD
@@ -160,17 +136,15 @@ namespace android {
 #define DEFAULT_JPEG_THUMBNAIL_HEIGHT       192
 
 #define CAMERA_DEV_NAME   "/dev/video0"
-
-#ifdef DUAL_PORT_RECORDING
 #define CAMERA_DEV_NAME2  "/dev/video2"
-#endif
+
 #define CAMERA_DEV_NAME_TEMP "/data/videotmp_000"
 #define CAMERA_DEV_NAME2_TEMP "/data/videotemp_002"
 
 
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
-#define MAX_BUFFERS     8
+#define MAX_BUFFERS     11
 
 /*
  * V 4 L 2   F I M C   E X T E N S I O N S
@@ -235,7 +209,6 @@ public:
         CAMERA_ID_FRONT = 1,
     };
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     enum JPEG_QUALITY {
         JPEG_QUALITY_ECONOMY    = 0,
         JPEG_QUALITY_NORMAL     = 50,
@@ -279,7 +252,6 @@ public:
 
     int m_touch_af_start_stop;
 
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     struct gps_info_latiude {
         unsigned int    north_south;
         unsigned int    dgree;
@@ -298,10 +270,6 @@ public:
         unsigned int    minute;
         unsigned int    second;
     } gpsInfoAltitude;
-#endif
-
-
-#endif
 
     SecCamera();
     ~SecCamera();
@@ -321,15 +289,14 @@ public:
 
     int             startPreview(void);
     int             stopPreview(void);
-#ifdef DUAL_PORT_RECORDING
+
     int             startRecord(void);
     int             stopRecord(void);
-    int             getRecord(void);
+    int             getRecordFrame(void);
+    int             releaseRecordFrame(int index);
     unsigned int    getRecPhyAddrY(int);
     unsigned int    getRecPhyAddrC(int);
-#endif
-    int             cancelPicture(void);
-    int             flagPreviewStart(void);
+
     int             getPreview(void);
     int             setPreviewSize(int width, int height, int pixel_format);
     int             getPreviewSize(int *width, int *height, int *frame_size);
@@ -369,7 +336,7 @@ public:
 
     int             setImageEffect(int image_effect);
     int             getImageEffect(void);
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
+
     int             setSceneMode(int scene_mode);
     int             getSceneMode(void);
 
@@ -443,6 +410,7 @@ public:
     int             setExifOrientationInfo(int orientationInfo);
     int             setBatchReflection(void);
     int             setSnapshotCmd(void);
+    int             endSnapshot(void);
     int             setCameraSensorReset(void);
     int             setSensorMode(int sensor_mode); /* Camcorder fix fps */
     int             setShotMode(int shot_mode);     /* Shot mode */
@@ -457,10 +425,10 @@ public:
     int             setDefultIMEI(int imei);
     int             getDefultIMEI(void);
     const __u8*     getCameraSensorName(void);
+    int             previewPoll(bool preview);
 #ifdef ENABLE_ESD_PREVIEW_CHECK
     int             getCameraSensorESDStatus(void);
 #endif // ENABLE_ESD_PREVIEW_CHECK
-#endif
 
     int setFrameRate(int frame_rate);
     unsigned char*  getJpeg(int*, unsigned int*);
@@ -468,22 +436,15 @@ public:
                                         unsigned int *output_size);
     int             getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);
 
-#ifdef JPEG_FROM_SENSOR
     void            getPostViewConfig(int*, int*, int*);
-#endif
     void            getThumbnailConfig(int *width, int *height, int *size);
 
-#ifdef DIRECT_DELIVERY_OF_POSTVIEW_DATA
     int             getPostViewOffset(void);
-#endif
     int             getCameraFd(void);
     int             getJpegFd(void);
     void            SetJpgAddr(unsigned char *addr);
     unsigned int    getPhyAddrY(int);
     unsigned int    getPhyAddrC(int);
-#ifdef SEND_YUV_RECORD_DATA
-    void            getYUVBuffers(unsigned char **virYAddr, unsigned char **virCaddr, int index);
-#endif
     void            pausePreview();
     int             initCamera(int index);
     void            DeinitCamera();
@@ -532,12 +493,10 @@ private:
 
     int             m_cam_fd_temp;
     int             m_cam_fd2_temp;
-#ifdef DUAL_PORT_RECORDING
+
     int             m_cam_fd2;
     struct pollfd   m_events_c2;
     int             m_flag_record_start;
-    struct          fimc_buffer m_buffers_c2[MAX_BUFFERS];
-#endif
 
     int             m_preview_v4lformat;
     int             m_preview_width;
@@ -552,10 +511,6 @@ private:
     int             m_snapshot_max_height;
 
     int             m_angle;
-#ifndef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
-    int             m_autofocus;
-#endif
-#ifdef SWP1_CAMERA_ADD_ADVANCED_FUNCTION
     int             m_anti_banding;
     int             m_wdr;
     int             m_anti_shake;
@@ -583,7 +538,6 @@ private:
     int             m_caf_on_off;
     int             m_default_imei;
     int             m_camera_af_flag;
-#endif
 
     int             m_flag_camera_start;
 
@@ -600,7 +554,7 @@ private:
 
     exif_attribute_t mExifInfo;
 
-    struct fimc_buffer m_buffers_c[MAX_BUFFERS];
+    struct fimc_buffer m_capture_buf;
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);

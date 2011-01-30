@@ -316,17 +316,13 @@ status_t AudioHardware::setMode(int mode)
     sp<AudioStreamInALSA> spIn;
     status_t status;
 
-    // bump thread priority to speed up mutex acquisition
-    int  priority = getpriority(PRIO_PROCESS, 0);
-    setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_URGENT_AUDIO);
-
     // Mutex acquisition order is always out -> in -> hw
     AutoMutex lock(mLock);
 
     spOut = mOutput;
     while (spOut != 0) {
         if (!spOut->checkStandby()) {
-            int cnt = spOut->standbyCnt();
+            int cnt = spOut->prepareLock();
             mLock.unlock();
             spOut->lock();
             mLock.lock();
@@ -345,7 +341,7 @@ status_t AudioHardware::setMode(int mode)
 
     spIn = getActiveInput_l();
     while (spIn != 0) {
-        int cnt = spIn->standbyCnt();
+        int cnt = spIn->prepareLock();
         mLock.unlock();
         spIn->lock();
         mLock.lock();
@@ -358,8 +354,6 @@ status_t AudioHardware::setMode(int mode)
         spIn = getActiveInput_l();
     }
     // spIn is not 0 here only if the input is active
-
-    setpriority(PRIO_PROCESS, 0, priority);
 
     int prevMode = mMode;
     status = AudioHardwareBase::setMode(mode);
@@ -947,7 +941,7 @@ AudioHardware::AudioStreamOutALSA::AudioStreamOutALSA() :
     mHardware(0), mPcm(0), mMixer(0), mRouteCtl(0),
     mStandby(true), mDevices(0), mChannels(AUDIO_HW_OUT_CHANNELS),
     mSampleRate(AUDIO_HW_OUT_SAMPLERATE), mBufferSize(AUDIO_HW_OUT_PERIOD_BYTES),
-    mDriverOp(DRV_NONE), mStandbyCnt(0)
+    mDriverOp(DRV_NONE), mStandbyCnt(0), mSleepReq(false)
 {
 }
 
@@ -1002,6 +996,12 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
 
     if (mHardware == NULL) return NO_INIT;
 
+    if (mSleepReq) {
+        // 10ms are always shorter than the time to reconfigure the audio path
+        // which is the only condition when mSleepReq would be true.
+        usleep(10000);
+    }
+
     { // scope for the lock
 
         AutoMutex lock(mLock);
@@ -1014,7 +1014,7 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
 
             sp<AudioStreamInALSA> spIn = mHardware->getActiveInput_l();
             while (spIn != 0) {
-                int cnt = spIn->standbyCnt();
+                int cnt = spIn->prepareLock();
                 mHardware->lock().unlock();
                 // Mutex acquisition order is always out -> in -> hw
                 spIn->lock();
@@ -1239,6 +1239,24 @@ status_t AudioHardware::AudioStreamOutALSA::getRenderPosition(uint32_t *dspFrame
     return INVALID_OPERATION;
 }
 
+int AudioHardware::AudioStreamOutALSA::prepareLock()
+{
+    // request sleep next time write() is called so that caller can acquire
+    // mLock
+    mSleepReq = true;
+    return mStandbyCnt;
+}
+
+void AudioHardware::AudioStreamOutALSA::lock()
+{
+    mLock.lock();
+    mSleepReq = false;
+}
+
+void AudioHardware::AudioStreamOutALSA::unlock() {
+    mLock.unlock();
+}
+
 //------------------------------------------------------------------------------
 //  AudioStreamInALSA
 //------------------------------------------------------------------------------
@@ -1248,7 +1266,7 @@ AudioHardware::AudioStreamInALSA::AudioStreamInALSA() :
     mStandby(true), mDevices(0), mChannels(AUDIO_HW_IN_CHANNELS), mChannelCount(1),
     mSampleRate(AUDIO_HW_IN_SAMPLERATE), mBufferSize(AUDIO_HW_IN_PERIOD_BYTES),
     mDownSampler(NULL), mReadStatus(NO_ERROR), mDriverOp(DRV_NONE),
-    mStandbyCnt(0)
+    mStandbyCnt(0), mSleepReq(false)
 {
 }
 
@@ -1320,6 +1338,12 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
 
     if (mHardware == NULL) return NO_INIT;
 
+    if (mSleepReq) {
+        // 10ms are always shorter than the time to reconfigure the audio path
+        // which is the only condition when mSleepReq would be true.
+        usleep(10000);
+    }
+
     { // scope for the lock
         AutoMutex lock(mLock);
 
@@ -1332,7 +1356,7 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             sp<AudioStreamOutALSA> spOut = mHardware->output();
             while (spOut != 0) {
                 if (!spOut->checkStandby()) {
-                    int cnt = spOut->standbyCnt();
+                    int cnt = spOut->prepareLock();
                     mHardware->lock().unlock();
                     mLock.unlock();
                     // Mutex acquisition order is always out -> in -> hw
@@ -1655,6 +1679,24 @@ size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int 
     }
 
     return (AUDIO_HW_IN_PERIOD_SZ*channelCount*sizeof(int16_t)) / ratio ;
+}
+
+int AudioHardware::AudioStreamInALSA::prepareLock()
+{
+    // request sleep next time read() is called so that caller can acquire
+    // mLock
+    mSleepReq = true;
+    return mStandbyCnt;
+}
+
+void AudioHardware::AudioStreamInALSA::lock()
+{
+    mLock.lock();
+    mSleepReq = false;
+}
+
+void AudioHardware::AudioStreamInALSA::unlock() {
+    mLock.unlock();
 }
 
 //------------------------------------------------------------------------------
