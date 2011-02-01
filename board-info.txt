@@ -1,3 +1,3 @@
 require board=herring
 require version-bootloader=I9020XXKA3
-require version-baseband=I9020XXKA6|I9020UCKA6
+require version-baseband=I9020XXKA7|I9020UCKB1|I9020KRKA5
