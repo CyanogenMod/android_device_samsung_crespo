@@ -87,6 +87,7 @@ AudioHardware::AudioHardware() :
     mInCallAudioMode(false),
     mInputSource(AUDIO_SOURCE_DEFAULT),
     mBluetoothNrec(true),
+    mTTYMode(TTY_MODE_OFF),
     mSecRilLibHandle(NULL),
     mRilClient(0),
     mActivatedCP(false),
@@ -464,6 +465,11 @@ status_t AudioHardware::setParameters(const String8& keyValuePairs)
     String8 key;
     const char BT_NREC_KEY[] = "bt_headset_nrec";
     const char BT_NREC_VALUE_ON[] = "on";
+    const char TTY_MODE_KEY[] = "tty_mode";
+    const char TTY_MODE_VALUE_OFF[] = "tty_off";
+    const char TTY_MODE_VALUE_VCO[] = "tty_vco";
+    const char TTY_MODE_VALUE_HCO[] = "tty_hco";
+    const char TTY_MODE_VALUE_FULL[] = "tty_full";
 
     key = String8(BT_NREC_KEY);
     if (param.get(key, value) == NO_ERROR) {
@@ -474,7 +480,33 @@ status_t AudioHardware::setParameters(const String8& keyValuePairs)
             LOGD("Turning noise reduction and echo cancellation off for BT "
                  "headset");
         }
+        param.remove(String8(BT_NREC_KEY));
     }
+
+    key = String8(TTY_MODE_KEY);
+    if (param.get(key, value) == NO_ERROR) {
+        int ttyMode;
+        if (value == TTY_MODE_VALUE_OFF) {
+            ttyMode = TTY_MODE_OFF;
+        } else if (value == TTY_MODE_VALUE_VCO) {
+            ttyMode = TTY_MODE_VCO;
+        } else if (value == TTY_MODE_VALUE_HCO) {
+            ttyMode = TTY_MODE_HCO;
+        } else if (value == TTY_MODE_VALUE_FULL) {
+            ttyMode = TTY_MODE_FULL;
+        } else {
+            return BAD_VALUE;
+        }
+
+        if (ttyMode != mTTYMode) {
+            LOGV("new tty mode %d", ttyMode);
+            mTTYMode = ttyMode;
+            if (mOutput != 0 && mMode == AudioSystem::MODE_IN_CALL) {
+                setIncallPath_l(mOutput->device());
+            }
+        }
+        param.remove(String8(TTY_MODE_KEY));
+     }
 
     return NO_ERROR;
 }
@@ -680,12 +712,10 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                     LOGD("### incall mode headphone route");
                     path = SOUND_AUDIO_PATH_HEADPHONE;
                     break;
-
                 case AudioSystem::DEVICE_OUT_WIRED_HEADSET :
                     LOGD("### incall mode headset route");
                     path = SOUND_AUDIO_PATH_HEADSET;
                     break;
-
                 default:
                     LOGW("### incall mode Error!! route = [%d]", device);
                     path = SOUND_AUDIO_PATH_HANDSET;
@@ -828,9 +858,22 @@ const char *AudioHardware::getVoiceRouteFromDevice(uint32_t device)
     case AudioSystem::DEVICE_OUT_SPEAKER:
         return "SPK";
     case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE:
-        return "HP_NO_MIC";
     case AudioSystem::DEVICE_OUT_WIRED_HEADSET:
-        return "HP";
+        switch (mTTYMode) {
+        case TTY_MODE_VCO:
+            return "TTY_VCO";
+        case TTY_MODE_HCO:
+            return "TTY_HCO";
+        case TTY_MODE_FULL:
+            return "TTY_FULL";
+        case TTY_MODE_OFF:
+        default:
+            if (device == AudioSystem::DEVICE_OUT_WIRED_HEADPHONE) {
+                return "HP_NO_MIC";
+            } else {
+                return "HP";
+            }
+        }
     case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO:
     case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
     case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
