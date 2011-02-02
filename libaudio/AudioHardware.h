@@ -136,6 +136,13 @@ protected:
 
 private:
 
+    enum tty_modes {
+        TTY_MODE_OFF,
+        TTY_MODE_VCO,
+        TTY_MODE_HCO,
+        TTY_MODE_FULL
+    };
+
     bool            mInit;
     bool            mMicMute;
     sp <AudioStreamOutALSA>                 mOutput;
@@ -149,6 +156,8 @@ private:
 
     audio_source    mInputSource;
     bool            mBluetoothNrec;
+    int             mTTYMode;
+
     void*           mSecRilLibHandle;
     HRilClient      mRilClient;
     bool            mActivatedCP;
