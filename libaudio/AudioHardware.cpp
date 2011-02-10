@@ -1241,16 +1241,18 @@ status_t AudioHardware::AudioStreamOutALSA::setParameters(const String8& keyValu
 
         if (param.getInt(String8(AudioParameter::keyRouting), device) == NO_ERROR)
         {
-            AutoMutex hwLock(mHardware->lock());
+            if (device != 0) {
+                AutoMutex hwLock(mHardware->lock());
 
-            if (mDevices != (uint32_t)device) {
-                mDevices = (uint32_t)device;
-                if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
-                    doStandby_l();
+                if (mDevices != (uint32_t)device) {
+                    mDevices = (uint32_t)device;
+                    if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
+                        doStandby_l();
+                    }
                 }
-            }
-            if (mHardware->mode() == AudioSystem::MODE_IN_CALL) {
-                mHardware->setIncallPath_l(device);
+                if (mHardware->mode() == AudioSystem::MODE_IN_CALL) {
+                    mHardware->setIncallPath_l(device);
+                }
             }
             param.remove(String8(AudioParameter::keyRouting));
         }
