@@ -20,7 +20,7 @@ import common
 def FindRadio(zipfile):
   matches = []
   for name in zipfile.namelist():
-    if re.match(r"^RADIO/radio[.].+[.]img$", name):
+    if re.match(r"^RADIO/radio[.](.+[.])?img$", name):
       matches.append(name)
   if len(matches) > 1:
     raise ValueError("multiple radio images in target-files zip!")
