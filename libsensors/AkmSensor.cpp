@@ -296,9 +296,11 @@ void AkmSensor::processEvent(int code, int value)
             mPendingEvents[Orientation].orientation.roll = value * CONVERT_O_R;
             break;
         case EVENT_TYPE_ORIENT_STATUS:
+            uint8_t status = uint8_t(value & SENSOR_STATE_MASK);
+            if (status == 4)
+                status = 0;
             mPendingMask |= 1<<Orientation;
-            mPendingEvents[Orientation].orientation.status =
-                    uint8_t(value & SENSOR_STATE_MASK);
+            mPendingEvents[Orientation].orientation.status = status;
             break;
     }
 }
