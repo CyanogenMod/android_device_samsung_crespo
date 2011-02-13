@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(TARGET_DEVICE),crespo)
 ifeq ($(filter-out s5pc110,$(TARGET_BOARD_PLATFORM)),)
 
 LOCAL_PATH:= $(call my-dir)
@@ -35,4 +36,5 @@ LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)
 
+endif
 endif
