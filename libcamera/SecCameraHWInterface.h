@@ -157,6 +157,8 @@ private:
                                    int *pdwJPEGSize, void *pVideo,
                                    int *pdwVideoSize);
             void        setSkipFrame(int frame);
+            bool        isSupportedPreviewSize(const int width,
+                                               const int height) const;
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
@@ -206,6 +208,8 @@ private:
             int         mPostViewWidth;
             int         mPostViewHeight;
             int         mPostViewSize;
+
+            Vector<Size> mSupportedPreviewSizes;
 };
 
 }; // namespace android
