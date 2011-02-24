@@ -170,6 +170,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
               "640x480");
     }
 
+    p.getSupportedPreviewSizes(mSupportedPreviewSizes);
+
     // If these fail, then we are using an invalid cameraId and we'll leave the
     // sizes at zero to catch the error.
     if (mSecCamera->getPreviewMaxSize(&preview_max_width,
@@ -1406,6 +1408,20 @@ status_t CameraHardwareSec::dump(int fd, const Vector<String16>& args) const
     return NO_ERROR;
 }
 
+bool CameraHardwareSec::isSupportedPreviewSize(const int width,
+                                               const int height) const
+{
+    unsigned int i;
+
+    for (i = 0; i < mSupportedPreviewSizes.size(); i++) {
+        if (mSupportedPreviewSizes[i].width == width &&
+                mSupportedPreviewSizes[i].height == height)
+            return true;
+    }
+
+    return false;
+}
+
 status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 {
     LOGV("%s :", __func__);
@@ -1432,7 +1448,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     LOGV("%s : new_preview_width x new_preview_height = %dx%d, format = %s",
          __func__, new_preview_width, new_preview_height, new_str_preview_format);
 
-    if (0 < new_preview_width && 0 < new_preview_height && new_str_preview_format != NULL) {
+    if (0 < new_preview_width && 0 < new_preview_height &&
+            new_str_preview_format != NULL &&
+            isSupportedPreviewSize(new_preview_width, new_preview_height)) {
         int new_preview_format = 0;
 
         if (!strcmp(new_str_preview_format,
@@ -1468,6 +1486,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             }
         }
 #endif
+    } else {
+        LOGE("%s: Invalid preview size(%dx%d)",
+                __func__, new_preview_width, new_preview_height);
+
+        ret = INVALID_OPERATION;
     }
 
     int new_picture_width  = 0;
