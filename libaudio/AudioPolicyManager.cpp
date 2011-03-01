@@ -43,32 +43,4 @@ extern "C" void destroyAudioPolicyManager(AudioPolicyInterface *interface)
 }
 
 
-status_t AudioPolicyManager::startInput(audio_io_handle_t input)
-{
-    status_t status = AudioPolicyManagerBase::startInput(input);
-
-    if (status == NO_ERROR) {
-        AudioInputDescriptor *inputDesc = mInputs.valueFor(input);
-        String8 key = String8("Input Source");
-        String8 value;
-        switch(inputDesc->mInputSource) {
-        case AUDIO_SOURCE_VOICE_RECOGNITION:
-            value = String8("Voice Recognition");
-            break;
-        case AUDIO_SOURCE_CAMCORDER:
-            value = String8("Camcorder");
-            break;
-        case AUDIO_SOURCE_DEFAULT:
-        case AUDIO_SOURCE_MIC:
-            value = String8("Default");
-        default:
-            break;
-        }
-        AudioParameter param = AudioParameter();
-        param.add(key, value);
-        mpClientInterface->setParameters(input, param.toString());
-    }
-    return status;
-}
-
 }; // namespace android

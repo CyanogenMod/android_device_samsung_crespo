@@ -13,8 +13,22 @@
 # limitations under the License.
 
 import sha
+import re
 
 import common
+
+def FindRadio(zipfile):
+  matches = []
+  for name in zipfile.namelist():
+    if re.match(r"^RADIO/radio[.].+[.]img$", name):
+      matches.append(name)
+  if len(matches) > 1:
+    raise ValueError("multiple radio images in target-files zip!")
+  if matches:
+    print "using %s as radio.img" % (matches[0],)
+    return zipfile.read(matches[0])
+  else:
+    return None
 
 def FullOTA_InstallEnd(info):
   try:
@@ -26,9 +40,8 @@ def FullOTA_InstallEnd(info):
     info.script.Print("Writing bootloader...")
     info.script.WriteRawImage("/bootloader", "bootloader.img")
 
-  try:
-    radio_img = info.input_zip.read("RADIO/radio.img")
-  except KeyError:
+  radio_img = FindRadio(info.input_zip)
+  if not radio_img:
     print "no radio.img in target_files; skipping install"
   else:
     common.ZipWriteStr(info.output_zip, "radio.img", radio_img)
@@ -36,19 +49,16 @@ def FullOTA_InstallEnd(info):
     info.script.WriteRawImage("/radio", "radio.img")
 
 def IncrementalOTA_VerifyEnd(info):
-  try:
-    target_radio_img = info.target_zip.read("RADIO/radio.img")
-    source_radio_img = info.source_zip.read("RADIO/radio.img")
-  except KeyError:
-    pass
-  else:
-    if source_radio_img != target_radio_img:
-      info.script.CacheFreeSpaceCheck(len(source_radio_img))
-      radio_type, radio_device = common.GetTypeAndDevice("/radio", info.info_dict)
-      info.script.PatchCheck("%s:%s:%d:%s:%d:%s" % (
-          radio_type, radio_device,
-          len(source_radio_img), sha.sha(source_radio_img).hexdigest(),
-          len(target_radio_img), sha.sha(target_radio_img).hexdigest()))
+  target_radio_img = FindRadio(info.target_zip)
+  source_radio_img = FindRadio(info.source_zip)
+  if not target_radio_img or not source_radio_img: return
+  if source_radio_img != target_radio_img:
+    info.script.CacheFreeSpaceCheck(len(source_radio_img))
+    radio_type, radio_device = common.GetTypeAndDevice("/radio", info.info_dict)
+    info.script.PatchCheck("%s:%s:%d:%s:%d:%s" % (
+        radio_type, radio_device,
+        len(source_radio_img), sha.sha(source_radio_img).hexdigest(),
+        len(target_radio_img), sha.sha(target_radio_img).hexdigest()))
 
 def IncrementalOTA_InstallEnd(info):
   try:
@@ -69,10 +79,22 @@ def IncrementalOTA_InstallEnd(info):
     print "no bootloader.img in target target_files; skipping install"
 
 
-  try:
-    tf = common.File("radio.img", info.target_zip.read("RADIO/radio.img"))
-    try:
-      sf = common.File("radio.img", info.source_zip.read("RADIO/radio.img"))
+  tf = FindRadio(info.target_zip)
+  if not tf:
+    # failed to read TARGET radio image: don't include any radio in update.
+    print "no radio.img in target target_files; skipping install"
+  else:
+    tf = common.File("radio.img", tf)
+
+    sf = FindRadio(info.source_zip)
+    if not sf:
+      # failed to read SOURCE radio image: include the whole target
+      # radio image.
+      tf.AddToZip(info.output_zip)
+      info.script.Print("Writing radio...")
+      info.script.WriteRawImage("/radio", tf.name)
+    else:
+      sf = common.File("radio.img", sf)
 
       if tf.sha1 == sf.sha1:
         print "radio image unchanged; skipping"
@@ -89,19 +111,9 @@ def IncrementalOTA_InstallEnd(info):
         else:
           common.ZipWriteStr(info.output_zip, "radio.img.p", d)
           info.script.Print("Patching radio...")
-          radio_type, radio_device = common.GetTypeAndDevice("/radio", info.info_dict)
+          radio_type, radio_device = common.GetTypeAndDevice(
+              "/radio", info.info_dict)
           info.script.ApplyPatch(
               "%s:%s:%d:%s:%d:%s" % (radio_type, radio_device,
                                      sf.size, sf.sha1, tf.size, tf.sha1),
               "-", tf.size, tf.sha1, sf.sha1, "radio.img.p")
-
-    except KeyError:
-      # failed to read SOURCE radio image: include the whole target
-      # radio image.
-      tf.AddToZip(info.output_zip)
-      info.script.Print("Writing radio...")
-      info.script.WriteRawImage("/radio", tf.name)
-
-  except KeyError:
-    # failed to read TARGET radio image: don't include any radio in update.
-    print "no radio.img in target target_files; skipping install"

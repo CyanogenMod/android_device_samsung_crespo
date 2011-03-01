@@ -80,21 +80,14 @@ private:
         CameraHardwareSec *mHardware;
     public:
         PreviewThread(CameraHardwareSec *hw):
-#ifdef SINGLE_PROCESS
-        // In single process mode this thread needs to be a java thread,
-        // since we won't be calling through the binder.
-        Thread(true),
-#else
         Thread(false),
-#endif
         mHardware(hw) { }
+        virtual void onFirstRef() {
+            run("CameraPreviewThread", PRIORITY_URGENT_DISPLAY);
+        }
         virtual bool threadLoop() {
-            int ret = mHardware->previewThread();
-            // loop until we need to quit
-            if(ret == NO_ERROR)
-                return true;
-            else
-                return false;
+            mHardware->previewThreadWrapper();
+            return false;
         }
     };
 
@@ -106,6 +99,7 @@ private:
         mHardware(hw) { }
         virtual bool threadLoop() {
             mHardware->pictureThread();
+            mHardware->mSecCamera->endSnapshot();
             return false;
         }
     };
@@ -128,7 +122,7 @@ private:
 
     sp<PreviewThread>   mPreviewThread;
             int         previewThread();
-            bool        mPreviewRunning;
+            int         previewThreadWrapper();
 
     sp<AutoFocusThread> mAutoFocusThread;
             int         autoFocusThread();
@@ -164,8 +158,15 @@ private:
             void        setSkipFrame(int frame);
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
-    mutable Condition   mCondition;
+    mutable Condition   mFocusCondition;
             bool        mExitAutoFocusThread;
+
+    /* used by preview thread to block until it's told to run */
+    mutable Mutex       mPreviewLock;
+    mutable Condition   mPreviewCondition;
+    mutable Condition   mPreviewStoppedCondition;
+            bool        mPreviewRunning;
+            bool        mExitPreviewThread;
 
     /* used to guard threading state */
     mutable Mutex       mStateLock;
@@ -181,9 +182,6 @@ private:
     sp<MemoryBase>      mRecordBuffers[kBufferCountForRecord];
 
             SecCamera   *mSecCamera;
-            int         mPreviewFrameSize;
-            int         mRawFrameSize;
-            int         mPreviewFrameRateMicrosec;
             const __u8  *mCameraSensorName;
 
     mutable Mutex       mSkipFrameLock;
@@ -202,20 +200,11 @@ private:
 
             int32_t     mMsgEnabled;
 
-            // only used from PreviewThread
-            int         mCurrentPreviewFrame;
-            int         mCurrentRecordFrame;
-
             bool        mRecordRunning;
-#ifdef JPEG_FROM_SENSOR
+    mutable Mutex       mRecordLock;
             int         mPostViewWidth;
             int         mPostViewHeight;
             int         mPostViewSize;
-#endif
-
-    struct timeval      mTimeStart;
-    struct timeval      mTimeStop;
-
 };
 
 }; // namespace android
