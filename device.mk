@@ -94,7 +94,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw \
-	com.google.android.usb
+	com.android.future.usb.accessory
 
 # NFC
 PRODUCT_PACKAGES += \
@@ -122,7 +122,6 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
 	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
 	frameworks/base/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
-	frameworks/base/data/etc/com.google.android.usb.xml:system/etc/permissions/com.google.android.usb.xml \
 	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 # The OpenGL ES API level that is natively supported by this device.
