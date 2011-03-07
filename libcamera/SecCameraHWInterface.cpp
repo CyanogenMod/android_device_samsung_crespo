@@ -156,8 +156,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     int snapshot_max_width  = 0;
     int snapshot_max_height = 0;
 
-    /* set camera ID & reset camera */
-    mSecCamera->setCameraId(cameraId);
     if (cameraId == SecCamera::CAMERA_ID_BACK) {
         p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
               "720x480,640x480,352x288,176x144");
