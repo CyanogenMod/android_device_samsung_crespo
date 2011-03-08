@@ -736,6 +736,22 @@ int SecCamera::initCamera(int index)
 
         m_camera_id = index;
 
+        switch (m_camera_id) {
+        case CAMERA_ID_FRONT:
+            m_preview_max_width   = MAX_FRONT_CAMERA_PREVIEW_WIDTH;
+            m_preview_max_height  = MAX_FRONT_CAMERA_PREVIEW_HEIGHT;
+            m_snapshot_max_width  = MAX_FRONT_CAMERA_SNAPSHOT_WIDTH;
+            m_snapshot_max_height = MAX_FRONT_CAMERA_SNAPSHOT_HEIGHT;
+            break;
+
+        case CAMERA_ID_BACK:
+            m_preview_max_width   = MAX_BACK_CAMERA_PREVIEW_WIDTH;
+            m_preview_max_height  = MAX_BACK_CAMERA_PREVIEW_HEIGHT;
+            m_snapshot_max_width  = MAX_BACK_CAMERA_SNAPSHOT_WIDTH;
+            m_snapshot_max_height = MAX_BACK_CAMERA_SNAPSHOT_HEIGHT;
+            break;
+        }
+
         setExifFixedAttribute();
 
         m_flag_init = 1;
@@ -1614,40 +1630,6 @@ int SecCamera::getSnapshotPixelFormat(void)
 
 // ======================================================================
 // Settings
-
-int SecCamera::setCameraId(int camera_id)
-{
-    if ((camera_id != CAMERA_ID_FRONT) && (camera_id != CAMERA_ID_BACK)) {
-        LOGE("ERR(%s)::Invalid camera id(%d)\n", __func__, camera_id);
-        return -1;
-    }
-    if (m_camera_id == camera_id)
-        return 0;
-
-    LOGV("%s(camera_id(%d))", __func__, camera_id);
-
-    switch (camera_id) {
-    case CAMERA_ID_FRONT:
-        m_preview_max_width   = MAX_FRONT_CAMERA_PREVIEW_WIDTH;
-        m_preview_max_height  = MAX_FRONT_CAMERA_PREVIEW_HEIGHT;
-        m_snapshot_max_width  = MAX_FRONT_CAMERA_SNAPSHOT_WIDTH;
-        m_snapshot_max_height = MAX_FRONT_CAMERA_SNAPSHOT_HEIGHT;
-        break;
-
-    case CAMERA_ID_BACK:
-        m_preview_max_width   = MAX_BACK_CAMERA_PREVIEW_WIDTH;
-        m_preview_max_height  = MAX_BACK_CAMERA_PREVIEW_HEIGHT;
-        m_snapshot_max_width  = MAX_BACK_CAMERA_SNAPSHOT_WIDTH;
-        m_snapshot_max_height = MAX_BACK_CAMERA_SNAPSHOT_HEIGHT;
-        break;
-    }
-
-    m_camera_id = camera_id;
-
-    resetCamera();
-
-    return 0;
-}
 
 int SecCamera::getCameraId(void)
 {
