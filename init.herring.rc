@@ -24,7 +24,7 @@ on boot
     chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
 
 # create data/gps for GPS demon
-    mkdir /data/gps 700 gps system
+    mkdir /data/gps 770 gps system
     chown gps system /data/gps
     chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
