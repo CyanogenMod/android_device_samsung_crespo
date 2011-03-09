@@ -1,4 +1,4 @@
-ifeq ($(TARGET_DEVICE),crespo)
+ifneq ($(filter crespo crespo4g,$(TARGET_DEVICE)),)
 
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
