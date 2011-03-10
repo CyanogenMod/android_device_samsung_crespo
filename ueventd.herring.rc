@@ -1,5 +1,7 @@
 
 /dev/pvrsrvkm             0666   system     system
+/dev/uwibro               0660   system     system
+/dev/swmxctl              0660   system     system
 /dev/video0               0660   system     camera
 /dev/video1               0660   system     camera
 /dev/video2               0660   system     camera
