@@ -7,7 +7,7 @@ LOCAL_SRC_FILES := \
 	SEC_OMX_Mpeg4enc.c \
 	library_register.c
 
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE := libOMX.SEC.M4V.Encoder
 
 LOCAL_CFLAGS :=

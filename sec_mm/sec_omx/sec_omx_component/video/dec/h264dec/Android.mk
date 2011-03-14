@@ -7,7 +7,7 @@ LOCAL_SRC_FILES := \
 	SEC_OMX_H264dec.c \
 	library_register.c
 
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE := libOMX.SEC.AVC.Decoder
 
 LOCAL_CFLAGS :=

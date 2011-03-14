@@ -9,7 +9,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE := libsecmfcencapi
 
-LOCAL_PRELINK_MODULE := false
+
 
 LOCAL_CFLAGS := -DUSE_FIMC_FRAME_BUFFER
 
