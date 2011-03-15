@@ -26,14 +26,15 @@
 #include "GyroSensor.h"
 
 #define FETCH_FULL_EVENT_BEFORE_RETURN 1
-
+#define IGNORE_EVENT_TIME 350000000
 /*****************************************************************************/
 
 GyroSensor::GyroSensor()
     : SensorBase(NULL, "gyro"),
       mEnabled(0),
       mInputReader(4),
-      mHasPendingEvent(false)
+      mHasPendingEvent(false),
+      mEnabledTime(0)
 {
     mPendingEvent.version = sizeof(sensors_event_t);
     mPendingEvent.sensor = ID_GY;
@@ -86,6 +87,7 @@ int GyroSensor::enable(int32_t, int en) {
             buf[1] = 0;
             if (flags) {
                 buf[0] = '1';
+                mEnabledTime = getTimestamp() + IGNORE_EVENT_TIME;
             } else {
                 buf[0] = '0';
             }
@@ -155,9 +157,11 @@ again:
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
             if (mEnabled) {
-                *data++ = mPendingEvent;
+                if (mPendingEvent.timestamp >= mEnabledTime) {
+                    *data++ = mPendingEvent;
+                    numEventReceived++;
+                }
                 count--;
-                numEventReceived++;
             }
         } else {
             LOGE("GyroSensor: unknown event (type=%d, code=%d)",
