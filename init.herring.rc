@@ -71,6 +71,7 @@ service setup_fs /system/bin/setup_fs /dev/block/platform/s3c-sdhci.0/by-name/us
 
 # 3D init
 service pvrsrvinit /system/vendor/bin/pvrsrvinit
+    class core
     user root
     group root
     oneshot
