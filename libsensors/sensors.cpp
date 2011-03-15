@@ -90,7 +90,7 @@ static const struct sensor_t sSensorList[] = {
         { "K3G Gyroscope sensor",
           "STMicroelectronics",
           1, SENSORS_GYROSCOPE_HANDLE,
-          SENSOR_TYPE_GYROSCOPE, RANGE_GYRO, CONVERT_GYRO, 6.1f, 1200, { } },
+          SENSOR_TYPE_GYROSCOPE, RANGE_GYRO, CONVERT_GYRO, 6.1f, 1190, { } },
 };
 
 
