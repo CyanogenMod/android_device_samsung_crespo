@@ -137,12 +137,8 @@ include frameworks/base/build/phone-hdpi-512-dalvik-heap.mk
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
 
-# Screen density is actually considered a locale (since it is taken into account
-# the the build-time selection of resources). The product definitions including
-# this file must pay attention to the fact that the first entry in the final
-# PRODUCT_LOCALES expansion must not be a density.
-PRODUCT_LOCALES := hdpi
-
+# Screen size is "normal", density is "hdpi"
+PRODUCT_AAPT_CONFIG := normal hdpi
 
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
