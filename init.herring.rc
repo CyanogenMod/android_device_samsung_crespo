@@ -37,6 +37,10 @@ on fs
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev
 
+    export EXTERNAL_STORAGE /mnt/sdcard
+    mkdir /mnt/sdcard 0000 system system
+    symlink /mnt/sdcard /sdcard
+
 # permissions for bluetooth.
     chown bluetooth bluetooth /efs/bluetooth
     chown bluetooth bluetooth ro.bt.bdaddr_path
