@@ -1129,12 +1129,16 @@ status_t AudioHardware::AudioStreamOutALSA::standby()
 {
     if (mHardware == NULL) return NO_INIT;
 
-    AutoMutex lock(mLock);
+    mSleepReq = true;
+    {
+        AutoMutex lock(mLock);
+        mSleepReq = false;
 
-    { // scope for the AudioHardware lock
-        AutoMutex hwLock(mHardware->lock());
+        { // scope for the AudioHardware lock
+            AutoMutex hwLock(mHardware->lock());
 
-        doStandby_l();
+            doStandby_l();
+        }
     }
 
     return NO_ERROR;
@@ -1246,9 +1250,10 @@ status_t AudioHardware::AudioStreamOutALSA::setParameters(const String8& keyValu
 
     if (mHardware == NULL) return NO_INIT;
 
+    mSleepReq = true;
     {
         AutoMutex lock(mLock);
-
+        mSleepReq = false;
         if (param.getInt(String8(AudioParameter::keyRouting), device) == NO_ERROR)
         {
             if (device != 0) {
@@ -1496,12 +1501,16 @@ status_t AudioHardware::AudioStreamInALSA::standby()
 {
     if (mHardware == NULL) return NO_INIT;
 
-    AutoMutex lock(mLock);
+    mSleepReq = true;
+    {
+        AutoMutex lock(mLock);
+        mSleepReq = false;
 
-    { // scope for AudioHardware lock
-        AutoMutex hwLock(mHardware->lock());
+        { // scope for AudioHardware lock
+            AutoMutex hwLock(mHardware->lock());
 
-        doStandby_l();
+            doStandby_l();
+        }
     }
     return NO_ERROR;
 }
@@ -1633,8 +1642,10 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
 
     if (mHardware == NULL) return NO_INIT;
 
+    mSleepReq = true;
     {
         AutoMutex lock(mLock);
+        mSleepReq = false;
 
         if (param.getInt(String8(AudioParameter::keyInputSource), value) == NO_ERROR) {
             AutoMutex hwLock(mHardware->lock());
