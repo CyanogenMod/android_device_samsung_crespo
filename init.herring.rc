@@ -93,12 +93,12 @@ service dhcpcd_uwbr0 /system/bin/dhcpcd -ABKL
 
 # IP Renew
 # wi-fi
-service dhcpcd_renew_eth0 /system/bin/dhcpcd -n
+service iprenew_eth0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
 # wimax
-service dhcpcd_renew_uwbr0 /system/bin/dhcpcd -n
+service iprenew_uwbr0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
