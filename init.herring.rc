@@ -80,7 +80,25 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0 -c/data/misc/wi
     disabled
     oneshot
 
-service dhcpcd /system/bin/dhcpcd -ABKL
+# DHCPCD
+# wi-fi
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+    disabled
+    oneshot
+
+# wimax
+service dhcpcd_uwbr0 /system/bin/dhcpcd -ABKL
+    disabled
+    oneshot
+
+# IP Renew
+# wi-fi
+service iprenew_wlan0 /system/bin/dhcpcd -n
+    disabled
+    oneshot
+
+# wimax
+service iprenew_uwbr0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
