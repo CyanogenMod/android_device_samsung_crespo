@@ -139,8 +139,14 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 PRODUCT_LOCALES := hdpi
 
 
+ifeq ($(TARGET_PREBUILT_WIFI_MODULE),)
+LOCAL_WIFI_MODULE := device/samsung/crespo/bcm4329.ko
+else
+LOCAL_WIFI_MODULE := $(TARGET_PREBUILT_WIFI_MODULE)
+endif
+
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
+	$(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
