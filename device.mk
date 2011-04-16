@@ -146,7 +146,9 @@ PRODUCT_LOCALES := hdpi
 
 
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko
+	device/samsung/crespo/bcm4329.ko:system/modules/bcm4329.ko \
+        device/samsung/crespo/cifs.ko:system/modules/cifs.ko \
+        device/samsung/crespo/tun.ko:system/modules/tun.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
