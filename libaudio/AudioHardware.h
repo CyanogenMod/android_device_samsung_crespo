@@ -34,7 +34,14 @@ extern "C" {
     struct mixer_ctl;
 };
 
-namespace android {
+namespace android_audio_legacy {
+    using android::AutoMutex;
+    using android::Mutex;
+    using android::RefBase;
+    using android::SortedVector;
+    using android::sp;
+    using android::String16;
+    using android::Vector;
 
 // TODO: determine actual audio DSP and hardware latency
 // Additionnal latency introduced by audio DSP and hardware in ms
