@@ -3034,7 +3034,7 @@ status_t SecCamera::dump(int fd)
 }
 
 double SecCamera::jpeg_ratio = 0.7;
-int SecCamera::interleaveDataSize = 4261248;
+int SecCamera::interleaveDataSize = 5242880;
 int SecCamera::jpegLineLength = 636;
 
 }; // namespace android
