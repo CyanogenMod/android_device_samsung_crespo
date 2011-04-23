@@ -19,22 +19,8 @@
 # product configuration (apps).
 #
 
-# NFC is a product-level aspect that is too closely tied
-# to this device to justify putting in a more generic config,
-# but which is also not quite a low-level driver to put in
-# device.mk
-PRODUCT_PACKAGES := \
-        libnfc \
-        libnfc_jni \
-        Nfc \
-        Tag
-
 # Get the long list of APNs
 PRODUCT_COPY_FILES := device/sample/etc/apns-full-conf.xml:system/etc/apns-conf.xml
-
-# Get the parts that are either non-open-source or depend
-# on non-open-source drivers
-$(call inherit-product-if-exists, vendor/samsung/crespo/full_crespo-trampoline.mk)
 
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
