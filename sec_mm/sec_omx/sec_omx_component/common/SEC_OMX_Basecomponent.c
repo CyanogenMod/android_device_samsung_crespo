@@ -1215,7 +1215,7 @@ OMX_ERRORTYPE SEC_OMX_GetConfig(
         ret = OMX_ErrorInvalidState;
         goto EXIT;
     }
-    ret = OMX_ErrorNone;
+    ret = OMX_ErrorUnsupportedIndex;
 
 EXIT:
     FunctionOut();
@@ -1258,7 +1258,7 @@ OMX_ERRORTYPE SEC_OMX_SetConfig(
         ret = OMX_ErrorInvalidState;
         goto EXIT;
     }
-    ret = OMX_ErrorNone;
+    ret = OMX_ErrorUnsupportedIndex;
 
 EXIT:
     FunctionOut();
