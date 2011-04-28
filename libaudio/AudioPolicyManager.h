@@ -23,7 +23,7 @@
 #include <hardware_legacy/AudioPolicyManagerBase.h>
 
 
-namespace android {
+namespace android_audio_legacy {
 
 class AudioPolicyManager: public AudioPolicyManagerBase
 {

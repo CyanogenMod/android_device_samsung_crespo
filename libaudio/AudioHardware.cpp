@@ -41,7 +41,7 @@ extern "C" {
 }
 
 
-namespace android {
+namespace android_audio_legacy {
 
 const uint32_t AudioHardware::inputSamplingRates[] = {
         8000, 11025, 16000, 22050, 44100

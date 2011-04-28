@@ -94,6 +94,12 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.herring
 
+# audio
+PRODUCT_PACKAGES += \
+	audio_policy.herring \
+	audio.primary.herring \
+	audio.a2dp.default
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
