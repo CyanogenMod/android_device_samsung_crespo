@@ -38,7 +38,7 @@ TARGET_SEC_INTERNAL_STORAGE := false
 TARGET_ARCH_VARIANT := armv7-a-neon
 ARCH_ARM_HAVE_TLS_REGISTER := true
 
-USE_CAMERA_STUB := false
+USE_CAMERA_STUB := true
 ifeq ($(USE_CAMERA_STUB),false)
 BOARD_CAMERA_LIBRARIES := libcamera
 endif
