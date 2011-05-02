@@ -107,6 +107,11 @@ service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
     disabled
     oneshot
 
+# bluetooth
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
+    disabled
+    oneshot
+
 # IP Renew
 # wi-fi
 service iprenew_wlan0 /system/bin/dhcpcd -n
@@ -123,6 +128,11 @@ service iprenew_uwbr0 /system/bin/dhcpcd -n
 # bluetooth
 service iprenew_bnep0 /system/bin/dhcpcd -n
     class main
+    disabled
+    oneshot
+
+# bluetooth
+service iprenew_bnep0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
