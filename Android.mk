@@ -33,8 +33,8 @@ LOCAL_MODULE_TAGS := optional
 #LOCAL_SHARED_LIBRARIES += libext4_utils libz
 include $(BUILD_EXECUTABLE)
 
-endif
-
 ifneq ($(TARGET_SIMULATOR),true)
 include $(call all-makefiles-under,$(LOCAL_PATH))
+endif
+
 endif
