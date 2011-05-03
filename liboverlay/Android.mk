@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(TARGET_DEVICE),crespo)
+
 ifeq ($(BOARD_USES_OVERLAY),true)
 
 LOCAL_PATH:= $(call my-dir)
@@ -31,5 +33,7 @@ LOCAL_SRC_FILES := v4l2_utils.c overlay.cpp
 LOCAL_MODULE := overlay.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
+
+endif
 
 endif

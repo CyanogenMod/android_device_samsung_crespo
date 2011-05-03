@@ -1,4 +1,4 @@
-
+ifeq ($(TARGET_DEVICE),crespo)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -20,3 +20,4 @@ include $(SEC_OMX_COMPONENT)/video/dec/mpeg4dec/Android.mk
 include $(SEC_OMX_COMPONENT)/video/enc/Android.mk
 include $(SEC_OMX_COMPONENT)/video/enc/h264enc/Android.mk
 include $(SEC_OMX_COMPONENT)/video/enc/mpeg4enc/Android.mk
+endif
