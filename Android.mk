@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(TARGET_DEVICE),crespo)
+
 LOCAL_PATH := $(call my-dir)
 
 ifeq ($(TARGET_DEVICE),crespo)
@@ -37,4 +39,6 @@ endif
 
 ifneq ($(TARGET_SIMULATOR),true)
 include $(call all-makefiles-under,$(LOCAL_PATH))
+endif
+
 endif
