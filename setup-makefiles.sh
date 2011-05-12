@@ -48,6 +48,13 @@ PRODUCT_PACKAGES := \\
 PRODUCT_COPY_FILES := \\
     packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:/system/etc/permissions/android.software.live_wallpaper.xml
 
+# NFC packages
+PRODUCT_PACKAGES += \\
+    libnfc \\
+    libnfc_jni \\
+    Nfc \\
+    Tag
+
 # Pick up overlay for features that depend on non-open-source files
 DEVICE_PACKAGE_OVERLAYS := vendor/__MANUFACTURER__/__DEVICE__/overlay
 
@@ -80,6 +87,7 @@ BOARD_USES_GENERIC_AUDIO := false
 BOARD_USES_LIBSECRIL_STUB := false
 
 BOARD_NO_PAGE_FLIPPING := false
+BOARD_NO_32BPP := false
 EOF
 
 mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/overlay/packages/apps/Launcher2/res/layout

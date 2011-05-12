@@ -14,7 +14,7 @@
 
 LOCAL_PATH := $(call my-dir)
 
-ifeq ($(TARGET_DEVICE),crespo)
+ifneq ($(filter crespo crespo4g,$(TARGET_DEVICE)),)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := s3c-keypad.kcm

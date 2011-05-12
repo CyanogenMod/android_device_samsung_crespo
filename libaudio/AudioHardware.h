@@ -119,6 +119,8 @@ public:
 
             status_t setInputSource_l(audio_source source);
 
+            void setVoiceVolume_l(float volume);
+
     static uint32_t    getInputSampleRate(uint32_t sampleRate);
            sp <AudioStreamInALSA> getActiveInput_l();
 
@@ -154,6 +156,7 @@ private:
     uint32_t        mPcmOpenCnt;
     uint32_t        mMixerOpenCnt;
     bool            mInCallAudioMode;
+    float           mVoiceVol;
 
     audio_source    mInputSource;
     bool            mBluetoothNrec;

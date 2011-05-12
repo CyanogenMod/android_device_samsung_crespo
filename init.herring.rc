@@ -24,7 +24,7 @@ on boot
     chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
 
 # create data/gps for GPS demon
-    mkdir /data/gps 700 gps system
+    mkdir /data/gps 770 gps system
     chown gps system /data/gps
     chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
@@ -83,7 +83,25 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wif
     disabled
     oneshot
 
+# DHCPCD
+# wi-fi
 service dhcpcd_eth0 /system/bin/dhcpcd -ABKL eth0
+    disabled
+    oneshot
+
+# wimax
+service dhcpcd_uwbr0 /system/bin/dhcpcd -ABKL
+    disabled
+    oneshot
+
+# IP Renew
+# wi-fi
+service iprenew_eth0 /system/bin/dhcpcd -n
+    disabled
+    oneshot
+
+# wimax
+service iprenew_uwbr0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
@@ -99,3 +117,7 @@ service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
     disabled
     oneshot
     keycodes 114 115 116
+
+service wimax_route /system/bin/route add default dev uwbr0
+    disabled
+    oneshot

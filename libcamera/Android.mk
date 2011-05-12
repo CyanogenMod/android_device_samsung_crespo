@@ -1,4 +1,5 @@
-ifeq ($(TARGET_DEVICE),crespo)
+ifneq ($(filter crespo crespo4g,$(TARGET_DEVICE)),)
+
 # When zero we link against libqcamera; when 1, we dlopen libqcamera.
 ifeq ($(BOARD_CAMERA_LIBRARIES),libcamera)
 

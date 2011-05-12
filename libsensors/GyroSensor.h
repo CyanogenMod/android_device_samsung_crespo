@@ -37,6 +37,7 @@ class GyroSensor : public SensorBase {
     bool mHasPendingEvent;
     char input_sysfs_path[PATH_MAX];
     int input_sysfs_path_len;
+    int64_t mEnabledTime;
 
     int setInitialState();
 
