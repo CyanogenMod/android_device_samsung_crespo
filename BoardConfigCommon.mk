@@ -54,7 +54,7 @@ BOARD_KERNEL_BASE := 0x30000000
 BOARD_KERNEL_PAGESIZE := 4096
 BOARD_KERNEL_CMDLINE := console=ttyFIQ0 no_console_suspend
 
-TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
+#TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 
 TARGET_USERIMAGES_USE_EXT4 := true
@@ -72,3 +72,4 @@ WIFI_DRIVER_FW_AP_PATH      := "/vendor/firmware/fw_bcm4329_apsta.bin"
 WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
 WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
 
+BOARD_HAS_NO_SELECT_BUTTON := true
