@@ -62,6 +62,14 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
 	device/samsung/crespo/sec_jack.kcm:system/usr/keychars/sec_jack.kcm
 
+#NVRAM setup
+PRODUCT_COPY_FILES += \
+        device/samsung/crespo/nvram_net.txt:system/vendor/firmware/nvram_net.txt
+
+#MFC Firmware
+PRODUCT_COPY_FILES += \
+        device/samsung/crespo/samsung_mfc_fw.bin:system/vendor/firmware/samsung_mfc_fw.bin
+
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
