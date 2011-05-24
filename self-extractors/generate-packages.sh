@@ -23,8 +23,9 @@
 # 118407 = GRJ06D
 # 120505 = GRJ18
 # 121341 = GRJ22
-ZIP=signed-soju-ota-121341.*.zip
-BUILD=grj22
+# 128018 = IRJ54
+ZIP=soju-ota-128018.*.zip
+BUILD=irj54
 ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
@@ -44,11 +45,8 @@ do
     ;;
   broadcom)
     TO_EXTRACT="\
-            system/etc/gps.conf \
             system/vendor/bin/gpsd \
-            system/vendor/etc/gps.xml \
             system/vendor/firmware/bcm4329.hcd \
-            system/vendor/firmware/nvram_net.txt \
             system/vendor/lib/hw/gps.s5pc110.so \
             "
     ;;
@@ -82,7 +80,6 @@ do
   samsung)
     TO_EXTRACT="\
             system/lib/libsecril-client.so \
-            system/vendor/firmware/samsung_mfc_fw.bin \
             system/vendor/lib/libsec-ril.so \
             "
     ;;
