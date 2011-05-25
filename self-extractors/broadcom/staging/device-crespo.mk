@@ -14,9 +14,6 @@
 
 # Broadcom blobs necessary for crespo
 PRODUCT_COPY_FILES := \
-    vendor/broadcom/crespo/proprietary/gps.conf:system/etc/gps.conf \
     vendor/broadcom/crespo/proprietary/gpsd:system/vendor/bin/gpsd \
-    vendor/broadcom/crespo/proprietary/gps.xml:system/vendor/etc/gps.xml \
     vendor/broadcom/crespo/proprietary/bcm4329.hcd:system/vendor/firmware/bcm4329.hcd \
-    vendor/broadcom/crespo/proprietary/nvram_net.txt:system/vendor/firmware/nvram_net.txt \
     vendor/broadcom/crespo/proprietary/gps.s5pc110.so:system/vendor/lib/hw/gps.s5pc110.so

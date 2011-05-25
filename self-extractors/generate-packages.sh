@@ -24,8 +24,9 @@
 # 120505 = GRJ18
 # 121341 = GRJ22
 # 128018 = IRJ54
-ZIP=soju-ota-128018.*.zip
-BUILD=irj54
+# 128447 = IRJ55
+ZIP=soju-ota-128447.zip
+BUILD=irj55
 ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
