@@ -62,6 +62,10 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
 	device/samsung/crespo/sec_jack.kcm:system/usr/keychars/sec_jack.kcm
 
+#Bluetooth setup
+PRODUCT_COPY_FILES += \
+	system/bluetooth/data/main.conf:system/etc/bluetooth/main.conf \
+
 #NVRAM setup
 PRODUCT_COPY_FILES += \
         device/samsung/crespo/nvram_net.txt:system/vendor/firmware/nvram_net.txt
