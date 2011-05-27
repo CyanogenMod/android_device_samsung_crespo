@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/reboot.h>
 #include <sys/wait.h>
+#include <cutils/android_reboot.h>
+#include <cutils/partition_utils.h>
 
 const char *mkfs = "/system/bin/make_ext4fs";
 
@@ -32,6 +34,11 @@ int setup_fs(const char *blockdev)
         return 0;
     }
     sprintf(buf,"/dev/block/%s", blockdev);
+
+    if (!partition_wiped(buf)) {
+        fprintf(stderr,"device %s not wiped, probably encrypted, not wiping\n", blockdev);
+        return 0;
+    }
 
     fprintf(stderr,"+++\n");
 
@@ -64,11 +71,8 @@ int main(int argc, char **argv)
     }
 
     if (need_reboot) {
-        sync();
-        sync();
-        sync();
         fprintf(stderr,"REBOOT!\n");
-        reboot(RB_AUTOBOOT);
+        android_reboot(ANDROID_RB_RESTART, 0, 0);
         exit(-1);
     }
     return 0;

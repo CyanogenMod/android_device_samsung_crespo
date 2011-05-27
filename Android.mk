@@ -20,7 +20,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := setup_fs.c
 LOCAL_MODULE := setup_fs
 LOCAL_MODULE_TAGS := optional
-#LOCAL_SHARED_LIBRARIES += libext4_utils libz
+LOCAL_SHARED_LIBRARIES += libcutils
 include $(BUILD_EXECUTABLE)
 
 endif
