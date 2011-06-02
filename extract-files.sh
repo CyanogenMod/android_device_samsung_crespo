@@ -20,6 +20,8 @@ DEVICE=crespo
 MANUFACTURER=samsung
 
 mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /system/app/Nfc.odex ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/Nfc.odex
+adb pull /system/app/Tag.odex ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/Tag.odex
 adb pull /system/lib/libpn544_fw.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libpn544_fw.so
 adb pull /system/lib/libsecril-client.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libsecril-client.so
 adb pull /system/vendor/bin/gpsd ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/gpsd
@@ -67,6 +69,8 @@ PRODUCT_COPY_FILES := \\
 
 # All the blobs necessary for crespo
 PRODUCT_COPY_FILES += \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/Nfc.odex:system/app/Nfc.odex \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/Tag.odex:system/app/Tag.odex \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libpn544_fw.so:system/lib/libpn544_fw.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsecril-client.so:system/lib/libsecril-client.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/gpsd:system/vendor/bin/gpsd \\
