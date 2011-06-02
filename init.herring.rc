@@ -7,7 +7,6 @@ on boot
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
     setprop ro.crypto.keyfile.userdata /efs/userdata_footer
-    setprop ro.crypto.internal_sd_partition "true"
 
 # fake some battery state
     setprop status.battery.state Slow
