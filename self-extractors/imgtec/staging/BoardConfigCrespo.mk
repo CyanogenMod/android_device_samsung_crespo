@@ -11,6 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-BOARD_NO_PAGE_FLIPPING := false
-BOARD_NO_32BPP := false

@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NXP blob necessary for crespo, and related open-source packages
+# NXP blob necessary for crespo
 PRODUCT_COPY_FILES := \
-    device/sample/nxp/com.nxp.mifare.xml:system/etc/permissions/com.nxp.mifare.xml \
     vendor/nxp/crespo/proprietary/libpn544_fw.so:system/lib/libpn544_fw.so
-
-PRODUCT_PACKAGES += \
-        libnfc \
-        libnfc_jni \
-        Nfc \
-        Tag
