@@ -33,12 +33,13 @@
 #include <sys/poll.h>
 #include <sys/stat.h>
 
+#include <utils/RefBase.h>
 #include <linux/videodev2.h>
 #include <videodev2_samsung.h>
 
-#include "JpegEncoder.h"
+#include <utils/String8.h>
 
-#include <camera/CameraHardwareInterface.h>
+#include "JpegEncoder.h"
 
 namespace android {
 
@@ -144,8 +145,7 @@ namespace android {
 
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
-#define MAX_BUFFERS     11
-
+#define MAX_BUFFERS     9 // 11
 /*
  * V 4 L 2   F I M C   E X T E N S I O N S
  *
@@ -200,8 +200,7 @@ struct camsensor_date_info {
     unsigned int date;
 };
 
-
-class SecCamera {
+class SecCamera : public virtual RefBase {
 public:
 
     enum CAMERA_ID {
@@ -272,17 +271,14 @@ public:
     } gpsInfoAltitude;
 
     SecCamera();
-    ~SecCamera();
+    virtual ~SecCamera();
 
     static SecCamera* createInstance(void)
     {
         static SecCamera singleton;
         return &singleton;
     }
-    status_t dump(int fd, const Vector<String16>& args);
-
-    int             flagCreate(void) const;
-
+    status_t dump(int fd);
 
     int             getCameraId(void);
 
@@ -489,9 +485,6 @@ private:
     int             m_camera_id;
 
     int             m_cam_fd;
-
-    int             m_cam_fd_temp;
-    int             m_cam_fd2_temp;
 
     int             m_cam_fd2;
     struct pollfd   m_events_c2;

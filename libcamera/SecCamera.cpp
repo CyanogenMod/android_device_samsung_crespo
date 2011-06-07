@@ -546,6 +546,8 @@ static int fimc_v4l2_s_parm(int fp, struct v4l2_streamparm *streamparm)
 SecCamera::SecCamera() :
             m_flag_init(0),
             m_camera_id(CAMERA_ID_BACK),
+            m_cam_fd(-1),
+            m_cam_fd2(-1),
             m_preview_v4lformat(V4L2_PIX_FMT_NV21),
             m_preview_width      (0),
             m_preview_height     (0),
@@ -609,12 +611,6 @@ SecCamera::SecCamera() :
     LOGV("%s :", __func__);
 }
 
-int SecCamera::flagCreate(void) const
-{
-    LOGV("%s : : %d", __func__, m_flag_init);
-    return m_flag_init;
-}
-
 SecCamera::~SecCamera()
 {
     LOGV("%s :", __func__);
@@ -632,43 +628,12 @@ int SecCamera::initCamera(int index)
          */
         m_camera_af_flag = -1;
 
-        m_cam_fd_temp = -1;
-        m_cam_fd2_temp = -1;
-
         m_cam_fd = open(CAMERA_DEV_NAME, O_RDWR);
         if (m_cam_fd < 0) {
             LOGE("ERR(%s):Cannot open %s (error : %s)\n", __func__, CAMERA_DEV_NAME, strerror(errno));
             return -1;
         }
-
-        if (m_cam_fd < 3) { // for 0, 1, 2
-            LOGE("ERR(%s):m_cam_fd is %d\n", __func__, m_cam_fd);
-
-            close(m_cam_fd);
-
-            m_cam_fd_temp = open(CAMERA_DEV_NAME_TEMP, O_CREAT);
-
-            LOGE("ERR(%s):m_cam_fd_temp is %d\n", __func__, m_cam_fd_temp);
-
-            m_cam_fd = open(CAMERA_DEV_NAME, O_RDWR);
-
-            if (m_cam_fd < 3) { // for 0, 1, 2
-                LOGE("ERR(%s):retring to open %s is failed, %d\n", __func__, CAMERA_DEV_NAME, m_cam_fd);
-
-                if (m_cam_fd < 0) {
-                    return -1;
-                } else {
-                    close(m_cam_fd);
-                    m_cam_fd = -1;
-                }
-
-                if (m_cam_fd_temp != -1){
-                    close(m_cam_fd_temp);
-                    m_cam_fd_temp = -1;
-                }
-                return -1;
-            }
-        }
+        LOGV("%s: open(%s) --> m_cam_fd %d", __FUNCTION__, CAMERA_DEV_NAME, m_cam_fd);
 
         LOGE("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
 
@@ -680,49 +645,10 @@ int SecCamera::initCamera(int index)
         CHECK(ret);
 
         m_cam_fd2 = open(CAMERA_DEV_NAME2, O_RDWR);
+        LOGV("%s: open(%s) --> m_cam_fd2 = %d", __FUNCTION__, CAMERA_DEV_NAME2, m_cam_fd2);
         if (m_cam_fd2 < 0) {
             LOGE("ERR(%s):Cannot open %s (error : %s)\n", __func__, CAMERA_DEV_NAME2, strerror(errno));
             return -1;
-        }
-        if (m_cam_fd2 < 3) { // for 0, 1, 2
-            LOGE("ERR(%s):m_cam_fd2 is %d\n", __func__, m_cam_fd2);
-
-            close(m_cam_fd2);
-
-            m_cam_fd2_temp = open(CAMERA_DEV_NAME2_TEMP, O_CREAT);
-
-            LOGE("ERR(%s):m_cam_fd2_temp is %d\n", __func__, m_cam_fd2_temp);
-
-            m_cam_fd2 = open(CAMERA_DEV_NAME2, O_RDWR);
-
-            if (m_cam_fd2 < 3) { // for 0, 1, 2
-                LOGE("ERR(%s):retring to open %s is failed, %d\n", __func__, CAMERA_DEV_NAME2, m_cam_fd2);
-
-                if (m_cam_fd2 < 0) {
-                    return -1;
-                }
-                else{
-                    close(m_cam_fd2);
-                    m_cam_fd2 = -1;
-                }
-
-                if (m_cam_fd2_temp != -1) {
-                    close(m_cam_fd2_temp);
-                    m_cam_fd2_temp = -1;
-                }
-
-                return -1;
-            }
-        }
-
-        if (m_cam_fd_temp != -1) {
-            close(m_cam_fd_temp);
-            m_cam_fd_temp = -1;
-        }
-
-        if (m_cam_fd2_temp != -1) {
-            close(m_cam_fd2_temp);
-            m_cam_fd2_temp = -1;
         }
 
         LOGE("initCamera: m_cam_fd2(%d)", m_cam_fd2);
@@ -755,6 +681,7 @@ int SecCamera::initCamera(int index)
         setExifFixedAttribute();
 
         m_flag_init = 1;
+        LOGI("%s : initialized", __FUNCTION__);
     }
     return 0;
 }
@@ -789,18 +716,9 @@ void SecCamera::DeinitCamera()
             m_cam_fd2 = -1;
         }
 
-        if (m_cam_fd_temp != -1) {
-            close(m_cam_fd_temp);
-            m_cam_fd_temp = -1;
-        }
-
-        if (m_cam_fd2_temp != -1) {
-            close(m_cam_fd2_temp);
-            m_cam_fd2_temp = -1;
-        }
-
         m_flag_init = 0;
     }
+    else LOGI("%s : already deinitialized", __FUNCTION__);
 }
 
 
@@ -2746,9 +2664,7 @@ int SecCamera::setDataLineCheck(int chk_dataline)
         return -1;
     }
 
-    if (m_chk_dataline != chk_dataline) {
-        m_chk_dataline = chk_dataline;
-    }
+    m_chk_dataline = chk_dataline;
 
     return 0;
 }
@@ -3124,7 +3040,7 @@ inline int SecCamera::m_frameSize(int format, int width, int height)
     return size;
 }
 
-status_t SecCamera::dump(int fd, const Vector<String16> &args)
+status_t SecCamera::dump(int fd)
 {
     const size_t SIZE = 256;
     char buffer[SIZE];

@@ -106,6 +106,10 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.herring
 
+# Camera
+PRODUCT_PACKAGES += \
+	camera.s5pc110
+
 # audio
 PRODUCT_PACKAGES += \
 	audio_policy.herring \
