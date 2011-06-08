@@ -58,3 +58,4 @@ $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/etc/asound
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/usr/share/alsa)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/PACKAGING/systemimage_intermediates)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRARIES/libaudio_intermediates)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/root/default.prop)
