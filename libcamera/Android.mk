@@ -16,7 +16,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES:= libutils libcutils libbinder liblog libcamera_client libhardware
 LOCAL_SHARED_LIBRARIES+= libs3cjpeg
 
-LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
+LOCAL_MODULE := camera.herring
 
 LOCAL_MODULE_TAGS := optional
 

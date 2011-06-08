@@ -108,7 +108,7 @@ PRODUCT_PACKAGES += \
 
 # Camera
 PRODUCT_PACKAGES += \
-	camera.s5pc110
+	camera.herring
 
 # audio
 PRODUCT_PACKAGES += \

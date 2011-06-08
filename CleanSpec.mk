@@ -59,3 +59,7 @@ $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/usr/share/
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/PACKAGING/systemimage_intermediates)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRARIES/libaudio_intermediates)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/root/default.prop)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/system/lib/hw/camera.s5pc110.so)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/lib/camera.s5pc110.so)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRARIES/camera.s5pc110_intermediates/LINKED/camera.s5pc110.so)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/symbols/system/lib/hw/camera.s5pc110.so)
