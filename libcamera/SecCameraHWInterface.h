@@ -154,6 +154,8 @@ private:
             void        setSkipFrame(int frame);
             bool        isSupportedPreviewSize(const int width,
                                                const int height) const;
+            bool        isSupportedParameter(const char * const parm,
+                            const char * const supported_parm) const;
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;

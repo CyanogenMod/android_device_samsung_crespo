@@ -1564,6 +1564,33 @@ bool CameraHardwareSec::isSupportedPreviewSize(const int width,
     return false;
 }
 
+bool CameraHardwareSec::isSupportedParameter(const char * const parm,
+        const char * const supported_parm) const
+{
+    const char *pStart;
+    const char *pEnd;
+
+    if (!parm || !supported_parm)
+        return false;
+
+    pStart = supported_parm;
+
+    while (true) {
+        pEnd = strchr(pStart, ',');
+        if (!pEnd) {
+            if (!strcmp(parm, pStart))
+                return true;
+            else
+                return false;
+        }
+        if (!strncmp(parm, pStart, pEnd - pStart)) {
+            return true;
+        }
+        pStart = pEnd + 1;
+    }
+    /* NOTREACHED */
+}
+
 status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 {
     LOGV("%s :", __func__);
@@ -1847,13 +1874,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         ret = UNKNOWN_ERROR;
     }
 
-    if (new_scene_mode_str != NULL) {
+    const char *new_focus_mode_str = params.get(CameraParameters::KEY_FOCUS_MODE);
+
+    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         int  new_scene_mode = -1;
 
         const char *new_flash_mode_str = params.get(CameraParameters::KEY_FLASH_MODE);
-        const char *new_focus_mode_str;
 
-        new_focus_mode_str = params.get(CameraParameters::KEY_FOCUS_MODE);
         // fps range is (15000,30000) by default.
         mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(15000,30000)");
         mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE,
@@ -1980,6 +2007,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             } else {
                 mParameters.set(CameraParameters::KEY_SCENE_MODE, new_scene_mode_str);
             }
+        }
+    } else {
+        if (!isSupportedParameter(new_focus_mode_str,
+                    mParameters.get(CameraParameters::KEY_SUPPORTED_FOCUS_MODES))) {
+            LOGE("%s: Unsupported focus mode: %s", __func__, new_focus_mode_str);
+            ret = UNKNOWN_ERROR;
         }
     }
 
