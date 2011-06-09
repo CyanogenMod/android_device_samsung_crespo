@@ -169,6 +169,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	wifi.interface=wlan0 \
 	wifi.supplicant_scan_interval=15
 
+# Set default USB interface
+ADDITIONAL_DEFAULT_PROPERTIES := \
+	persist.sys.usb.config=mass_storage
+
 include frameworks/base/build/phone-hdpi-512-dalvik-heap.mk
 
 # we have enough storage space to hold precise GC data
