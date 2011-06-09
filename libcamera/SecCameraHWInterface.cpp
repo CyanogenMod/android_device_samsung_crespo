@@ -132,6 +132,11 @@ CameraHardwareSec::CameraHardwareSec(int cameraId, camera_device_t *dev)
     mPictureThread = new PictureThread(this);
 }
 
+int CameraHardwareSec::getCameraId() const
+{
+    return mSecCamera->getCameraId();
+}
+
 void CameraHardwareSec::initDefaultParameters(int cameraId)
 {
     if (mSecCamera == NULL) {
@@ -2664,8 +2669,14 @@ static int HAL_camera_device_open(const struct hw_module_t* module,
     }
 
     if (g_cam_device) {
-        LOGV("returning existing camera ID %s", id);
-        goto done;
+        if (obj(g_cam_device)->getCameraId() == cameraId) {
+            LOGV("returning existing camera ID %s", id);
+            goto done;
+        } else {
+            LOGE("Cannot open camera %d. camera %d is already running!",
+                    cameraId, obj(g_cam_device)->getCameraId());
+            return -ENOSYS;
+        }
     }
 
     g_cam_device = (camera_device_t *)malloc(sizeof(camera_device_t));

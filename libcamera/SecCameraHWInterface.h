@@ -61,6 +61,8 @@ public:
     virtual status_t    setPreviewWindow(preview_stream_ops *w);
     virtual void        release();
 
+    inline  int         getCameraId() const;
+
     CameraHardwareSec(int cameraId, camera_device_t *dev);
     virtual             ~CameraHardwareSec();
 private:
