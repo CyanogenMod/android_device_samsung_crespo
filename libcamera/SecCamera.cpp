@@ -122,24 +122,6 @@ static int get_pixel_depth(unsigned int fmt)
 #define ALIGN_H(x)      (((x) + 0x1F) & (~0x1F))    // Set as multiple of 32
 #define ALIGN_BUF(x)    (((x) + 0x1FFF)& (~0x1FFF)) // Set as multiple of 8K
 
-static int init_preview_buffers(struct fimc_buffer *buffers, int width, int height, unsigned int fmt)
-{
-    int i, len;
-
-    if (fmt==V4L2_PIX_FMT_NV12T) {
-        len = ALIGN_BUF(ALIGN_W(width) * ALIGN_H(height)) +
-              ALIGN_BUF(ALIGN_W(width) * ALIGN_H(height / 2));
-    } else {
-        len = (width * height * get_pixel_depth(fmt)) / 8;
-    }
-
-    for (i = 0; i < MAX_BUFFERS; i++) {
-        buffers[i].length = len;
-    }
-
-    return 0;
-}
-
 static int fimc_poll(struct pollfd *events)
 {
     int ret;

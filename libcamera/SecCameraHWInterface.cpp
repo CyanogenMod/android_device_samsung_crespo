@@ -38,6 +38,23 @@
 #define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.20,0.25,Infinity"
 
+// This hack does two things:
+// -- it sets preview to NV21 (YUV420SP)
+// -- it sets gralloc to YV12
+//
+// The reason being: the samsung encoder understands only yuv420sp, and gralloc
+// does yv12 and rgb565.  So what we do is we break up the interleaved UV in
+// separate V and U planes, which makes preview look good, and enabled the
+// encoder as well.
+//
+// FIXME: Samsung needs to enable support for proper yv12 coming out of the
+//        camera, and to fix their video encoder to work with yv12.
+// FIXME: It also seems like either Samsung's YUV420SP (NV21) or img's YV12 has
+//        the color planes switched.  We need to figure which side is doing it
+//        wrong and have the respective party fix it.
+
+#define HACK 1
+
 namespace android {
 
 struct addrs {
@@ -158,20 +175,26 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         LOGE("getSnapshotMaxSize fail (%d / %d) \n",
              snapshot_max_width, snapshot_max_height);
 
-    p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_RGB565);
+//  p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_RGB565);
+//  p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, CameraParameters::PIXEL_FORMAT_RGB565);
+//  p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_RGB565);
+#if HACK
+    p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP); mFrameSizeDelta = 16;
+    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, CameraParameters::PIXEL_FORMAT_YUV420SP);
+    p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_YUV420SP);
+#else
+    p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420P); mFrameSizeDelta = 16;
+    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, CameraParameters::PIXEL_FORMAT_YUV420P);
+    p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_YUV420P);
+#endif
 //  p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420P); mFrameSizeDelta = 16;
     p.setPreviewSize(preview_max_width, preview_max_height);
 
     p.setPictureFormat(CameraParameters::PIXEL_FORMAT_JPEG);
     p.setPictureSize(snapshot_max_width, snapshot_max_height);
     p.set(CameraParameters::KEY_JPEG_QUALITY, "100"); // maximum quality
-
-    p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, CameraParameters::PIXEL_FORMAT_RGB565);
-//  p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, CameraParameters::PIXEL_FORMAT_YUV420P);
     p.set(CameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
           CameraParameters::PIXEL_FORMAT_JPEG);
-    p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_RGB565);
-//  p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_YUV420P);
 
     String8 parameterString;
 
@@ -387,6 +410,9 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     const char *str_preview_format = mParameters.getPreviewFormat();
     LOGV("%s: preview format %s", __func__, str_preview_format);
     mFrameSizeDelta = 16;
+
+    hal_pixel_format = HAL_PIXEL_FORMAT_YV12; // default
+
     if (!strcmp(str_preview_format,
                 CameraParameters::PIXEL_FORMAT_RGB565)) {
         hal_pixel_format = HAL_PIXEL_FORMAT_RGB_565;
@@ -398,21 +424,15 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
         mFrameSizeDelta = 0;
     }
     else if (!strcmp(str_preview_format,
-                     CameraParameters::PIXEL_FORMAT_YUV420SP))
-        hal_pixel_format = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-    else if (!strcmp(str_preview_format,
-                     CameraParameters::PIXEL_FORMAT_YUV420P))
+                     CameraParameters::PIXEL_FORMAT_YUV420SP)) {
+#if HACK
         hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
-    else if (!strcmp(str_preview_format, "yuv420sp_custom"))
-        hal_pixel_format = V4L2_PIX_FMT_NV12T;
-    else if (!strcmp(str_preview_format, "yuv420p"))
-        hal_pixel_format = V4L2_PIX_FMT_YUV420;
-    else if (!strcmp(str_preview_format, "yuv422i"))
-        hal_pixel_format = V4L2_PIX_FMT_YUYV;
-    else if (!strcmp(str_preview_format, "yuv422p"))
-        hal_pixel_format = V4L2_PIX_FMT_YUV422P;
-    else
+#else
         hal_pixel_format = HAL_PIXEL_FORMAT_YCrCb_420_SP;
+#endif
+    } else if (!strcmp(str_preview_format,
+                     CameraParameters::PIXEL_FORMAT_YUV420P))
+        hal_pixel_format = HAL_PIXEL_FORMAT_YV12; // HACK
 
     if (w->set_usage(w, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
         LOGE("%s: could not set usage on gralloc buffer", __func__);
@@ -571,25 +591,85 @@ int CameraHardwareSec::previewThread()
 
     if (mPreviewWindow && mGrallocHal) {
         buffer_handle_t *buf_handle;
-        if (0 != mPreviewWindow->dequeue_buffer(mPreviewWindow, &buf_handle)) {
+        int stride;
+        if (0 != mPreviewWindow->dequeue_buffer(mPreviewWindow, &buf_handle, &stride)) {
             LOGE("Could not dequeue gralloc buffer!\n");
             goto callbacks;
         }
 
-//      LOGV("%s: dequeued gralloc buffer %p (%d) from preview window!\n", __func__,
-//           buf_handle, index);
         void *vaddr;
         if (!mGrallocHal->lock(mGrallocHal,
                                *buf_handle,
                                GRALLOC_USAGE_SW_WRITE_OFTEN,
                                0, 0, width, height, &vaddr)) {
-            LOGV("%s: vaddr [%p, %p) <-- heap [%p, %p) (base %p offset 0x%x size 0x%x)", __func__,
-                 vaddr, vaddr + frame_size + mFrameSizeDelta,
-                 ((char *)mPreviewHeap->data) + offset, ((char *)mPreviewHeap->data) + offset + frame_size + mFrameSizeDelta,
-                 ((char *)mPreviewHeap->data), offset, frame_size + mFrameSizeDelta);
-            memcpy(vaddr,
-                   ((char *)mPreviewHeap->data) + offset,
-                   frame_size + mFrameSizeDelta);
+            char *frame = ((char *)mPreviewHeap->data) + offset;
+            int total = frame_size + mFrameSizeDelta;
+
+// HACK or no HACK, the code below assumes YUV, not RGB
+            {
+                int h;
+                char *src = frame;
+                char *ptr = (char *)vaddr;
+
+                // Copy the Y plane, while observing the stride
+                for (h = 0; h < height; h++) {
+                    memcpy(ptr, src, width);
+                    ptr += stride;
+                    src += width;
+                }
+
+                if (HACK) {
+                    // The incoming data is in NV21 format, and we need to
+                    // convert it to YV12 for the gralloc buffer.
+
+                    char *uv = src;
+                    const int uv_size = width * height / 2;
+                    char saved_uv[uv_size];
+                    memcpy(saved_uv, src, uv_size);
+
+                    // first, collapse the V chroma pixels into their own plane
+                    // following the Y plane.
+                    h = 0;
+                    while (h < width * height / 4) {
+                        *ptr++ = *src;
+                        src += 2;
+                        h++;
+                        if (!(h % (width / 2)))
+                            ptr += (stride - width) / 2;
+                    }
+
+                    // next, use the saved_uv plane and collapse the U chroma
+                    // pixels into their own plane following the newly-created
+                    // V plane.
+                    h = 0;
+                    src = saved_uv + 1;
+                    while (h < width * height / 4) {
+                        *ptr++ = *src;
+                        src += 2;
+                        h++;
+                        if (!(h % (width / 2)))
+                            ptr += (stride - width) / 2;
+                    }
+                }
+                else {
+                    // U
+                    char *v = ptr;
+                    ptr += stride * height / 4;
+                    for (h = 0; h < height / 2; h++) {
+                        memcpy(ptr, src, width / 2);
+                        ptr += stride / 2;
+                        src += width / 2;
+                    }
+                    // V
+                    ptr = v;
+                    for (h = 0; h < height / 2; h++) {
+                        memcpy(ptr, src, width / 2);
+                        ptr += stride / 2;
+                        src += width / 2;
+                    }
+                }
+            }
+
             mGrallocHal->unlock(mGrallocHal, *buf_handle);
         }
         else
@@ -599,8 +679,6 @@ int CameraHardwareSec::previewThread()
             LOGE("Could not enqueue gralloc buffer!\n");
             goto callbacks;
         }
-//      LOGV("%s: enqueued gralloc buffer %p (%d) to preview window!\n", __func__,
-//           buf_handle, index);
     }
 
 callbacks:
@@ -1526,10 +1604,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_str_preview_format,
                          CameraParameters::PIXEL_FORMAT_YUV420SP))
             new_preview_format = V4L2_PIX_FMT_NV21;
+        else if (!strcmp(new_str_preview_format,
+                         CameraParameters::PIXEL_FORMAT_YUV420P))
+            new_preview_format = V4L2_PIX_FMT_YUV420;
         else if (!strcmp(new_str_preview_format, "yuv420sp_custom"))
             new_preview_format = V4L2_PIX_FMT_NV12T;
-        else if (!strcmp(new_str_preview_format, "yuv420p"))
-            new_preview_format = V4L2_PIX_FMT_YUV420;
         else if (!strcmp(new_str_preview_format, "yuv422i"))
             new_preview_format = V4L2_PIX_FMT_YUYV;
         else if (!strcmp(new_str_preview_format, "yuv422p"))
@@ -2246,14 +2325,12 @@ static camera_device_t *g_cam_device;
 static int HAL_camera_device_close(struct hw_device_t* device)
 {
     LOGI("%s", __func__);
-#if 1
     if (device) {
         camera_device_t *cam_device = (camera_device_t *)device;
         delete static_cast<CameraHardwareSec *>(cam_device->priv);
         free(cam_device);
         g_cam_device = 0;
     }
-#endif
     return 0;
 }
 
