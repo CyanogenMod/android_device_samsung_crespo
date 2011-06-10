@@ -170,7 +170,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	wifi.supplicant_scan_interval=15
 
 # Set default USB interface
-ADDITIONAL_DEFAULT_PROPERTIES := \
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 	persist.sys.usb.config=mass_storage
 
 include frameworks/base/build/phone-hdpi-512-dalvik-heap.mk
