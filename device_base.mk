@@ -49,6 +49,7 @@ PRODUCT_COPY_FILES := \
 # Init files
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/init.herring.rc:root/init.herring.rc \
+	device/samsung/crespo/init.herring.usb.rc:root/init.herring.usb.rc \
 	device/samsung/crespo/ueventd.herring.rc:root/ueventd.herring.rc
 
 # Prebuilt kl and kcm keymaps
