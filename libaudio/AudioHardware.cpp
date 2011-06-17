@@ -1703,37 +1703,16 @@ String8 AudioHardware::AudioStreamInALSA::getParameters(const String8& keys)
     return param.toString();
 }
 
-status_t AudioHardware::AudioStreamInALSA::getNextBuffer(AudioHardware::BufferProvider::Buffer* buffer)
+status_t AudioHardware::AudioStreamInALSA::addAudioEffect(effect_handle_t effect)
 {
-    if (mPcm == NULL) {
-        buffer->raw = NULL;
-        buffer->frameCount = 0;
-        mReadStatus = NO_INIT;
-        return NO_INIT;
-    }
-
-    if (mInPcmInBuf == 0) {
-        TRACE_DRIVER_IN(DRV_PCM_READ)
-        mReadStatus = pcm_read(mPcm,(void*) mPcmIn, AUDIO_HW_IN_PERIOD_SZ * frameSize());
-        TRACE_DRIVER_OUT
-        if (mReadStatus != 0) {
-            buffer->raw = NULL;
-            buffer->frameCount = 0;
-            return mReadStatus;
-        }
-        mInPcmInBuf = AUDIO_HW_IN_PERIOD_SZ;
-    }
-
-    buffer->frameCount = (buffer->frameCount > mInPcmInBuf) ? mInPcmInBuf : buffer->frameCount;
-    buffer->i16 = mPcmIn + (AUDIO_HW_IN_PERIOD_SZ - mInPcmInBuf) * mChannelCount;
-
-    return mReadStatus;
+    return NO_ERROR;
 }
 
-void AudioHardware::AudioStreamInALSA::releaseBuffer(Buffer* buffer)
+status_t AudioHardware::AudioStreamInALSA::removeAudioEffect(effect_handle_t effect)
 {
-    mInPcmInBuf -= buffer->frameCount;
+    return NO_ERROR;
 }
+
 
 size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int channelCount)
 {
@@ -1768,6 +1747,39 @@ void AudioHardware::AudioStreamInALSA::lock()
 
 void AudioHardware::AudioStreamInALSA::unlock() {
     mLock.unlock();
+}
+
+//--- BufferProvider
+status_t AudioHardware::AudioStreamInALSA::getNextBuffer(AudioHardware::BufferProvider::Buffer* buffer)
+{
+    if (mPcm == NULL) {
+        buffer->raw = NULL;
+        buffer->frameCount = 0;
+        mReadStatus = NO_INIT;
+        return NO_INIT;
+    }
+
+    if (mInPcmInBuf == 0) {
+        TRACE_DRIVER_IN(DRV_PCM_READ)
+        mReadStatus = pcm_read(mPcm,(void*) mPcmIn, AUDIO_HW_IN_PERIOD_SZ * frameSize());
+        TRACE_DRIVER_OUT
+        if (mReadStatus != 0) {
+            buffer->raw = NULL;
+            buffer->frameCount = 0;
+            return mReadStatus;
+        }
+        mInPcmInBuf = AUDIO_HW_IN_PERIOD_SZ;
+    }
+
+    buffer->frameCount = (buffer->frameCount > mInPcmInBuf) ? mInPcmInBuf : buffer->frameCount;
+    buffer->i16 = mPcmIn + (AUDIO_HW_IN_PERIOD_SZ - mInPcmInBuf) * mChannelCount;
+
+    return mReadStatus;
+}
+
+void AudioHardware::AudioStreamInALSA::releaseBuffer(Buffer* buffer)
+{
+    mInPcmInBuf -= buffer->frameCount;
 }
 
 //------------------------------------------------------------------------------
