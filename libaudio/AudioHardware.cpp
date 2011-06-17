@@ -37,7 +37,7 @@
 #include <hardware_legacy/power.h>
 
 extern "C" {
-#include "alsa_audio.h"
+#include <tinyalsa/asoundlib.h>
 }
 
 
@@ -391,12 +391,12 @@ status_t AudioHardware::setMode(int mode)
             setInputSource_l(mInputSource);
             if (mMixer != NULL) {
                 TRACE_DRIVER_IN(DRV_MIXER_GET)
-                struct mixer_ctl *ctl= mixer_get_control(mMixer, "Playback Path", 0);
+                struct mixer_ctl *ctl= mixer_get_ctl_by_name(mMixer, "Playback Path");
                 TRACE_DRIVER_OUT
                 if (ctl != NULL) {
                     LOGV("setMode() reset Playback Path to RCV");
                     TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                    mixer_ctl_select(ctl, "RCV");
+                    mixer_ctl_set_enum_by_string(ctl, "RCV");
                     TRACE_DRIVER_OUT
                 }
             }
@@ -736,13 +736,13 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
 
             if (mMixer != NULL) {
                 TRACE_DRIVER_IN(DRV_MIXER_GET)
-                struct mixer_ctl *ctl= mixer_get_control(mMixer, "Voice Call Path", 0);
+                struct mixer_ctl *ctl= mixer_get_ctl_by_name(mMixer, "Voice Call Path");
                 TRACE_DRIVER_OUT
                 LOGE_IF(ctl == NULL, "setIncallPath_l() could not get mixer ctl");
                 if (ctl != NULL) {
                     LOGV("setIncallPath_l() Voice Call Path, (%x)", device);
                     TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                    mixer_ctl_select(ctl, getVoiceRouteFromDevice(device));
+                    mixer_ctl_set_enum_by_string(ctl, getVoiceRouteFromDevice(device));
                     TRACE_DRIVER_OUT
                 }
             }
@@ -762,14 +762,19 @@ struct pcm *AudioHardware::openPcmOut_l()
         }
         unsigned flags = PCM_OUT;
 
-        flags |= (AUDIO_HW_OUT_PERIOD_MULT - 1) << PCM_PERIOD_SZ_SHIFT;
-        flags |= (AUDIO_HW_OUT_PERIOD_CNT - PCM_PERIOD_CNT_MIN) << PCM_PERIOD_CNT_SHIFT;
+        struct pcm_config config = {
+            channels : 2,
+            rate : AUDIO_HW_OUT_SAMPLERATE,
+            period_size : AUDIO_HW_OUT_PERIOD_SZ,
+            period_count : AUDIO_HW_OUT_PERIOD_CNT,
+            format : PCM_FORMAT_S16_LE,
+        };
 
         TRACE_DRIVER_IN(DRV_PCM_OPEN)
-        mPcm = pcm_open(flags);
+        mPcm = pcm_open(0, 0, flags, &config);
         TRACE_DRIVER_OUT
-        if (!pcm_ready(mPcm)) {
-            LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_error(mPcm));
+        if (!pcm_is_ready(mPcm)) {
+            LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_get_error(mPcm));
             TRACE_DRIVER_IN(DRV_PCM_CLOSE)
             pcm_close(mPcm);
             TRACE_DRIVER_OUT
@@ -806,7 +811,7 @@ struct mixer *AudioHardware::openMixer_l()
             return NULL;
         }
         TRACE_DRIVER_IN(DRV_MIXER_OPEN)
-        mMixer = mixer_open();
+        mMixer = mixer_open(0);
         TRACE_DRIVER_OUT
         if (mMixer == NULL) {
             LOGE("openMixer_l() cannot open mixer");
@@ -949,7 +954,7 @@ status_t AudioHardware::setInputSource_l(audio_source source)
          if ((source == AUDIO_SOURCE_DEFAULT) || (mMode != AudioSystem::MODE_IN_CALL)) {
              if (mMixer) {
                  TRACE_DRIVER_IN(DRV_MIXER_GET)
-                 struct mixer_ctl *ctl= mixer_get_control(mMixer, "Input Source", 0);
+                 struct mixer_ctl *ctl= mixer_get_ctl_by_name(mMixer, "Input Source");
                  TRACE_DRIVER_OUT
                  if (ctl == NULL) {
                      return NO_INIT;
@@ -973,9 +978,9 @@ status_t AudioHardware::setInputSource_l(audio_source source)
                      default:
                          return NO_INIT;
                  }
-                 LOGV("mixer_ctl_select, Input Source, (%s)", sourceName);
+                 LOGV("mixer_ctl_set_enum_by_string, Input Source, (%s)", sourceName);
                  TRACE_DRIVER_IN(DRV_MIXER_SEL)
-                 mixer_ctl_select(ctl, sourceName);
+                 mixer_ctl_set_enum_by_string(ctl, sourceName);
                  TRACE_DRIVER_OUT
              }
          }
@@ -1179,7 +1184,7 @@ status_t AudioHardware::AudioStreamOutALSA::open_l()
     if (mMixer) {
         LOGV("open playback normal");
         TRACE_DRIVER_IN(DRV_MIXER_GET)
-        mRouteCtl = mixer_get_control(mMixer, "Playback Path", 0);
+        mRouteCtl = mixer_get_ctl_by_name(mMixer, "Playback Path");
         TRACE_DRIVER_OUT
     }
     if (mHardware->mode() != AudioSystem::MODE_IN_CALL) {
@@ -1187,7 +1192,7 @@ status_t AudioHardware::AudioStreamOutALSA::open_l()
         LOGV("write() wakeup setting route %s", route);
         if (mRouteCtl) {
             TRACE_DRIVER_IN(DRV_MIXER_SEL)
-            mixer_ctl_select(mRouteCtl, route);
+            mixer_ctl_set_enum_by_string(mRouteCtl, route);
             TRACE_DRIVER_OUT
         }
     }
@@ -1543,19 +1548,21 @@ void AudioHardware::AudioStreamInALSA::close_l()
 status_t AudioHardware::AudioStreamInALSA::open_l()
 {
     unsigned flags = PCM_IN;
-    if (mChannels == AudioSystem::CHANNEL_IN_MONO) {
-        flags |= PCM_MONO;
-    }
-    flags |= (AUDIO_HW_IN_PERIOD_MULT - 1) << PCM_PERIOD_SZ_SHIFT;
-    flags |= (AUDIO_HW_IN_PERIOD_CNT - PCM_PERIOD_CNT_MIN)
-            << PCM_PERIOD_CNT_SHIFT;
+
+    struct pcm_config config = {
+        channels : mChannelCount,
+        rate : AUDIO_HW_IN_SAMPLERATE,
+        period_size : AUDIO_HW_IN_PERIOD_SZ,
+        period_count : AUDIO_HW_IN_PERIOD_CNT,
+        format : PCM_FORMAT_S16_LE,
+    };
 
     LOGV("open pcm_in driver");
     TRACE_DRIVER_IN(DRV_PCM_OPEN)
-    mPcm = pcm_open(flags);
+    mPcm = pcm_open(0, 0, flags, &config);
     TRACE_DRIVER_OUT
-    if (!pcm_ready(mPcm)) {
-        LOGE("cannot open pcm_in driver: %s\n", pcm_error(mPcm));
+    if (!pcm_is_ready(mPcm)) {
+        LOGE("cannot open pcm_in driver: %s\n", pcm_get_error(mPcm));
         TRACE_DRIVER_IN(DRV_PCM_CLOSE)
         pcm_close(mPcm);
         TRACE_DRIVER_OUT
@@ -1571,7 +1578,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     mMixer = mHardware->openMixer_l();
     if (mMixer) {
         TRACE_DRIVER_IN(DRV_MIXER_GET)
-        mRouteCtl = mixer_get_control(mMixer, "Capture MIC Path", 0);
+        mRouteCtl = mixer_get_ctl_by_name(mMixer, "Capture MIC Path");
         TRACE_DRIVER_OUT
     }
 
@@ -1580,7 +1587,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
         LOGV("read() wakeup setting route %s", route);
         if (mRouteCtl) {
             TRACE_DRIVER_IN(DRV_MIXER_SEL)
-            mixer_ctl_select(mRouteCtl, route);
+            mixer_ctl_set_enum_by_string(mRouteCtl, route);
             TRACE_DRIVER_OUT
         }
     }
