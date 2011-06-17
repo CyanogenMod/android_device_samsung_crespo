@@ -43,8 +43,13 @@ extern "C" {
 
 namespace android_audio_legacy {
 
-const uint32_t AudioHardware::inputSamplingRates[] = {
-        8000, 11025, 16000, 22050, 44100
+const uint32_t AudioHardware::inputConfigTable[][AudioHardware::INPUT_CONFIG_CNT] = {
+        {8000, 4},
+        {11025, 4},
+        {16000, 2},
+        {22050, 2},
+        {32000, 1},
+        {44100, 1}
 };
 
 //  trace driver operations for dump
@@ -533,8 +538,8 @@ size_t AudioHardware::getInputBufferSize(uint32_t sampleRate, int format, int ch
         LOGW("getInputBufferSize bad channel count: %d", channelCount);
         return 0;
     }
-    if (sampleRate != 8000 && sampleRate != 11025 && sampleRate != 16000 &&
-            sampleRate != 22050 && sampleRate != 44100) {
+
+    if (sampleRate != getInputSampleRate(sampleRate)) {
         LOGW("getInputBufferSize bad sample rate: %d", sampleRate);
         return 0;
     }
@@ -918,16 +923,17 @@ const char *AudioHardware::getInputRouteFromDevice(uint32_t device)
 
 uint32_t AudioHardware::getInputSampleRate(uint32_t sampleRate)
 {
-    uint32_t i;
+    size_t i;
     uint32_t prevDelta;
     uint32_t delta;
+    size_t size = sizeof(inputConfigTable)/sizeof(uint32_t)/INPUT_CONFIG_CNT;
 
-    for (i = 0, prevDelta = 0xFFFFFFFF; i < sizeof(inputSamplingRates)/sizeof(uint32_t); i++, prevDelta = delta) {
-        delta = abs(sampleRate - inputSamplingRates[i]);
+    for (i = 0, prevDelta = 0xFFFFFFFF; i < size; i++, prevDelta = delta) {
+        delta = abs(sampleRate - inputConfigTable[i][INPUT_CONFIG_SAMPLE_RATE]);
         if (delta > prevDelta) break;
     }
     // i is always > 0 here
-    return inputSamplingRates[i-1];
+    return inputConfigTable[i-1][INPUT_CONFIG_SAMPLE_RATE];
 }
 
 // getActiveInput_l() must be called with mLock held
@@ -1368,17 +1374,16 @@ status_t AudioHardware::AudioStreamInALSA::set(
     mChannelCount = AudioSystem::popCount(mChannels);
     mSampleRate = rate;
     if (mSampleRate != AUDIO_HW_OUT_SAMPLERATE) {
-        mDownSampler = new AudioHardware::DownSampler(mSampleRate,
-                                                  mChannelCount,
-                                                  AUDIO_HW_IN_PERIOD_SZ,
-                                                  this);
+        mDownSampler = new AudioHardware::ReSampler(AUDIO_HW_OUT_SAMPLERATE,
+                                                    mSampleRate,
+                                                    mChannelCount,
+                                                    this);
         status_t status = mDownSampler->initCheck();
         if (status != NO_ERROR) {
             delete mDownSampler;
             LOGW("AudioStreamInALSA::set() downsampler init failed: %d", status);
             return status;
         }
-
         mPcmIn = new int16_t[AUDIO_HW_IN_PERIOD_SZ * mChannelCount];
     }
     return NO_ERROR;
@@ -1389,15 +1394,13 @@ AudioHardware::AudioStreamInALSA::~AudioStreamInALSA()
     standby();
     if (mDownSampler != NULL) {
         delete mDownSampler;
-        if (mPcmIn != NULL) {
-            delete[] mPcmIn;
-        }
+        delete[] mPcmIn;
     }
 }
 
 ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
 {
-    //    LOGV("AudioStreamInALSA::read(%p, %u)", buffer, bytes);
+    //    LOGV("AudioStreamInALSA::read(%p, %d)", buffer, (int)bytes);
     status_t status = NO_INIT;
     int ret;
 
@@ -1734,24 +1737,19 @@ void AudioHardware::AudioStreamInALSA::releaseBuffer(Buffer* buffer)
 
 size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int channelCount)
 {
-    size_t ratio;
+    size_t i;
+    size_t size = sizeof(inputConfigTable)/sizeof(uint32_t)/INPUT_CONFIG_CNT;
 
-    switch (sampleRate) {
-    case 8000:
-    case 11025:
-        ratio = 4;
-        break;
-    case 16000:
-    case 22050:
-        ratio = 2;
-        break;
-    case 44100:
-    default:
-        ratio = 1;
-        break;
+    for (i = 0; i < size; i++) {
+        if (sampleRate == inputConfigTable[i][INPUT_CONFIG_SAMPLE_RATE]) {
+            return (AUDIO_HW_IN_PERIOD_SZ*channelCount*sizeof(int16_t)) /
+                    inputConfigTable[i][INPUT_CONFIG_BUFFER_RATIO];
+        }
     }
-
-    return (AUDIO_HW_IN_PERIOD_SZ*channelCount*sizeof(int16_t)) / ratio ;
+    // this should never happen as getBufferSize() is always called after getInputSampleRate()
+    // that checks for valid sampling rates.
+    LOGE("AudioStreamInALSA::getBufferSize() invalid sampling rate %d", sampleRate);
+    return 0;
 }
 
 int AudioHardware::AudioStreamInALSA::prepareLock()
@@ -1773,215 +1771,64 @@ void AudioHardware::AudioStreamInALSA::unlock() {
 }
 
 //------------------------------------------------------------------------------
-//  DownSampler
+// speex based resampler
 //------------------------------------------------------------------------------
 
-/*
- * 2.30 fixed point FIR filter coefficients for conversion 44100 -> 22050.
- * (Works equivalently for 22010 -> 11025 or any other halving, of course.)
- *
- * Transition band from about 18 kHz, passband ripple < 0.1 dB,
- * stopband ripple at about -55 dB, linear phase.
- *
- * Design and display in MATLAB or Octave using:
- *
- * filter = fir1(19, 0.5); filter = round(filter * 2**30); freqz(filter * 2**-30);
- */
-static const int32_t filter_22khz_coeff[] = {
-    2089257, 2898328, -5820678, -10484531,
-    19038724, 30542725, -50469415, -81505260,
-    152544464, 478517512, 478517512, 152544464,
-    -81505260, -50469415, 30542725, 19038724,
-    -10484531, -5820678, 2898328, 2089257,
-};
-#define NUM_COEFF_22KHZ (sizeof(filter_22khz_coeff) / sizeof(filter_22khz_coeff[0]))
-#define OVERLAP_22KHZ (NUM_COEFF_22KHZ - 2)
+#define RESAMPLER_QUALITY 2
 
-/*
- * Convolution of signals A and reverse(B). (In our case, the filter response
- * is symmetric, so the reversing doesn't matter.)
- * A is taken to be in 0.16 fixed-point, and B is taken to be in 2.30 fixed-point.
- * The answer will be in 16.16 fixed-point, unclipped.
- *
- * This function would probably be the prime candidate for SIMD conversion if
- * you want more speed.
- */
-int32_t fir_convolve(const int16_t* a, const int32_t* b, int num_samples)
-{
-        int32_t sum = 1 << 13;
-        for (int i = 0; i < num_samples; ++i) {
-                sum += a[i] * (b[i] >> 16);
-        }
-        return sum >> 14;
-}
-
-/* Clip from 16.16 fixed-point to 0.16 fixed-point. */
-int16_t clip(int32_t x)
-{
-    if (x < -32768) {
-        return -32768;
-    } else if (x > 32767) {
-        return 32767;
-    } else {
-        return x;
-    }
-}
-
-/*
- * Convert a chunk from 44 kHz to 22 kHz. Will update num_samples_in and num_samples_out
- * accordingly, since it may leave input samples in the buffer due to overlap.
- *
- * Input and output are taken to be in 0.16 fixed-point.
- */
-void resample_2_1(int16_t* input, int16_t* output, int* num_samples_in, int* num_samples_out)
-{
-    if (*num_samples_in < (int)NUM_COEFF_22KHZ) {
-        *num_samples_out = 0;
-        return;
-    }
-
-    int odd_smp = *num_samples_in & 0x1;
-    int num_samples = *num_samples_in - odd_smp - OVERLAP_22KHZ;
-
-    for (int i = 0; i < num_samples; i += 2) {
-            output[i / 2] = clip(fir_convolve(input + i, filter_22khz_coeff, NUM_COEFF_22KHZ));
-    }
-
-    memmove(input, input + num_samples, (OVERLAP_22KHZ + odd_smp) * sizeof(*input));
-    *num_samples_out = num_samples / 2;
-    *num_samples_in = OVERLAP_22KHZ + odd_smp;
-}
-
-/*
- * 2.30 fixed point FIR filter coefficients for conversion 22050 -> 16000,
- * or 11025 -> 8000.
- *
- * Transition band from about 14 kHz, passband ripple < 0.1 dB,
- * stopband ripple at about -50 dB, linear phase.
- *
- * Design and display in MATLAB or Octave using:
- *
- * filter = fir1(23, 16000 / 22050); filter = round(filter * 2**30); freqz(filter * 2**-30);
- */
-static const int32_t filter_16khz_coeff[] = {
-    2057290, -2973608, 1880478, 4362037,
-    -14639744, 18523609, -1609189, -38502470,
-    78073125, -68353935, -59103896, 617555440,
-    617555440, -59103896, -68353935, 78073125,
-    -38502470, -1609189, 18523609, -14639744,
-    4362037, 1880478, -2973608, 2057290,
-};
-#define NUM_COEFF_16KHZ (sizeof(filter_16khz_coeff) / sizeof(filter_16khz_coeff[0]))
-#define OVERLAP_16KHZ (NUM_COEFF_16KHZ - 1)
-
-/*
- * Convert a chunk from 22 kHz to 16 kHz. Will update num_samples_in and
- * num_samples_out accordingly, since it may leave input samples in the buffer
- * due to overlap.
- *
- * This implementation is rather ad-hoc; it first low-pass filters the data
- * into a temporary buffer, and then converts chunks of 441 input samples at a
- * time into 320 output samples by simple linear interpolation. A better
- * implementation would use a polyphase filter bank to do these two operations
- * in one step.
- *
- * Input and output are taken to be in 0.16 fixed-point.
- */
-
-#define RESAMPLE_16KHZ_SAMPLES_IN 441
-#define RESAMPLE_16KHZ_SAMPLES_OUT 320
-
-void resample_441_320(int16_t* input, int16_t* output, int* num_samples_in, int* num_samples_out)
-{
-    const int num_blocks = (*num_samples_in - OVERLAP_16KHZ) / RESAMPLE_16KHZ_SAMPLES_IN;
-    if (num_blocks < 1) {
-        *num_samples_out = 0;
-        return;
-    }
-
-    for (int i = 0; i < num_blocks; ++i) {
-        uint32_t tmp[RESAMPLE_16KHZ_SAMPLES_IN];
-        for (int j = 0; j < RESAMPLE_16KHZ_SAMPLES_IN; ++j) {
-            tmp[j] = fir_convolve(input + i * RESAMPLE_16KHZ_SAMPLES_IN + j,
-                          filter_16khz_coeff,
-                          NUM_COEFF_16KHZ);
-        }
-
-        const float step_float = (float)RESAMPLE_16KHZ_SAMPLES_IN / (float)RESAMPLE_16KHZ_SAMPLES_OUT;
-        const uint32_t step = (uint32_t)(step_float * 32768.0f + 0.5f);  // 17.15 fixed point
-
-        uint32_t in_sample_num = 0;   // 17.15 fixed point
-        for (int j = 0; j < RESAMPLE_16KHZ_SAMPLES_OUT; ++j, in_sample_num += step) {
-            const uint32_t whole = in_sample_num >> 15;
-            const uint32_t frac = (in_sample_num & 0x7fff);  // 0.15 fixed point
-            const int32_t s1 = tmp[whole];
-            const int32_t s2 = tmp[whole + 1];
-            *output++ = clip(s1 + (((s2 - s1) * (int32_t)frac) >> 15));
-        }
-
-    }
-
-    const int samples_consumed = num_blocks * RESAMPLE_16KHZ_SAMPLES_IN;
-    memmove(input, input + samples_consumed, (*num_samples_in - samples_consumed) * sizeof(*input));
-    *num_samples_in -= samples_consumed;
-    *num_samples_out = RESAMPLE_16KHZ_SAMPLES_OUT * num_blocks;
-}
-
-
-AudioHardware::DownSampler::DownSampler(uint32_t outSampleRate,
+AudioHardware::ReSampler::ReSampler(uint32_t inSampleRate,
+                                    uint32_t outSampleRate,
                                     uint32_t channelCount,
-                                    uint32_t frameCount,
-                                    AudioHardware::BufferProvider* provider)
-    :  mStatus(NO_INIT), mProvider(provider), mSampleRate(outSampleRate),
-       mChannelCount(channelCount), mFrameCount(frameCount),
-       mInLeft(NULL), mInRight(NULL), mTmpLeft(NULL), mTmpRight(NULL),
-       mTmp2Left(NULL), mTmp2Right(NULL), mOutLeft(NULL), mOutRight(NULL)
-
+                                    BufferProvider* provider)
+    :  mStatus(NO_INIT), mSpeexResampler(NULL), mProvider(provider),
+       mInSampleRate(inSampleRate), mOutSampleRate(outSampleRate), mChannelCount(channelCount),
+       mInBuf(NULL), mInBufSize(0)
 {
-    LOGV("AudioHardware::DownSampler() cstor %p SR %d channels %d frames %d",
-         this, mSampleRate, mChannelCount, mFrameCount);
+    LOGV("AudioHardware::ReSampler() cstor %p In SR %d Out SR %d channels %d",
+         this, mInSampleRate, mInSampleRate, mChannelCount);
 
-    if (mSampleRate != 8000 && mSampleRate != 11025 && mSampleRate != 16000 &&
-            mSampleRate != 22050) {
-        LOGW("AudioHardware::DownSampler cstor: bad sampling rate: %d", mSampleRate);
+    if (mProvider == NULL) {
         return;
     }
 
-    mInLeft = new int16_t[mFrameCount];
-    mInRight = new int16_t[mFrameCount];
-    mTmpLeft = new int16_t[mFrameCount];
-    mTmpRight = new int16_t[mFrameCount];
-    mTmp2Left = new int16_t[mFrameCount];
-    mTmp2Right = new int16_t[mFrameCount];
-    mOutLeft = new int16_t[mFrameCount];
-    mOutRight = new int16_t[mFrameCount];
+    int error;
+    mSpeexResampler = speex_resampler_init(channelCount,
+                                      inSampleRate,
+                                      outSampleRate,
+                                      RESAMPLER_QUALITY,
+                                      &error);
+    if (mSpeexResampler == NULL) {
+        LOGW("ReSampler: Cannot create speex resampler: %s", speex_resampler_strerror(error));
+        return;
+    }
+
+    reset();
 
     mStatus = NO_ERROR;
 }
 
-AudioHardware::DownSampler::~DownSampler()
+AudioHardware::ReSampler::~ReSampler()
 {
-    if (mInLeft) delete[] mInLeft;
-    if (mInRight) delete[] mInRight;
-    if (mTmpLeft) delete[] mTmpLeft;
-    if (mTmpRight) delete[] mTmpRight;
-    if (mTmp2Left) delete[] mTmp2Left;
-    if (mTmp2Right) delete[] mTmp2Right;
-    if (mOutLeft) delete[] mOutLeft;
-    if (mOutRight) delete[] mOutRight;
+    free(mInBuf);
+
+    if (mSpeexResampler != NULL) {
+        speex_resampler_destroy(mSpeexResampler);
+    }
 }
 
-void AudioHardware::DownSampler::reset()
+void AudioHardware::ReSampler::reset()
 {
-    mInInBuf = 0;
-    mInTmpBuf = 0;
-    mInTmp2Buf = 0;
-    mOutBufPos = 0;
-    mInOutBuf = 0;
+    mFramesIn = 0;
+    mFramesRq = 0;
+
+    if (mSpeexResampler != NULL) {
+        speex_resampler_reset_mem(mSpeexResampler);
+    }
 }
 
-
-int AudioHardware::DownSampler::resample(int16_t* out, size_t *outFrameCount)
+// outputs a number of frames less or equal to *outFrameCount and updates *outFrameCount
+// with the actual number of frames produced.
+int AudioHardware::ReSampler::resample(int16_t *out, size_t *outFrameCount)
 {
     if (mStatus != NO_ERROR) {
         return mStatus;
@@ -1991,154 +1838,69 @@ int AudioHardware::DownSampler::resample(int16_t* out, size_t *outFrameCount)
         return BAD_VALUE;
     }
 
-    int16_t *outLeft = mTmp2Left;
-    int16_t *outRight = mTmp2Left;
-    if (mSampleRate == 22050) {
-        outLeft = mTmpLeft;
-        outRight = mTmpRight;
-    } else if (mSampleRate == 8000){
-        outLeft = mOutLeft;
-        outRight = mOutRight;
+    size_t framesRq = *outFrameCount;
+    // update and cache the number of frames needed at the input sampling rate to produce
+    // the number of frames requested at the output sampling rate
+    if (framesRq != mFramesRq) {
+        mFramesNeeded = (framesRq * mOutSampleRate) / mInSampleRate + 1;
+        mFramesRq = framesRq;
     }
 
-    int outFrames = 0;
-    int remaingFrames = *outFrameCount;
-
-    if (mInOutBuf) {
-        int frames = (remaingFrames > mInOutBuf) ? mInOutBuf : remaingFrames;
-
-        for (int i = 0; i < frames; ++i) {
-            out[i] = outLeft[mOutBufPos + i];
-        }
-        if (mChannelCount == 2) {
-            for (int i = 0; i < frames; ++i) {
-                out[i * 2] = outLeft[mOutBufPos + i];
-                out[i * 2 + 1] = outRight[mOutBufPos + i];
+    size_t framesWr = 0;
+    size_t inFrames = 0;
+    while (framesWr < framesRq) {
+        if (mFramesIn < mFramesNeeded) {
+            // make sure that the number of frames present in mInBuf (mFramesIn) is at least
+            // the number of frames needed to produce the number of frames requested at
+            // the output sampling rate
+            if (mInBufSize < mFramesNeeded) {
+                mInBufSize = mFramesNeeded;
+                mInBuf = (int16_t *)realloc(mInBuf, mInBufSize * mChannelCount * sizeof(int16_t));
             }
-        }
-        remaingFrames -= frames;
-        mInOutBuf -= frames;
-        mOutBufPos += frames;
-        outFrames += frames;
-    }
-
-    while (remaingFrames) {
-        LOGW_IF((mInOutBuf != 0), "mInOutBuf should be 0 here");
-
-        AudioHardware::BufferProvider::Buffer buf;
-        buf.frameCount =  mFrameCount - mInInBuf;
-        int ret = mProvider->getNextBuffer(&buf);
-        if (buf.raw == NULL) {
-            *outFrameCount = outFrames;
-            return ret;
+            AudioHardware::BufferProvider::Buffer buf;
+            buf.frameCount = mFramesNeeded - mFramesIn;
+            mProvider->getNextBuffer(&buf);
+            if (buf.raw == NULL) {
+                break;
+            }
+            memcpy(mInBuf + mFramesIn * mChannelCount,
+                    buf.raw,
+                    buf.frameCount * mChannelCount * sizeof(int16_t));
+            mFramesIn += buf.frameCount;
+            mProvider->releaseBuffer(&buf);
         }
 
-        for (size_t i = 0; i < buf.frameCount; ++i) {
-            mInLeft[i + mInInBuf] = buf.i16[i];
-        }
-        if (mChannelCount == 2) {
-            for (size_t i = 0; i < buf.frameCount; ++i) {
-                mInLeft[i + mInInBuf] = buf.i16[i * 2];
-                mInRight[i + mInInBuf] = buf.i16[i * 2 + 1];
-            }
-        }
-        mInInBuf += buf.frameCount;
-        mProvider->releaseBuffer(&buf);
-
-        /* 44010 -> 22050 */
-        {
-            int samples_in_left = mInInBuf;
-            int samples_out_left;
-            resample_2_1(mInLeft, mTmpLeft + mInTmpBuf, &samples_in_left, &samples_out_left);
-
-            if (mChannelCount == 2) {
-                int samples_in_right = mInInBuf;
-                int samples_out_right;
-                resample_2_1(mInRight, mTmpRight + mInTmpBuf, &samples_in_right, &samples_out_right);
-            }
-
-            mInInBuf = samples_in_left;
-            mInTmpBuf += samples_out_left;
-            mInOutBuf = samples_out_left;
-        }
-
-        if (mSampleRate == 11025 || mSampleRate == 8000) {
-            /* 22050 - > 11025 */
-            int samples_in_left = mInTmpBuf;
-            int samples_out_left;
-            resample_2_1(mTmpLeft, mTmp2Left + mInTmp2Buf, &samples_in_left, &samples_out_left);
-
-            if (mChannelCount == 2) {
-                int samples_in_right = mInTmpBuf;
-                int samples_out_right;
-                resample_2_1(mTmpRight, mTmp2Right + mInTmp2Buf, &samples_in_right, &samples_out_right);
-            }
-
-
-            mInTmpBuf = samples_in_left;
-            mInTmp2Buf += samples_out_left;
-            mInOutBuf = samples_out_left;
-
-            if (mSampleRate == 8000) {
-                /* 11025 -> 8000*/
-                int samples_in_left = mInTmp2Buf;
-                int samples_out_left;
-                resample_441_320(mTmp2Left, mOutLeft, &samples_in_left, &samples_out_left);
-
-                if (mChannelCount == 2) {
-                    int samples_in_right = mInTmp2Buf;
-                    int samples_out_right;
-                    resample_441_320(mTmp2Right, mOutRight, &samples_in_right, &samples_out_right);
-                }
-
-                mInTmp2Buf = samples_in_left;
-                mInOutBuf = samples_out_left;
-            } else {
-                mInTmp2Buf = 0;
-            }
-
-        } else if (mSampleRate == 16000) {
-            /* 22050 -> 16000*/
-            int samples_in_left = mInTmpBuf;
-            int samples_out_left;
-            resample_441_320(mTmpLeft, mTmp2Left, &samples_in_left, &samples_out_left);
-
-            if (mChannelCount == 2) {
-                int samples_in_right = mInTmpBuf;
-                int samples_out_right;
-                resample_441_320(mTmpRight, mTmp2Right, &samples_in_right, &samples_out_right);
-            }
-
-            mInTmpBuf = samples_in_left;
-            mInOutBuf = samples_out_left;
+        size_t outFrames = framesRq - framesWr;
+        inFrames = mFramesIn;
+        if (mChannelCount == 1) {
+            speex_resampler_process_int(mSpeexResampler,
+                                        0,
+                                        mInBuf,
+                                        &inFrames,
+                                        out + framesWr * mChannelCount,
+                                        &outFrames);
         } else {
-            mInTmpBuf = 0;
+            speex_resampler_process_interleaved_int(mSpeexResampler,
+                                        mInBuf,
+                                        &inFrames,
+                                        out + framesWr * mChannelCount,
+                                        &outFrames);
         }
-
-        int frames = (remaingFrames > mInOutBuf) ? mInOutBuf : remaingFrames;
-
-        for (int i = 0; i < frames; ++i) {
-            out[outFrames + i] = outLeft[i];
-        }
-        if (mChannelCount == 2) {
-            for (int i = 0; i < frames; ++i) {
-                out[(outFrames + i) * 2] = outLeft[i];
-                out[(outFrames + i) * 2 + 1] = outRight[i];
-            }
-        }
-        remaingFrames -= frames;
-        outFrames += frames;
-        mOutBufPos = frames;
-        mInOutBuf -= frames;
+        framesWr += outFrames;
+        mFramesIn -= inFrames;
+        LOGW_IF((framesWr != framesRq) && (mFramesIn != 0),
+                "ReSampler::resample() remaining %d frames in and %d frames out",
+                mFramesIn, (framesRq - framesWr));
     }
+    if (mFramesIn) {
+        memmove(mInBuf,
+                mInBuf + inFrames * mChannelCount,
+                mFramesIn * mChannelCount * sizeof(int16_t));
+    }
+    *outFrameCount = framesWr;
 
-    return 0;
+    return NO_ERROR;
 }
-
-
-
-
-
 
 
 //------------------------------------------------------------------------------
