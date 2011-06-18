@@ -29,7 +29,8 @@
 
 #include "secril-client.h"
 
-#include "speex/speex_resampler.h"
+#include "ReSampler.h"
+#include "EchoReference.h"
 
 extern "C" {
     struct pcm;
@@ -78,6 +79,7 @@ class AudioHardware : public AudioHardwareBase
 {
     class AudioStreamOutALSA;
     class AudioStreamInALSA;
+
 public:
 
     // input path names used to translate from input sources to driver paths
@@ -139,6 +141,11 @@ public:
 
            sp <AudioStreamOutALSA>  output() { return mOutput; }
 
+           EchoReference *getEchoReference(audio_format_t format,
+                                          uint32_t channelCount,
+                                          uint32_t samplingRate);
+           void releaseEchoReference(EchoReference *reference);
+
 protected:
     virtual status_t dump(int fd, const Vector<String16>& args);
 
@@ -180,6 +187,7 @@ private:
     int             (*setCallClockSync)(HRilClient, SoundClockCondition);
     void            loadRILD(void);
     status_t        connectRILDIfRequired(void);
+    EchoReference*  mEchoReference;
 
     //  trace driver operations for dump
     int             mDriverOp;
@@ -240,7 +248,12 @@ private:
                 void lock();
                 void unlock();
 
+                void addEchoReference(EchoReference *reference);
+                void removeEchoReference(EchoReference *reference);
+
     private:
+
+                int computeEchoReferenceDelay(size_t frames, struct timespec *echoRefRenderTime);
 
         Mutex mLock;
         AudioHardware* mHardware;
@@ -257,56 +270,10 @@ private:
         int mDriverOp;
         int mStandbyCnt;
         bool mSleepReq;
+        EchoReference *mEchoReference;
     };
 
-    class BufferProvider
-    {
-    public:
-
-        struct Buffer {
-            union {
-                void*       raw;
-                short*      i16;
-                int8_t*     i8;
-            };
-            size_t frameCount;
-        };
-
-        virtual ~BufferProvider() {}
-
-        virtual status_t getNextBuffer(Buffer* buffer) = 0;
-        virtual void releaseBuffer(Buffer* buffer) = 0;
-    };
-
-    class ReSampler {
-    public:
-        ReSampler(uint32_t inSampleRate,
-                  uint32_t outSampleRate,
-                  uint32_t channelCount,
-                  BufferProvider* provider);
-
-        virtual ~ReSampler();
-
-                status_t initCheck() { return mStatus; }
-                void reset();
-                int resample(int16_t* out, size_t *outFrameCount);
-
-    private:
-        status_t    mStatus;
-        SpeexResamplerState *mSpeexResampler;
-        BufferProvider* mProvider;
-        uint32_t mInSampleRate;
-        uint32_t mOutSampleRate;
-        uint32_t mChannelCount;
-        int16_t *mInBuf;
-        size_t mInBufSize;
-        size_t mFramesIn;
-        size_t mFramesRq;
-        size_t mFramesNeeded;
-    };
-
-
-    class AudioStreamInALSA : public AudioStreamIn, public BufferProvider, public RefBase
+    class AudioStreamInALSA : public AudioStreamIn, public ReSampler::BufferProvider, public RefBase
     {
 
      public:
@@ -342,8 +309,8 @@ private:
         static size_t getBufferSize(uint32_t sampleRate, int channelCount);
 
         // BufferProvider
-        virtual status_t getNextBuffer(BufferProvider::Buffer* buffer);
-        virtual void releaseBuffer(BufferProvider::Buffer* buffer);
+        virtual status_t getNextBuffer(ReSampler::BufferProvider::Buffer* buffer);
+        virtual void releaseBuffer(ReSampler::BufferProvider::Buffer* buffer);
 
         int prepareLock();
         void lock();
@@ -353,6 +320,11 @@ private:
 
         ssize_t readFrames(void* buffer, ssize_t frames);
         ssize_t processFrames(void* buffer, ssize_t frames);
+        void updateEchoReference(size_t frames);
+        void pushEchoReference(size_t frames);
+        void updateEchoDelay(size_t frames, struct timespec *echoRefRenderTime);
+        status_t setPreProcessorEchoDelay(effect_handle_t handle, int32_t delayUs);
+        status_t setPreprocessorParam(effect_handle_t handle, effect_param_t *param);
 
         Mutex mLock;
         AudioHardware* mHardware;
@@ -378,6 +350,12 @@ private:
         int16_t *mProcBuf;
         size_t mProcBufSize;
         size_t mProcFramesIn;
+        int16_t *mRefBuf;
+        size_t mRefBufSize;
+        size_t mRefFramesIn;
+        EchoReference *mEchoReference;
+        bool mNeedEchoReference;
+        int32_t mEchoDelayUs;
     };
 
 };

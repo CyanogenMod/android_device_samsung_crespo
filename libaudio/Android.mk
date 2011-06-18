@@ -1,10 +1,28 @@
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
-LOCAL_SRC_FILES:= AudioHardware.cpp
+
+LOCAL_MODULE := libaudioutils
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_SRC_FILES:= \
+	ReSampler.cpp \
+	EchoReference.cpp
+
+LOCAL_C_INCLUDES += $(call include-path-for, speex)
+
+LOCAL_SHARED_LIBRARIES := libcutils
+
+
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES:= \
+	AudioHardware.cpp
+
 LOCAL_MODULE := audio.primary.herring
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
-LOCAL_STATIC_LIBRARIES:= libmedia_helper
+LOCAL_STATIC_LIBRARIES:= libmedia_helper libaudioutils
 LOCAL_SHARED_LIBRARIES:= \
 	libutils \
 	libhardware_legacy \
@@ -16,7 +34,9 @@ LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES += libdl
 LOCAL_C_INCLUDES += $(call include-path-for, speex)
-LOCAL_C_INCLUDES += external/tinyalsa/include
+LOCAL_C_INCLUDES += \
+	external/tinyalsa/include \
+	system/media/audio_effects/include
 
 include $(BUILD_SHARED_LIBRARY)
 
