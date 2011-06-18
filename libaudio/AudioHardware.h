@@ -25,6 +25,7 @@
 
 #include <hardware_legacy/AudioHardwareBase.h>
 #include <media/mediarecorder.h>
+#include <hardware/audio_effect.h>
 
 #include "secril-client.h"
 
@@ -55,7 +56,7 @@ namespace android_audio_legacy {
 // Default audio output sample format
 #define AUDIO_HW_OUT_FORMAT (AudioSystem::PCM_16_BIT)
 // Kernel pcm out buffer size in frames at 44.1kHz
-#define AUDIO_HW_OUT_PERIOD_SZ 1024
+#define AUDIO_HW_OUT_PERIOD_SZ 448
 #define AUDIO_HW_OUT_PERIOD_CNT 4
 // Default audio output buffer size in bytes
 #define AUDIO_HW_OUT_PERIOD_BYTES (AUDIO_HW_OUT_PERIOD_SZ * 2 * sizeof(int16_t))
@@ -67,8 +68,8 @@ namespace android_audio_legacy {
 // Default audio input sample format
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)
 // Kernel pcm in buffer size in frames at 44.1kHz (before resampling)
-#define AUDIO_HW_IN_PERIOD_SZ 2048
-#define AUDIO_HW_IN_PERIOD_CNT 2
+#define AUDIO_HW_IN_PERIOD_SZ 448
+#define AUDIO_HW_IN_PERIOD_CNT 4
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
@@ -348,7 +349,11 @@ private:
         void lock();
         void unlock();
 
-    private:
+     private:
+
+        ssize_t readFrames(void* buffer, ssize_t frames);
+        ssize_t processFrames(void* buffer, ssize_t frames);
+
         Mutex mLock;
         AudioHardware* mHardware;
         struct pcm *mPcm;
@@ -363,12 +368,16 @@ private:
         size_t mBufferSize;
         ReSampler *mDownSampler;
         status_t mReadStatus;
-        size_t mInPcmInBuf;
-        int16_t *mPcmIn;
+        size_t mInputFramesIn;
+        int16_t *mInputBuf;
         //  trace driver operations for dump
         int mDriverOp;
         int mStandbyCnt;
         bool mSleepReq;
+        SortedVector<effect_handle_t> mPreprocessors;
+        int16_t *mProcBuf;
+        size_t mProcBufSize;
+        size_t mProcFramesIn;
     };
 
 };

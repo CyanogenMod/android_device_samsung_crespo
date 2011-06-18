@@ -1336,8 +1336,9 @@ AudioHardware::AudioStreamInALSA::AudioStreamInALSA() :
     mHardware(0), mPcm(0), mMixer(0), mRouteCtl(0),
     mStandby(true), mDevices(0), mChannels(AUDIO_HW_IN_CHANNELS), mChannelCount(1),
     mSampleRate(AUDIO_HW_IN_SAMPLERATE), mBufferSize(AUDIO_HW_IN_PERIOD_BYTES),
-    mDownSampler(NULL), mReadStatus(NO_ERROR), mDriverOp(DRV_NONE),
-    mStandbyCnt(0), mSleepReq(false)
+    mDownSampler(NULL), mReadStatus(NO_ERROR), mInputBuf(NULL),
+    mDriverOp(DRV_NONE), mStandbyCnt(0), mSleepReq(false),
+    mProcBuf(NULL), mProcBufSize(0)
 {
 }
 
@@ -1384,25 +1385,113 @@ status_t AudioHardware::AudioStreamInALSA::set(
             LOGW("AudioStreamInALSA::set() downsampler init failed: %d", status);
             return status;
         }
-        mPcmIn = new int16_t[AUDIO_HW_IN_PERIOD_SZ * mChannelCount];
     }
+    mInputBuf = new int16_t[AUDIO_HW_IN_PERIOD_SZ * mChannelCount];
     return NO_ERROR;
 }
 
 AudioHardware::AudioStreamInALSA::~AudioStreamInALSA()
 {
     standby();
-    if (mDownSampler != NULL) {
-        delete mDownSampler;
-        delete[] mPcmIn;
+    delete mDownSampler;
+    delete[] mInputBuf;
+    delete[] mProcBuf;
+}
+
+// readFrames() reads frames from kernel driver, down samples to capture rate if necessary
+// and output the number of frames requested to the buffer specified
+ssize_t AudioHardware::AudioStreamInALSA::readFrames(void* buffer, ssize_t frames)
+{
+    ssize_t framesWr = 0;
+    while (framesWr < frames) {
+        size_t framesRd = frames - framesWr;
+        if (mDownSampler != NULL) {
+            mDownSampler->resample(
+                    (int16_t *)((char *)buffer + framesWr * frameSize()),
+                    &framesRd);
+        } else {
+            AudioHardware::BufferProvider::Buffer buf;
+            buf.frameCount = framesRd;
+            getNextBuffer(&buf);
+            if (buf.raw != NULL) {
+                memcpy((char *)buffer + framesWr * frameSize(),
+                        buf.raw,
+                        buf.frameCount * frameSize());
+                framesRd = buf.frameCount;
+            }
+            releaseBuffer(&buf);
+        }
+        // mReadStatus is updated by getNextBuffer() also called by mDownSampler->resample()
+        if (mReadStatus != 0) {
+            return mReadStatus;
+        }
+        framesWr += framesRd;
     }
+    return framesWr;
+}
+
+// processFrames() reads frames from kernel driver (via readFrames()), calls the active
+// audio pre processings and output the number of frames requested to the buffer specified
+ssize_t AudioHardware::AudioStreamInALSA::processFrames(void* buffer, ssize_t frames)
+{
+    ssize_t framesWr = 0;
+    while (framesWr < frames) {
+        // first reload enough frames at the end of process input buffer
+        if (mProcFramesIn < (size_t)frames) {
+            // expand process input buffer if necessary
+            if (mProcBufSize < (size_t)frames) {
+                mProcBufSize = (size_t)frames;
+                mProcBuf = (int16_t *)realloc(mProcBuf,
+                                              mProcBufSize * mChannelCount * sizeof(int16_t));
+                LOGV("read: mProcBuf size extended to %d frames", mProcBufSize);
+            }
+            ssize_t framesRd = readFrames(mProcBuf + mProcFramesIn * mChannelCount,
+                                          frames - mProcFramesIn);
+            if (framesRd < 0) {
+                framesWr = framesRd;
+                break;
+            }
+            mProcFramesIn += framesRd;
+        }
+
+        // inBuf.frameCount and outBuf.frameCount indicate respectively the maximum number of frames
+        // to be consumed and produced by process()
+        audio_buffer_t inBuf = {
+                mProcFramesIn,
+                {mProcBuf}
+        };
+        audio_buffer_t outBuf = {
+                frames - framesWr,
+                {(int16_t *)buffer + framesWr * mChannelCount}
+        };
+
+        for (size_t i = 0; i < mPreprocessors.size(); i++) {
+            (*mPreprocessors[i])->process(mPreprocessors[i],
+                                                   &inBuf,
+                                                   &outBuf);
+        }
+
+        // process() has updated the number of frames consumed and produced in
+        // inBuf.frameCount and outBuf.frameCount respectively
+        // move remaining frames to the beginning of mProcBuf
+        memcpy(mProcBuf,
+               mProcBuf + inBuf.frameCount * mChannelCount,
+               (mProcFramesIn - inBuf.frameCount) * mChannelCount * sizeof(int16_t));
+        mProcFramesIn -= inBuf.frameCount;
+
+        // if not enough frames were passed to process(), read more and retry.
+        if (outBuf.frameCount == 0) {
+            continue;
+        }
+        framesWr += outBuf.frameCount;
+    }
+    return framesWr;
 }
 
 ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
 {
     //    LOGV("AudioStreamInALSA::read(%p, %d)", buffer, (int)bytes);
     status_t status = NO_INIT;
-    int ret;
 
     if (mHardware == NULL) return NO_INIT;
 
@@ -1464,32 +1553,21 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             mStandby = false;
         }
 
+        size_t framesRq = bytes / mChannelCount/sizeof(int16_t);
+        ssize_t framesRd;
 
-        if (mDownSampler != NULL) {
-            size_t frames = bytes / frameSize();
-            size_t framesIn = 0;
-            mReadStatus = 0;
-            do {
-                size_t outframes = frames - framesIn;
-                mDownSampler->resample(
-                        (int16_t *)buffer + (framesIn * mChannelCount),
-                        &outframes);
-                framesIn += outframes;
-            } while ((framesIn < frames) && mReadStatus == 0);
-            ret = mReadStatus;
-            bytes = framesIn * frameSize();
+        if (mPreprocessors.size() == 0) {
+            framesRd = readFrames(buffer, framesRq);
         } else {
-            TRACE_DRIVER_IN(DRV_PCM_READ)
-            ret = pcm_read(mPcm, buffer, bytes);
-            TRACE_DRIVER_OUT
+            framesRd = processFrames(buffer, framesRq);
         }
 
-        if (ret == 0) {
-            return bytes;
+        if (framesRd >= 0) {
+            return framesRd * mChannelCount * sizeof(int16_t);
         }
 
-        LOGW("read error: %d", ret);
-        status = ret;
+        LOGW("read error: %d", (int)framesRd);
+        status = framesRd;
     }
 
 Error:
@@ -1546,6 +1624,10 @@ void AudioHardware::AudioStreamInALSA::close_l()
         TRACE_DRIVER_OUT
         mPcm = NULL;
     }
+
+    delete[] mProcBuf;
+    mProcBuf = NULL;
+    mProcBufSize = 0;
 }
 
 status_t AudioHardware::AudioStreamInALSA::open_l()
@@ -1574,9 +1656,12 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     }
 
     if (mDownSampler != NULL) {
-        mInPcmInBuf = 0;
         mDownSampler->reset();
     }
+    mInputFramesIn = 0;
+
+    mProcBufSize = 0;
+    mProcFramesIn = 0;
 
     mMixer = mHardware->openMixer_l();
     if (mMixer) {
@@ -1705,14 +1790,62 @@ String8 AudioHardware::AudioStreamInALSA::getParameters(const String8& keys)
 
 status_t AudioHardware::AudioStreamInALSA::addAudioEffect(effect_handle_t effect)
 {
+    LOGV("AudioStreamInALSA::addAudioEffect() %p", effect);
+
+    AutoMutex lock(mLock);
+    mPreprocessors.add(effect);
     return NO_ERROR;
 }
 
 status_t AudioHardware::AudioStreamInALSA::removeAudioEffect(effect_handle_t effect)
 {
-    return NO_ERROR;
+    status_t status = INVALID_OPERATION;
+    LOGV("AudioStreamInALSA::removeAudioEffect() %p", effect);
+    {
+        AutoMutex lock(mLock);
+        for (size_t i = 0; i < mPreprocessors.size(); i++) {
+            if (mPreprocessors[i] == effect) {
+                mPreprocessors.removeAt(i);
+                status = NO_ERROR;
+                break;
+            }
+        }
+    }
+
+    return status;
 }
 
+status_t AudioHardware::AudioStreamInALSA::getNextBuffer(AudioHardware::BufferProvider::Buffer* buffer)
+{
+    if (mPcm == NULL) {
+        buffer->raw = NULL;
+        buffer->frameCount = 0;
+        mReadStatus = NO_INIT;
+        return NO_INIT;
+    }
+
+    if (mInputFramesIn == 0) {
+        TRACE_DRIVER_IN(DRV_PCM_READ)
+        mReadStatus = pcm_read(mPcm,(void*) mInputBuf, AUDIO_HW_IN_PERIOD_SZ * frameSize());
+        TRACE_DRIVER_OUT
+        if (mReadStatus != 0) {
+            buffer->raw = NULL;
+            buffer->frameCount = 0;
+            return mReadStatus;
+        }
+        mInputFramesIn = AUDIO_HW_IN_PERIOD_SZ;
+    }
+
+    buffer->frameCount = (buffer->frameCount > mInputFramesIn) ? mInputFramesIn : buffer->frameCount;
+    buffer->i16 = mInputBuf + (AUDIO_HW_IN_PERIOD_SZ - mInputFramesIn) * mChannelCount;
+
+    return mReadStatus;
+}
+
+void AudioHardware::AudioStreamInALSA::releaseBuffer(AudioHardware::BufferProvider::Buffer* buffer)
+{
+    mInputFramesIn -= buffer->frameCount;
+}
 
 size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int channelCount)
 {
@@ -1747,39 +1880,6 @@ void AudioHardware::AudioStreamInALSA::lock()
 
 void AudioHardware::AudioStreamInALSA::unlock() {
     mLock.unlock();
-}
-
-//--- BufferProvider
-status_t AudioHardware::AudioStreamInALSA::getNextBuffer(AudioHardware::BufferProvider::Buffer* buffer)
-{
-    if (mPcm == NULL) {
-        buffer->raw = NULL;
-        buffer->frameCount = 0;
-        mReadStatus = NO_INIT;
-        return NO_INIT;
-    }
-
-    if (mInPcmInBuf == 0) {
-        TRACE_DRIVER_IN(DRV_PCM_READ)
-        mReadStatus = pcm_read(mPcm,(void*) mPcmIn, AUDIO_HW_IN_PERIOD_SZ * frameSize());
-        TRACE_DRIVER_OUT
-        if (mReadStatus != 0) {
-            buffer->raw = NULL;
-            buffer->frameCount = 0;
-            return mReadStatus;
-        }
-        mInPcmInBuf = AUDIO_HW_IN_PERIOD_SZ;
-    }
-
-    buffer->frameCount = (buffer->frameCount > mInPcmInBuf) ? mInPcmInBuf : buffer->frameCount;
-    buffer->i16 = mPcmIn + (AUDIO_HW_IN_PERIOD_SZ - mInPcmInBuf) * mChannelCount;
-
-    return mReadStatus;
-}
-
-void AudioHardware::AudioStreamInALSA::releaseBuffer(Buffer* buffer)
-{
-    mInPcmInBuf -= buffer->frameCount;
 }
 
 //------------------------------------------------------------------------------
