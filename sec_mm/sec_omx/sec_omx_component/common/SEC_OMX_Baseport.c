@@ -941,7 +941,7 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECOutputPort->markType.hMarkTargetComponent = NULL;
     pSECOutputPort->markType.pMarkData = NULL;
 
-    pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_TRUE;
+    pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_FALSE;
     pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;
     pSECComponent->checkTimeStamp.startTimeStamp = 0;
     pSECComponent->checkTimeStamp.nStartFlags = 0x0;
