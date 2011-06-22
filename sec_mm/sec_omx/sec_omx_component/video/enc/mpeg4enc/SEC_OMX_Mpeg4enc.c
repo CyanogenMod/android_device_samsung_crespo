@@ -851,19 +851,14 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pOutputData->dataBuffer = outputInfo.StrmVirAddr;
         pOutputData->allocSize = outputInfo.headerSize;
         pOutputData->dataLen = outputInfo.headerSize;
-        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->timeStamp = 0;
         pOutputData->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
         pOutputData->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
         pMpeg4Enc->hMFCMpeg4Handle.bConfiguredMFC = OMX_TRUE;
 
-        if (pOutputData->dataLen > 0) {
-            ret = OMX_ErrorNone;
-            goto EXIT;
-        } else {
-            ret = OMX_ErrorInputDataEncodeYet;
-            goto EXIT;
-        }
+        ret = OMX_ErrorInputDataEncodeYet;
+        goto EXIT;
     }
 
     if ((pInputData->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
@@ -976,9 +971,9 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, S
             pOutputData->usedDataLen = 0;
             pOutputData->remainDataLen = pOutputData->dataLen;
         } else {
-        pSECComponent->pCallbacks->EventHandler((OMX_HANDLETYPE)pOMXComponent,
-                                        pSECComponent->callbackData,
-                                        OMX_EventError, ret, 0, NULL);
+            pSECComponent->pCallbacks->EventHandler((OMX_HANDLETYPE)pOMXComponent,
+                                            pSECComponent->callbackData,
+                                            OMX_EventError, ret, 0, NULL);
         }
     } else {
         pInputData->usedDataLen += pInputData->dataLen;

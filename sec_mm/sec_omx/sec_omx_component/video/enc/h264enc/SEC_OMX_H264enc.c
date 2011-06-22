@@ -725,13 +725,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pOutputData->dataBuffer = outputInfo.StrmVirAddr;
         pOutputData->allocSize = outputInfo.headerSize;
         pOutputData->dataLen = outputInfo.headerSize;
-        pOutputData->timeStamp = pInputData->timeStamp;
+        pOutputData->timeStamp = 0;
         pOutputData->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
         pOutputData->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
         pH264Enc->hMFCH264Handle.bConfiguredMFC = OMX_TRUE;
 
-        ret = OMX_ErrorNone;
+        ret = OMX_ErrorInputDataEncodeYet;
         goto EXIT;
     }
 
@@ -847,17 +847,22 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_bufferProcess(OMX_COMPONENTTYPE *pOMXComponent, SE
 
     ret = SEC_MFC_H264_Encode(pOMXComponent, pInputData, pOutputData);
     if (ret != OMX_ErrorNone) {
-        pSECComponent->pCallbacks->EventHandler((OMX_HANDLETYPE)pOMXComponent,
-                                        pSECComponent->callbackData,
-                                        OMX_EventError, ret, 0, NULL);
+        if (ret == OMX_ErrorInputDataEncodeYet) {
+            pOutputData->usedDataLen = 0;
+            pOutputData->remainDataLen = pOutputData->dataLen;
+        } else {
+            pSECComponent->pCallbacks->EventHandler((OMX_HANDLETYPE)pOMXComponent,
+                                            pSECComponent->callbackData,
+                                            OMX_EventError, ret, 0, NULL);
+        }
     } else {
         pInputData->usedDataLen += pInputData->dataLen;
         pInputData->remainDataLen = pInputData->dataLen - pInputData->usedDataLen;
         pInputData->dataLen -= pInputData->usedDataLen;
         pInputData->usedDataLen = 0;
 
-        /* pOutputData->usedDataLen = 0; */
-        pOutputData->remainDataLen = pOutputData->dataLen - pOutputData->usedDataLen;
+        pOutputData->usedDataLen = 0;
+        pOutputData->remainDataLen = pOutputData->dataLen;
     }
 
 EXIT:
