@@ -61,7 +61,9 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
 	device/samsung/crespo/cypress-touchkey.kcm:system/usr/keychars/cypress-touchkey.kcm \
 	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
-	device/samsung/crespo/sec_jack.kcm:system/usr/keychars/sec_jack.kcm
+	device/samsung/crespo/sec_jack.kcm:system/usr/keychars/sec_jack.kcm \
+	device/samsung/crespo/mxt224_ts_input.kl:system/usr/keylayout/mxt224_ts_input.kl \
+	device/samsung/crespo/mxt224_ts_input.kcm:system/usr/keychars/mxt224_ts_input.kcm
 
 #Bluetooth setup
 PRODUCT_COPY_FILES += \

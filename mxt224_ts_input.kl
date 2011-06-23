@@ -1,4 +1,4 @@
-# Copyright (C) 2010 The Android Open Source Project
+# Copyright (C) 2011 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-key 114   VOLUME_DOWN       WAKE
-key 115   VOLUME_UP         WAKE
-key 116   POWER             WAKE
+key 158   BACK              WAKE
+key 139   MENU              WAKE
+key 217   SEARCH            WAKE
+key 102   HOME              WAKE
