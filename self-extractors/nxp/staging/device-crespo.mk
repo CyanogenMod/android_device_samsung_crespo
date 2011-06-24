@@ -14,4 +14,4 @@
 
 # NXP blob necessary for crespo
 PRODUCT_COPY_FILES := \
-    vendor/nxp/crespo/proprietary/libpn544_fw.so:system/lib/libpn544_fw.so
+    vendor/nxp/crespo/proprietary/libpn544_fw.so:system/vendor/firmware/libpn544_fw.so
