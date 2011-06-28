@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Broadcom blobs necessary for crespo
+LOCAL_PATH := vendor/broadcom/crespo
+
+# Broadcom blobs necessary for Nexus S hardware
 PRODUCT_COPY_FILES := \
-    vendor/broadcom/crespo/proprietary/gpsd:system/vendor/bin/gpsd \
-    vendor/broadcom/crespo/proprietary/bcm4329.hcd:system/vendor/firmware/bcm4329.hcd \
-    vendor/broadcom/crespo/proprietary/gps.s5pc110.so:system/vendor/lib/hw/gps.s5pc110.so
+    $(LOCAL_PATH)/proprietary/gpsd:system/vendor/bin/gpsd \
+    $(LOCAL_PATH)/proprietary/bcm4329.hcd:system/vendor/firmware/bcm4329.hcd \
+    $(LOCAL_PATH)/proprietary/gps.s5pc110.so:system/vendor/lib/hw/gps.s5pc110.so

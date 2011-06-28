@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NXP blob necessary for crespo
+LOCAL_PATH := vendor/nxp/crespo
+
+# NXP blob necessary for Nexus S hardware
 PRODUCT_COPY_FILES := \
-    vendor/nxp/crespo/proprietary/libpn544_fw.so:system/vendor/firmware/libpn544_fw.so
+    $(LOCAL_PATH)/proprietary/libpn544_fw.so:system/vendor/firmware/libpn544_fw.so

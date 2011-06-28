@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Imgtec blobs necessary for crespo
+LOCAL_PATH := vendor/imgtec/crespo
+
+# Imgtec blobs necessary for Nexus S hardware
 PRODUCT_COPY_FILES += \
-    vendor/imgtec/crespo/proprietary/pvrsrvinit:system/vendor/bin/pvrsrvinit \
-    vendor/imgtec/crespo/proprietary/libEGL_POWERVR_SGX540_120.so:system/vendor/lib/egl/libEGL_POWERVR_SGX540_120.so \
-    vendor/imgtec/crespo/proprietary/libGLESv1_CM_POWERVR_SGX540_120.so:system/vendor/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so \
-    vendor/imgtec/crespo/proprietary/libGLESv2_POWERVR_SGX540_120.so:system/vendor/lib/egl/libGLESv2_POWERVR_SGX540_120.so \
-    vendor/imgtec/crespo/proprietary/gralloc.s5pc110.so:system/vendor/lib/hw/gralloc.s5pc110.so \
-    vendor/imgtec/crespo/proprietary/libglslcompiler.so:system/vendor/lib/libglslcompiler.so \
-    vendor/imgtec/crespo/proprietary/libIMGegl.so:system/vendor/lib/libIMGegl.so \
-    vendor/imgtec/crespo/proprietary/libpvr2d.so:system/vendor/lib/libpvr2d.so \
-    vendor/imgtec/crespo/proprietary/libpvrANDROID_WSEGL.so:system/vendor/lib/libpvrANDROID_WSEGL.so \
-    vendor/imgtec/crespo/proprietary/libPVRScopeServices.so:system/vendor/lib/libPVRScopeServices.so \
-    vendor/imgtec/crespo/proprietary/libsrv_init.so:system/vendor/lib/libsrv_init.so \
-    vendor/imgtec/crespo/proprietary/libsrv_um.so:system/vendor/lib/libsrv_um.so \
-    vendor/imgtec/crespo/proprietary/libusc.so:system/vendor/lib/libusc.so
+    $(LOCAL_PATH)/proprietary/pvrsrvinit:system/vendor/bin/pvrsrvinit \
+    $(LOCAL_PATH)/proprietary/libEGL_POWERVR_SGX540_120.so:system/vendor/lib/egl/libEGL_POWERVR_SGX540_120.so \
+    $(LOCAL_PATH)/proprietary/libGLESv1_CM_POWERVR_SGX540_120.so:system/vendor/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so \
+    $(LOCAL_PATH)/proprietary/libGLESv2_POWERVR_SGX540_120.so:system/vendor/lib/egl/libGLESv2_POWERVR_SGX540_120.so \
+    $(LOCAL_PATH)/proprietary/gralloc.s5pc110.so:system/vendor/lib/hw/gralloc.s5pc110.so \
+    $(LOCAL_PATH)/proprietary/libglslcompiler.so:system/vendor/lib/libglslcompiler.so \
+    $(LOCAL_PATH)/proprietary/libIMGegl.so:system/vendor/lib/libIMGegl.so \
+    $(LOCAL_PATH)/proprietary/libpvr2d.so:system/vendor/lib/libpvr2d.so \
+    $(LOCAL_PATH)/proprietary/libpvrANDROID_WSEGL.so:system/vendor/lib/libpvrANDROID_WSEGL.so \
+    $(LOCAL_PATH)/proprietary/libPVRScopeServices.so:system/vendor/lib/libPVRScopeServices.so \
+    $(LOCAL_PATH)/proprietary/libsrv_init.so:system/vendor/lib/libsrv_init.so \
+    $(LOCAL_PATH)/proprietary/libsrv_um.so:system/vendor/lib/libsrv_um.so \
+    $(LOCAL_PATH)/proprietary/libusc.so:system/vendor/lib/libusc.so

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# AKM blob necessary for crespo
+LOCAL_PATH := vendor/akm/crespo
+
+# AKM blob necessary for Nexus S hardware
 PRODUCT_COPY_FILES := \
-    vendor/akm/crespo/proprietary/libakm.so:system/vendor/lib/libakm.so
+    $(LOCAL_PATH)/proprietary/libakm.so:system/vendor/lib/libakm.so

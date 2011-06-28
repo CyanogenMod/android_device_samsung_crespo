@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cypress blob necessary for crespo
+LOCAL_PATH := vendor/cypress/crespo
+
+# cypress blob necessary for Nexus S hardware
 PRODUCT_COPY_FILES := \
-    vendor/cypress/crespo/proprietary/cypress-touchkey.bin:system/vendor/firmware/cypress-touchkey.bin
+    $(LOCAL_PATH)/proprietary/cypress-touchkey.bin:system/vendor/firmware/cypress-touchkey.bin
