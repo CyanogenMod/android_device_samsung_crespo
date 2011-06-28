@@ -75,7 +75,7 @@ do
     ;;
   nxp)
     TO_EXTRACT="\
-            system/lib/libpn544_fw.so \
+            system/vendor/firmware/libpn544_fw.so \
             "
     ;;
   samsung)
