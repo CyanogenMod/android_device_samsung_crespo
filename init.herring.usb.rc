@@ -2,7 +2,9 @@ on boot
     write /sys/class/android_usb/android0/iManufacturer $ro.product.manufacturer
     write /sys/class/android_usb/android0/iProduct $ro.product.model
     write /sys/class/android_usb/android0/iSerial $ro.serialno
-    write /sys/class/android_usb/f_mass_storage/inquiry_string "Google  Nexus S         0100"
+    write /sys/class/android_usb/android0/f_mass_storage/inquiry_string "Google  Nexus S         0100"
+    write /sys/class/android_usb/android0/f_rndis/manufacturer Samsung
+    write /sys/class/android_usb/android0/f_rndis/vendorID 18d1
 
 on property:sys.usb.config=none
     stop adbd
