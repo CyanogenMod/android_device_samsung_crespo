@@ -53,23 +53,19 @@ namespace android_audio_legacy {
 // Default audio output sample format
 #define AUDIO_HW_OUT_FORMAT (AudioSystem::PCM_16_BIT)
 // Kernel pcm out buffer size in frames at 44.1kHz
-#define AUDIO_HW_OUT_PERIOD_MULT 8 // (8 * 128 = 1024 frames)
-#define AUDIO_HW_OUT_PERIOD_SZ (PCM_PERIOD_SZ_MIN * AUDIO_HW_OUT_PERIOD_MULT)
+#define AUDIO_HW_OUT_PERIOD_SZ 1024
 #define AUDIO_HW_OUT_PERIOD_CNT 4
 // Default audio output buffer size in bytes
 #define AUDIO_HW_OUT_PERIOD_BYTES (AUDIO_HW_OUT_PERIOD_SZ * 2 * sizeof(int16_t))
 
 // Default audio input sample rate
-#define AUDIO_HW_IN_SAMPLERATE 8000
+#define AUDIO_HW_IN_SAMPLERATE 44100
 // Default audio input channel mask
 #define AUDIO_HW_IN_CHANNELS (AudioSystem::CHANNEL_IN_MONO)
 // Default audio input sample format
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)
-// Number of buffers in audio driver for input
-#define AUDIO_HW_NUM_IN_BUF 2
 // Kernel pcm in buffer size in frames at 44.1kHz (before resampling)
-#define AUDIO_HW_IN_PERIOD_MULT 16  // (16 * 128 = 2048 frames)
-#define AUDIO_HW_IN_PERIOD_SZ (PCM_PERIOD_SZ_MIN * AUDIO_HW_IN_PERIOD_MULT)
+#define AUDIO_HW_IN_PERIOD_SZ 2048
 #define AUDIO_HW_IN_PERIOD_CNT 2
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
