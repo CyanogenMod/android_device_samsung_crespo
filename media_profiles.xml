@@ -70,6 +70,11 @@
 <!ELEMENT AudioDecoderCap EMPTY>
 <!ATTLIST AudioDecoderCap name (wma) #REQUIRED>
 <!ATTLIST AudioDecoderCap enabled (true|false) #REQUIRED>
+<!ELEMENT VideoEditorCap EMPTY>
+<!ATTLIST VideoEditorCap maxInputFrameWidth CDATA #REQUIRED>
+<!ATTLIST VideoEditorCap maxInputFrameHeight CDATA #REQUIRED>
+<!ATTLIST VideoEditorCap maxOutputFrameWidth CDATA #REQUIRED>
+<!ATTLIST VideoEditorCap maxOutputFrameHeight CDATA #REQUIRED>
 ]>
 <!--
      This file is used to declare the multimedia profiles and capabilities
@@ -200,4 +205,7 @@
     -->
     <VideoDecoderCap name="wmv" enabled="false"/>
     <AudioDecoderCap name="wma" enabled="false"/>
+    <VideoEditorCap  maxInputFrameWidth="1280"
+        maxInputFrameHeight="720" maxOutputFrameWidth="1280"
+        maxOutputFrameHeight="720"/>
 </MediaSettings>
