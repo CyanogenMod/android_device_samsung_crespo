@@ -28,6 +28,8 @@
 
 #include "secril-client.h"
 
+#include "speex/speex_resampler.h"
+
 extern "C" {
     struct pcm;
     struct mixer;
@@ -182,7 +184,17 @@ private:
     int             mDriverOp;
 
     static uint32_t         checkInputSampleRate(uint32_t sampleRate);
-    static const uint32_t   inputSamplingRates[];
+
+    // column index in inputConfigTable[][]
+    enum {
+        INPUT_CONFIG_SAMPLE_RATE,
+        INPUT_CONFIG_BUFFER_RATIO,
+        INPUT_CONFIG_CNT
+    };
+
+    // contains the list of valid sampling rates for input streams as well as the ratio
+    // between the kernel buffer size and audio hal buffer size for each sampling rate
+    static const uint32_t  inputConfigTable[][INPUT_CONFIG_CNT];
 
     class AudioStreamOutALSA : public AudioStreamOut, public RefBase
     {
@@ -246,8 +258,6 @@ private:
         bool mSleepReq;
     };
 
-    class DownSampler;
-
     class BufferProvider
     {
     public:
@@ -267,38 +277,31 @@ private:
         virtual void releaseBuffer(Buffer* buffer) = 0;
     };
 
-    class DownSampler {
+    class ReSampler {
     public:
-        DownSampler(uint32_t outSampleRate,
+        ReSampler(uint32_t inSampleRate,
+                  uint32_t outSampleRate,
                   uint32_t channelCount,
-                  uint32_t frameCount,
                   BufferProvider* provider);
 
-        virtual ~DownSampler();
+        virtual ~ReSampler();
 
-                void reset();
                 status_t initCheck() { return mStatus; }
+                void reset();
                 int resample(int16_t* out, size_t *outFrameCount);
 
     private:
         status_t    mStatus;
+        SpeexResamplerState *mSpeexResampler;
         BufferProvider* mProvider;
-        uint32_t mSampleRate;
+        uint32_t mInSampleRate;
+        uint32_t mOutSampleRate;
         uint32_t mChannelCount;
-        uint32_t mFrameCount;
-        int16_t *mInLeft;
-        int16_t *mInRight;
-        int16_t *mTmpLeft;
-        int16_t *mTmpRight;
-        int16_t *mTmp2Left;
-        int16_t *mTmp2Right;
-        int16_t *mOutLeft;
-        int16_t *mOutRight;
-        int mInInBuf;
-        int mInTmpBuf;
-        int mInTmp2Buf;
-        int mOutBufPos;
-        int mInOutBuf;
+        int16_t *mInBuf;
+        size_t mInBufSize;
+        size_t mFramesIn;
+        size_t mFramesRq;
+        size_t mFramesNeeded;
     };
 
 
@@ -355,7 +358,7 @@ private:
         uint32_t mChannelCount;
         uint32_t mSampleRate;
         size_t mBufferSize;
-        DownSampler *mDownSampler;
+        ReSampler *mDownSampler;
         status_t mReadStatus;
         size_t mInPcmInBuf;
         int16_t *mPcmIn;
