@@ -14,11 +14,7 @@ LOCAL_SHARED_LIBRARIES:= \
 LOCAL_WHOLE_STATIC_LIBRARIES := libaudiohw_legacy
 LOCAL_MODULE_TAGS := optional
 
-ifeq ($(TARGET_SIMULATOR),true)
- LOCAL_LDLIBS += -ldl
-else
- LOCAL_SHARED_LIBRARIES += libdl
-endif
+LOCAL_SHARED_LIBRARIES += libdl
 LOCAL_C_INCLUDES += $(call include-path-for, speex)
 LOCAL_C_INCLUDES += external/tinyalsa/include
 
