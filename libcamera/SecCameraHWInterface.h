@@ -95,7 +95,6 @@ private:
         mHardware(hw) { }
         virtual bool threadLoop() {
             mHardware->pictureThread();
-            mHardware->mSecCamera->endSnapshot();
             return false;
         }
     };
@@ -156,6 +155,7 @@ private:
                                                const int height) const;
             bool        isSupportedParameter(const char * const parm,
                             const char * const supported_parm) const;
+            status_t    waitCaptureCompletion();
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
@@ -171,8 +171,9 @@ private:
 
             preview_stream_ops *mPreviewWindow;
 
-    /* used to guard threading state */
-    mutable Mutex       mStateLock;
+    /* used to guard mCaptureInProgress */
+    mutable Mutex       mCaptureLock;
+    mutable Condition   mCaptureCondition;
 
     CameraParameters    mParameters;
     CameraParameters    mInternalParameters;
