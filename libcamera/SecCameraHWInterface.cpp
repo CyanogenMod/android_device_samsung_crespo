@@ -732,10 +732,8 @@ status_t CameraHardwareSec::startPreview()
 
     LOGV("%s :", __func__);
 
-    Mutex::Autolock lock(mStateLock);
-    if (mCaptureInProgress) {
-        LOGE("%s : capture in progress, not allowed", __func__);
-        return INVALID_OPERATION;
+    if (waitCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
 
     mPreviewLock.lock();
@@ -1120,6 +1118,8 @@ int CameraHardwareSec::pictureThread()
     int mPostViewWidth, mPostViewHeight, mPostViewSize;
     int mThumbWidth, mThumbHeight, mThumbSize;
     int cap_width, cap_height, cap_frame_size;
+    int JpegImageSize, JpegExifSize;
+    bool isLSISensor = false;
 
     unsigned int output_size = 0;
 
@@ -1169,15 +1169,13 @@ int CameraHardwareSec::pictureThread()
             if (jpeg_data == NULL) {
                 LOGE("ERR(%s):Fail on SecCamera->getSnapshot()", __func__);
                 ret = UNKNOWN_ERROR;
+                goto out;
             }
         } else {
             if (mSecCamera->getSnapshotAndJpeg((unsigned char*)PostviewHeap->base(),
                     (unsigned char*)JpegHeap->data, &output_size) < 0) {
-                mStateLock.lock();
-                mCaptureInProgress = false;
-                mStateLock.unlock();
-                JpegHeap->release(JpegHeap);
-                return UNKNOWN_ERROR;
+                ret = UNKNOWN_ERROR;
+                goto out;
             }
             LOGI("snapshotandjpeg done\n");
         }
@@ -1185,9 +1183,6 @@ int CameraHardwareSec::pictureThread()
         LOG_TIME_END(1)
         LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
     }
-
-    int JpegImageSize, JpegExifSize;
-    bool isLSISensor = false;
 
     if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8);
@@ -1199,8 +1194,8 @@ int CameraHardwareSec::pictureThread()
                             mPostViewWidth * 2, mPostViewWidth,
                             JpegHeap->data, &JpegImageSize,
                             PostviewHeap->base(), &mPostViewSize)) {
-                JpegHeap->release(JpegHeap);
-                return UNKNOWN_ERROR;
+                ret = UNKNOWN_ERROR;
+                goto out;
             }
         } else {
             LOGI("== Camera Sensor Detect %s Sony SOC 5M ==\n", mCameraSensorName);
@@ -1250,11 +1245,29 @@ int CameraHardwareSec::pictureThread()
 
 out:
     JpegHeap->release(JpegHeap);
-    mStateLock.lock();
+    mSecCamera->endSnapshot();
+    mCaptureLock.lock();
     mCaptureInProgress = false;
-    mStateLock.unlock();
+    mCaptureCondition.broadcast();
+    mCaptureLock.unlock();
 
     return ret;
+}
+
+status_t CameraHardwareSec::waitCaptureCompletion() {
+    // 5 seconds timeout
+    nsecs_t endTime = 5000000000LL + systemTime(SYSTEM_TIME_MONOTONIC);
+    Mutex::Autolock lock(mCaptureLock);
+    while (mCaptureInProgress) {
+        nsecs_t remainingTime = endTime - systemTime(SYSTEM_TIME_MONOTONIC);
+        if (remainingTime <= 0) {
+            LOGE("Timed out waiting picture thread.");
+            return TIMED_OUT;
+        }
+        LOGD("Waiting for picture thread to complete.");
+        mCaptureCondition.waitRelative(mCaptureLock, remainingTime);
+    }
+    return NO_ERROR;
 }
 
 status_t CameraHardwareSec::takePicture()
@@ -1272,17 +1285,17 @@ status_t CameraHardwareSec::takePicture()
         }
     }
 
-    Mutex::Autolock lock(mStateLock);
-    if (mCaptureInProgress) {
-        LOGE("%s : capture already in progress", __func__);
-        return INVALID_OPERATION;
+    if (waitCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
 
     if (mPictureThread->run("CameraPictureThread", PRIORITY_DEFAULT) != NO_ERROR) {
         LOGE("%s : couldn't run picture thread", __func__);
         return INVALID_OPERATION;
     }
+    mCaptureLock.lock();
     mCaptureInProgress = true;
+    mCaptureLock.unlock();
 
     return NO_ERROR;
 }
@@ -1598,16 +1611,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     status_t ret = NO_ERROR;
 
     /* if someone calls us while picture thread is running, it could screw
-     * up the sensor quite a bit so return error.  we can't wait because
-     * that would cause deadlock with the callbacks
+     * up the sensor quite a bit so return error.
      */
-    mStateLock.lock();
-    if (mCaptureInProgress) {
-        mStateLock.unlock();
-        LOGE("%s : capture in progress, not allowed", __func__);
-        return UNKNOWN_ERROR;
+    if (waitCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
-    mStateLock.unlock();
 
     // preview size
     int new_preview_width  = 0;
