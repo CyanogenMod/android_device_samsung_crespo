@@ -35,6 +35,7 @@
 #include "library_register.h"
 #include "SEC_OMX_H264dec.h"
 #include "SsbSipMfcApi.h"
+#include "color_space_convertor.h"
 
 #undef  SEC_LOG_TAG
 #define SEC_LOG_TAG    "SEC_H264_DEC"
@@ -955,14 +956,17 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
         } else {
             SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420 out for ThumbnailMode");
-            Y_tile_to_linear_4x2(
-                    (unsigned char *)pOutBuf,
-                    (unsigned char *)outputInfo.YVirAddr,
-                    bufWidth, bufHeight);
-            CbCr_tile_to_linear_4x2(
-                    ((unsigned char *)pOutBuf) + frameSize,
-                    (unsigned char *)outputInfo.CVirAddr,
-                    bufWidth, bufHeight);
+            csc_tiled_to_linear_neon(
+                        (unsigned char *)pOutBuf,
+                        (unsigned char *)outputInfo.YVirAddr,
+                        bufWidth,
+                        bufHeight);
+            csc_tiled_to_linear_deinterleave_neon(
+                        (unsigned char *)pOutBuf + frameSize,
+                        (unsigned char *)pOutBuf + (frameSize * 5) / 4,
+                        (unsigned char *)outputInfo.CVirAddr,
+                        bufWidth,
+                        bufHeight >> 1);
         }
     }
 

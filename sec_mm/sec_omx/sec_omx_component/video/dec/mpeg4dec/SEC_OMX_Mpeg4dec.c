@@ -35,6 +35,7 @@
 #include "library_register.h"
 #include "SEC_OMX_Mpeg4dec.h"
 #include "SsbSipMfcApi.h"
+#include "color_space_convertor.h"
 
 #undef  SEC_LOG_TAG
 #define SEC_LOG_TAG    "SEC_MPEG4_DEC"
@@ -1135,14 +1136,17 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             SEC_OSAL_Memcpy(pOutputBuf + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
         } else {
             SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420 out for ThumbnailMode");
-            Y_tile_to_linear_4x2(
-                    (unsigned char *)pOutputBuf,
-                    (unsigned char *)outputInfo.YVirAddr,
-                    bufWidth, bufHeight);
-            CbCr_tile_to_linear_4x2(
-                    ((unsigned char *)pOutputBuf) + frameSize,
-                    (unsigned char *)outputInfo.CVirAddr,
-                    bufWidth, bufHeight);
+            csc_tiled_to_linear_neon(
+                        (unsigned char *)pOutputBuf,
+                        (unsigned char *)outputInfo.YVirAddr,
+                        bufWidth,
+                        bufHeight);
+            csc_tiled_to_linear_deinterleave_neon(
+                        (unsigned char *)pOutputBuf + frameSize,
+                        (unsigned char *)pOutputBuf + (frameSize * 5) / 4,
+                        (unsigned char *)outputInfo.CVirAddr,
+                        bufWidth,
+                        bufHeight >> 1);
         }
     }
 
