@@ -179,7 +179,7 @@ static OMX_ERRORTYPE SEC_OMX_BufferProcessThread(OMX_PTR threadData)
     pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
     pSECComponent->sec_BufferProcess(pOMXComponent);
 
-    SEC_OSAL_TheadExit(NULL);
+    SEC_OSAL_ThreadExit(NULL);
 
 EXIT:
     FunctionOut();
@@ -540,7 +540,7 @@ static OMX_ERRORTYPE SEC_OMX_MessageHandlerThread(OMX_PTR threadData)
         }
     }
 
-    SEC_OSAL_TheadExit(NULL);
+    SEC_OSAL_ThreadExit(NULL);
 
 EXIT:
     FunctionOut();

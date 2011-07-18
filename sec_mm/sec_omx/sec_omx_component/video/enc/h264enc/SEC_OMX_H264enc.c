@@ -307,7 +307,7 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_GetParameter(
             goto EXIT;
         }
 
-        SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPOMENT_H264_ENC_ROLE);
+        SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPONENT_H264_ENC_ROLE);
     }
         break;
     case OMX_IndexParamVideoProfileLevelQuerySupported:
@@ -466,7 +466,7 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_SetParameter(
             goto EXIT;
         }
 
-        if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPOMENT_H264_ENC_ROLE)) {
+        if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPONENT_H264_ENC_ROLE)) {
             pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eCompressionFormat = OMX_VIDEO_CodingAVC;
         } else {
             ret = OMX_ErrorBadParameter;
@@ -589,7 +589,7 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_ComponentRoleEnum(OMX_HANDLETYPE hComponent, OMX_U
         goto EXIT;
     }
     if (nIndex == (MAX_COMPONENT_ROLE_NUM-1)) {
-        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPOMENT_H264_ENC_ROLE);
+        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPONENT_H264_ENC_ROLE);
         ret = OMX_ErrorNone;
     } else {
         ret = OMX_ErrorNoMore;
@@ -887,7 +887,7 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
         SEC_OSAL_Log(SEC_LOG_ERROR, "OMX_ErrorBadParameter, Line:%d", __LINE__);
         goto EXIT;
     }
-    if (SEC_OSAL_Strcmp(SEC_OMX_COMPOMENT_H264_ENC, componentName) != 0) {
+    if (SEC_OSAL_Strcmp(SEC_OMX_COMPONENT_H264_ENC, componentName) != 0) {
         ret = OMX_ErrorBadParameter;
         SEC_OSAL_Log(SEC_LOG_ERROR, "OMX_ErrorBadParameter, componentName:%s, Line:%d", componentName, __LINE__);
         goto EXIT;
@@ -921,7 +921,7 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
     SEC_OSAL_Memset(pH264Enc, 0, sizeof(SEC_H264ENC_HANDLE));
     pSECComponent->hCodecHandle = (OMX_HANDLETYPE)pH264Enc;
 
-    SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPOMENT_H264_ENC);
+    SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPONENT_H264_ENC);
     /* Set componentVersion */
     pSECComponent->componentVersion.s.nVersionMajor = VERSIONMAJOR_NUMBER;
     pSECComponent->componentVersion.s.nVersionMinor = VERSIONMINOR_NUMBER;
