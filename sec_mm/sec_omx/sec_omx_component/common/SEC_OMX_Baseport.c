@@ -832,6 +832,8 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECInputPort->portDefinition.nBufferAlignment = 0;
     pSECInputPort->markType.hMarkTargetComponent = NULL;
     pSECInputPort->markType.pMarkData = NULL;
+    pSECInputPort->bUseAndroidNativeBuffer = OMX_FALSE;
+    pSECInputPort->bStoreMetaDataInBuffer = OMX_FALSE;
 
     /* Output Port */
     pSECOutputPort = &pSECPort[OUTPUT_PORT_INDEX];
@@ -940,6 +942,8 @@ OMX_ERRORTYPE SEC_OMX_Port_Constructor(OMX_HANDLETYPE hComponent)
     pSECOutputPort->portDefinition.nBufferAlignment = 0;
     pSECOutputPort->markType.hMarkTargetComponent = NULL;
     pSECOutputPort->markType.pMarkData = NULL;
+    pSECOutputPort->bUseAndroidNativeBuffer = OMX_FALSE;
+    pSECOutputPort->bStoreMetaDataInBuffer = OMX_FALSE;
 
     pSECComponent->checkTimeStamp.needSetStartTimeStamp = OMX_FALSE;
     pSECComponent->checkTimeStamp.needCheckStartTimeStamp = OMX_FALSE;

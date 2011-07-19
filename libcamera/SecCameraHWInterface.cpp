@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <camera/Camera.h>
+#include <media/stagefright/MetadataBufferType.h>
 
 #define VIDEO_COMMENT_MARKER_H          0xFFBE
 #define VIDEO_COMMENT_MARKER_L          0xFFBF
@@ -58,6 +59,7 @@
 namespace android {
 
 struct addrs {
+    uint32_t type;  // make sure that this is 4 byte.
     unsigned int addr_y;
     unsigned int addr_cbcr;
     unsigned int buf_index;
@@ -699,6 +701,7 @@ callbacks:
 
         addrs = (struct addrs *)mRecordHeap->data;
 
+        addrs[index].type   = kMetadataBufferTypeCameraSource;
         addrs[index].addr_y = phyYAddr;
         addrs[index].addr_cbcr = phyCAddr;
         addrs[index].buf_index = index;
@@ -2340,6 +2343,18 @@ void CameraHardwareSec::release()
     mSecCamera->DeinitCamera();
 }
 
+status_t CameraHardwareSec::storeMetaDataInBuffers(bool enable)
+{
+    // FIXME:
+    // metadata buffer mode can be turned on or off.
+    // Samsung needs to fix this.
+    if (!enable) {
+        LOGE("Non-metadata buffer mode is not supported!");
+        return INVALID_OPERATION;
+    }
+    return OK;
+}
+
 static CameraInfo sCameraInfo[] = {
     {
         CAMERA_FACING_BACK,
@@ -2495,7 +2510,7 @@ static int HAL_camera_device_preview_enabled(struct camera_device *dev)
 static int HAL_camera_device_store_meta_data_in_buffers(struct camera_device *dev, int enable)
 {
     LOGV("%s", __func__);
-    return INVALID_OPERATION;// obj(dev)->storeMetaDataInBuffers(enable);
+    return obj(dev)->storeMetaDataInBuffers(enable);
 }
 
 /**

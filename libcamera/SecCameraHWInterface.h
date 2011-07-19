@@ -59,6 +59,7 @@ public:
     virtual CameraParameters  getParameters() const;
     virtual status_t    sendCommand(int32_t command, int32_t arg1, int32_t arg2);
     virtual status_t    setPreviewWindow(preview_stream_ops *w);
+    virtual status_t    storeMetaDataInBuffers(bool enable);
     virtual void        release();
 
     inline  int         getCameraId() const;

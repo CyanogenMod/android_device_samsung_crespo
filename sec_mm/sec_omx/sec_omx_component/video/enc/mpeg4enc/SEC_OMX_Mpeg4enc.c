@@ -36,6 +36,7 @@
 #include "library_register.h"
 #include "SEC_OMX_Mpeg4enc.h"
 #include "SsbSipMfcApi.h"
+#include "color_space_convertor.h"
 
 #undef  SEC_LOG_TAG
 #define SEC_LOG_TAG    "SEC_MPEG4_ENC"
@@ -647,6 +648,54 @@ EXIT:
     return ret;
 }
 
+OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_GetConfig(
+    OMX_HANDLETYPE hComponent,
+    OMX_INDEXTYPE nIndex,
+    OMX_PTR pComponentConfigStructure)
+{
+    OMX_ERRORTYPE           ret = OMX_ErrorNone;
+    OMX_COMPONENTTYPE     *pOMXComponent = NULL;
+    SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
+
+    FunctionIn();
+
+    if (hComponent == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    ret = SEC_OMX_Check_SizeVersion(pOMXComponent, sizeof(OMX_COMPONENTTYPE));
+    if (ret != OMX_ErrorNone) {
+        goto EXIT;
+    }
+
+    if (pOMXComponent->pComponentPrivate == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+
+    if (pComponentConfigStructure == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    if (pSECComponent->currentState == OMX_StateInvalid) {
+        ret = OMX_ErrorInvalidState;
+        goto EXIT;
+    }
+
+    switch (nIndex) {
+    default:
+        ret = SEC_OMX_GetConfig(hComponent, nIndex, pComponentConfigStructure);
+        break;
+    }
+
+EXIT:
+    FunctionOut();
+
+    return ret;
+}
+
 OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_SetConfig(
     OMX_IN OMX_HANDLETYPE hComponent,
     OMX_IN OMX_INDEXTYPE  nIndex,
@@ -683,6 +732,59 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_SetConfig(
         ret = SEC_OMX_SetConfig(hComponent, nIndex, pComponentConfigStructure);
         break;
     }
+
+EXIT:
+    FunctionOut();
+
+    return ret;
+}
+
+OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_GetExtensionIndex(
+    OMX_IN OMX_HANDLETYPE  hComponent,
+    OMX_IN OMX_STRING      cParameterName,
+    OMX_OUT OMX_INDEXTYPE *pIndexType)
+{
+    OMX_ERRORTYPE           ret = OMX_ErrorNone;
+    OMX_COMPONENTTYPE     *pOMXComponent = NULL;
+    SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
+
+    FunctionIn();
+
+    if (hComponent == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    ret = SEC_OMX_Check_SizeVersion(pOMXComponent, sizeof(OMX_COMPONENTTYPE));
+    if (ret != OMX_ErrorNone) {
+        goto EXIT;
+    }
+
+    if (pOMXComponent->pComponentPrivate == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+
+    if ((cParameterName == NULL) || (pIndexType == NULL)) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+    if (pSECComponent->currentState == OMX_StateInvalid) {
+        ret = OMX_ErrorInvalidState;
+        goto EXIT;
+    }
+
+#ifdef USE_ANDROID_EXTENSION
+    if (SEC_OSAL_Strcmp(cParameterName, SEC_INDEX_PARAM_STORE_METADATA_BUFFER) == 0) {
+        *pIndexType = OMX_IndexParamStoreMetaDataBuffer;
+        ret = OMX_ErrorNone;
+    } else {
+        ret = SEC_OMX_GetExtensionIndex(hComponent, cParameterName, pIndexType);
+    }
+#else
+    ret = SEC_OMX_GetExtensionIndex(hComponent, cParameterName, pIndexType);
+#endif
 
 EXIT:
     FunctionOut();
@@ -870,8 +972,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
     pSECComponent->nFlags[pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
     SsbSipMfcEncSetConfig(hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp));
     pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp++;
-    if (pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp >= MAX_TIMESTAMP)
-        pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp = 0;
+    pMpeg4Enc->hMFCMpeg4Handle.indexTimestamp %= MAX_TIMESTAMP;
 
     if (oneFrameSize <= 0) {
         pOutputData->timeStamp = pInputData->timeStamp;
@@ -882,29 +983,28 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
     }
 
     pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
-    if (pSECPort->portDefinition.format.video.eColorFormat == SEC_OMX_COLOR_FormatNV12PhysicalAddress) {
-    /* input data from Real camera */
-#define USE_FIMC_FRAME_BUFFER
-#ifdef USE_FIMC_FRAME_BUFFER
+    if (pSECPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress) {
         SEC_OSAL_Memcpy(&addrInfo.pAddrY, pInputData->dataBuffer, sizeof(addrInfo.pAddrY));
         SEC_OSAL_Memcpy(&addrInfo.pAddrC, pInputData->dataBuffer + sizeof(addrInfo.pAddrY), sizeof(addrInfo.pAddrC));
         pInputInfo->YPhyAddr = addrInfo.pAddrY;
         pInputInfo->CPhyAddr = addrInfo.pAddrC;
-        returnCodec = SsbSipMfcEncSetInBuf(hMFCHandle, pInputInfo);
-        if (returnCodec != MFC_RET_OK) {
-            SEC_OSAL_Log(SEC_LOG_ERROR, "%s: SsbSipMfcEncSetInBuf failed, ret:%d", __FUNCTION__, returnCodec);
-            ret = OMX_ErrorUndefined;
+#ifdef USE_ANDROID_EXTENSION
+    } else if (pSECPort->bStoreMetaDataInBuffer != OMX_FALSE) {
+        ret = preprocessMetaDataInBuffers(pOMXComponent, pInputData->dataBuffer, pInputInfo);
+        if (ret != OMX_ErrorNone)
             goto EXIT;
-        }
-#else
-        OMX_U32 width, height;
-
-        width = pSECPort->portDefinition.format.video.nFrameWidth;
-        height = pSECPort->portDefinition.format.video.nFrameHeight;
-
-        SEC_OSAL_Memcpy(pInputInfo->YVirAddr, pInputData->dataBuffer, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)));
-        SEC_OSAL_Memcpy(pInputInfo->CVirAddr, pInputData->dataBuffer + ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)), ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height / 2)));
 #endif
+    } else {
+        /* Real input data */
+        pInputInfo->YPhyAddr = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YPhyAddr;
+        pInputInfo->CPhyAddr = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CPhyAddr;
+    }
+
+    returnCodec = SsbSipMfcEncSetInBuf(hMFCHandle, pInputInfo);
+    if (returnCodec != MFC_RET_OK) {
+        SEC_OSAL_Log(SEC_LOG_ERROR, "%s: SsbSipMfcEncSetInBuf failed, ret:%d", __FUNCTION__, returnCodec);
+        ret = OMX_ErrorUndefined;
+        goto EXIT;
     }
 
     returnCodec = SsbSipMfcEncExe(hMFCHandle);
@@ -914,7 +1014,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         returnCodec = SsbSipMfcEncGetOutBuf(hMFCHandle, &outputInfo);
 
         if ((SsbSipMfcEncGetConfig(hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
-            (((indexTimestamp < 0) || (indexTimestamp > MAX_TIMESTAMP)))) {
+            (((indexTimestamp < 0) || (indexTimestamp >= MAX_TIMESTAMP)))) {
             pOutputData->timeStamp = pInputData->timeStamp;
             pOutputData->nFlags = pInputData->nFlags;
         } else {
@@ -1084,7 +1184,7 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
     pSECPort->portDefinition.format.video.bFlagErrorConcealment = OMX_FALSE;
     SEC_OSAL_Memset(pSECPort->portDefinition.format.video.cMIMEType, 0, MAX_OMX_MIMETYPE_SIZE);
     SEC_OSAL_Strcpy(pSECPort->portDefinition.format.video.cMIMEType, "raw/video");
-    pSECPort->portDefinition.format.video.eColorFormat = SEC_OMX_COLOR_FormatNV12PhysicalAddress;//OMX_COLOR_FormatYUV420SemiPlanar;
+    pSECPort->portDefinition.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
     pSECPort->portDefinition.nBufferSize = DEFAULT_VIDEO_INPUT_BUFFER_SIZE;
     pSECPort->portDefinition.bEnabled = OMX_TRUE;
 
@@ -1142,7 +1242,9 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
 
     pOMXComponent->GetParameter      = &SEC_MFC_Mpeg4Enc_GetParameter;
     pOMXComponent->SetParameter      = &SEC_MFC_Mpeg4Enc_SetParameter;
+    pOMXComponent->GetConfig         = &SEC_MFC_Mpeg4Enc_GetConfig;
     pOMXComponent->SetConfig         = &SEC_MFC_Mpeg4Enc_SetConfig;
+    pOMXComponent->GetExtensionIndex = &SEC_MFC_Mpeg4Enc_GetExtensionIndex;
     pOMXComponent->ComponentRoleEnum = &SEC_MFC_Mpeg4Enc_ComponentRoleEnum;
     pOMXComponent->ComponentDeInit   = &SEC_OMX_ComponentDeinit;
 

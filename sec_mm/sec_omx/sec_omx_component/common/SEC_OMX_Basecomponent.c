@@ -1419,7 +1419,6 @@ OMX_ERRORTYPE SEC_OMX_BaseComponent_Constructor(
 
     pOMXComponent->GetComponentVersion = &SEC_OMX_GetComponentVersion;
     pOMXComponent->SendCommand         = &SEC_OMX_SendCommand;
-    pOMXComponent->GetConfig           = &SEC_OMX_GetConfig;
     pOMXComponent->GetExtensionIndex   = &SEC_OMX_GetExtensionIndex;
     pOMXComponent->GetState            = &SEC_OMX_GetState;
     pOMXComponent->SetCallbacks        = &SEC_OMX_SetCallbacks;

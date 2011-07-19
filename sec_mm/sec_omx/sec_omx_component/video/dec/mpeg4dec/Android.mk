@@ -14,8 +14,9 @@ LOCAL_CFLAGS :=
 
 LOCAL_ARM_MODE := arm
 
-LOCAL_STATIC_LIBRARIES := libSEC_OMX_Vdec libsecosal libsecbasecomponent libsecmfcdecapi libseccsc
-LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils
+LOCAL_STATIC_LIBRARIES := libSEC_OMX_Vdec libsecosal libsecbasecomponent \
+						libsecmfcdecapi libseccsc
+LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils libui
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
 	$(SEC_OMX_INC)/sec \
