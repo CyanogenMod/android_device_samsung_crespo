@@ -362,9 +362,9 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_GetParameter(
 
         codecType = ((SEC_MPEG4ENC_HANDLE *)(pSECComponent->hCodecHandle))->hMFCMpeg4Handle.codecType;
         if (codecType == CODEC_TYPE_MPEG4)
-            SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPOMENT_MPEG4_ENC_ROLE);
+            SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPONENT_MPEG4_ENC_ROLE);
         else
-            SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPOMENT_H263_ENC_ROLE);
+            SEC_OSAL_Strcpy((char *)pComponentRole->cRole, SEC_OMX_COMPONENT_H263_ENC_ROLE);
     }
         break;
     case OMX_IndexParamVideoProfileLevelQuerySupported:
@@ -560,10 +560,10 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_SetParameter(
             goto EXIT;
         }
 
-        if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPOMENT_MPEG4_ENC_ROLE)) {
+        if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPONENT_MPEG4_ENC_ROLE)) {
             pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
             //((SEC_MPEG4ENC_HANDLE *)(pSECComponent->hCodecHandle))->hMFCMpeg4Handle.codecType = CODEC_TYPE_MPEG4;
-        } else if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPOMENT_H263_ENC_ROLE)) {
+        } else if (!SEC_OSAL_Strcmp((char*)pComponentRole->cRole, SEC_OMX_COMPONENT_H263_ENC_ROLE)) {
             pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eCompressionFormat = OMX_VIDEO_CodingH263;
             //((SEC_MPEG4ENC_HANDLE *)(pSECComponent->hCodecHandle))->hMFCMpeg4Handle.codecType = CODEC_TYPE_H263;
         } else {
@@ -728,9 +728,9 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Enc_ComponentRoleEnum(
 
     codecType = ((SEC_MPEG4ENC_HANDLE *)(pSECComponent->hCodecHandle))->hMFCMpeg4Handle.codecType;
     if (codecType == CODEC_TYPE_MPEG4)
-        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPOMENT_MPEG4_ENC_ROLE);
+        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPONENT_MPEG4_ENC_ROLE);
     else
-        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPOMENT_H263_ENC_ROLE);
+        SEC_OSAL_Strcpy((char *)cRole, SEC_OMX_COMPONENT_H263_ENC_ROLE);
 
 EXIT:
     FunctionOut();
@@ -1008,9 +1008,9 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
         SEC_OSAL_Log(SEC_LOG_ERROR, "%s: parameters are null, ret: %X", __FUNCTION__, ret);
         goto EXIT;
     }
-    if (SEC_OSAL_Strcmp(SEC_OMX_COMPOMENT_MPEG4_ENC, componentName) == 0) {
+    if (SEC_OSAL_Strcmp(SEC_OMX_COMPONENT_MPEG4_ENC, componentName) == 0) {
         codecType = CODEC_TYPE_MPEG4;
-    } else if (SEC_OSAL_Strcmp(SEC_OMX_COMPOMENT_H263_ENC, componentName) == 0) {
+    } else if (SEC_OSAL_Strcmp(SEC_OMX_COMPONENT_H263_ENC, componentName) == 0) {
         codecType = CODEC_TYPE_H263;
     } else {
         ret = OMX_ErrorBadParameter;
@@ -1048,9 +1048,9 @@ OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, O
     pMpeg4Enc->hMFCMpeg4Handle.codecType = codecType;
 
     if (codecType == CODEC_TYPE_MPEG4)
-        SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPOMENT_MPEG4_ENC);
+        SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPONENT_MPEG4_ENC);
     else
-        SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPOMENT_H263_ENC);
+        SEC_OSAL_Strcpy(pSECComponent->componentName, SEC_OMX_COMPONENT_H263_ENC);
 
     /* Set componentVersion */
     pSECComponent->componentVersion.s.nVersionMajor = VERSIONMAJOR_NUMBER;
