@@ -17,10 +17,6 @@
 <!-- Crespo-specific phone app resources. -->
 <resources>
 
-    <!-- Enable the onscreen touch UI for all states of the in-call UI. -->
-    <bool name="allow_incoming_call_touch_ui">true</bool>
-    <bool name="allow_in_call_touch_ui">true</bool>
-
     <!-- This is a device with capacitive buttons, so disable the feature
          where BACK rejects the current incoming call.  (Since it's so
          easy to press the key accidentally as you pull the phone out of
