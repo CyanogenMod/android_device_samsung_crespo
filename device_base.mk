@@ -130,8 +130,12 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
 # for bugmailer
-PRODUCT_COPY_FILES += \
-        system/extras/bugmailer/bugmailer.sh:system/bin/bugmailer.sh
+ifneq ($(TARGET_BUILD_VARIANT),user)
+	PRODUCT_PACKAGES += send_bug
+	PRODUCT_COPY_FILES += \
+		system/extras/bugmailer/bugmailer.sh:system/bin/bugmailer.sh \
+		system/extras/bugmailer/send_bug:system/bin/send_bug
+endif
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
