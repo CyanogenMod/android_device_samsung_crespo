@@ -467,9 +467,6 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPU
     input_info->YVirAddr = (void*)pCTX->virFrmBuf.luma;
     input_info->CVirAddr = (void*)pCTX->virFrmBuf.chroma;
 
-    input_info->YSize    = aligned_y_size;
-    input_info->CSize    = aligned_c_size;
-
     return MFC_RET_OK;
 }
 

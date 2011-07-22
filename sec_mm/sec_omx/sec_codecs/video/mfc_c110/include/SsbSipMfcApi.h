@@ -285,6 +285,12 @@ extern "C" {
 #endif
 
 /*--------------------------------------------------------------------------------*/
+/* Format Conversion API                                                          */
+/*--------------------------------------------------------------------------------*/
+void Y_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size);
+void CbCr_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size);
+
+/*--------------------------------------------------------------------------------*/
 /* Decoding APIs                                                                  */
 /*--------------------------------------------------------------------------------*/
 void *SsbSipMfcDecOpen(void);
