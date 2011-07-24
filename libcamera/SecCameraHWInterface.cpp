@@ -484,17 +484,6 @@ void CameraHardwareSec::enableMsgType(int32_t msgType)
          __func__, msgType, mMsgEnabled);
     mMsgEnabled |= msgType;
 
-    mPreviewLock.lock();
-    if ((msgType & (CAMERA_MSG_PREVIEW_FRAME | CAMERA_MSG_VIDEO_FRAME)) &&
-             mPreviewRunning && mPreviewStartDeferred) {
-        LOGV("%s: starting deferred preview", __func__);
-        if (startPreviewInternal() == OK) {
-            mPreviewStartDeferred = false;
-            mPreviewCondition.signal();
-        }
-    }
-    mPreviewLock.unlock();
-
     LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
 }
 
@@ -747,9 +736,7 @@ status_t CameraHardwareSec::startPreview()
     mPreviewRunning = true;
     mPreviewStartDeferred = false;
 
-    if (!mPreviewWindow &&
-            !(mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) &&
-            !(mMsgEnabled & CAMERA_MSG_VIDEO_FRAME)) {
+    if (!mPreviewWindow) {
         LOGI("%s : deferring", __func__);
         mPreviewStartDeferred = true;
         mPreviewLock.unlock();
