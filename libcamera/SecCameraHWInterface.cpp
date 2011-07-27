@@ -2628,6 +2628,12 @@ char *HAL_camera_device_get_parameters(struct camera_device *dev)
     return strdup(str.string());
 }
 
+void HAL_camera_device_put_parameters(struct camera_device *dev, char *parms)
+{
+    LOGV("%s", __func__);
+    free(parms);
+}
+
 /**
  * Send command to camera driver.
  */
@@ -2692,6 +2698,7 @@ static camera_device_ops_t camera_device_ops = {
         SET_METHOD(cancel_picture),
         SET_METHOD(set_parameters),
         SET_METHOD(get_parameters),
+        SET_METHOD(put_parameters),
         SET_METHOD(send_command),
         SET_METHOD(release),
         SET_METHOD(dump),
