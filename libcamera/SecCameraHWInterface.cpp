@@ -54,7 +54,7 @@
 //        the color planes switched.  We need to figure which side is doing it
 //        wrong and have the respective party fix it.
 
-#define HACK 1
+#define HACK 0
 
 namespace android {
 
