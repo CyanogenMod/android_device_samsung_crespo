@@ -33,7 +33,6 @@
 
 #include "AudioHardware.h"
 #include <media/AudioRecord.h>
-#include <hardware_legacy/power.h>
 #include <audio_effects/effect_aec.h>
 
 extern "C" {
@@ -1134,8 +1133,6 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
             AutoMutex hwLock(mHardware->lock());
 
             LOGD("AudioHardware pcm playback is exiting standby.");
-            acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioOutLock");
-
             sp<AudioStreamInALSA> spIn = mHardware->getActiveInput_l();
             while (spIn != 0) {
                 int cnt = spIn->prepareLock();
@@ -1167,7 +1164,6 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
                 spIn->unlock();
             }
             if (mPcm == NULL) {
-                release_wake_lock("AudioOutLock");
                 goto Error;
             }
             mStandby = false;
@@ -1226,7 +1222,6 @@ void AudioHardware::AudioStreamOutALSA::doStandby_l()
 
     if (!mStandby) {
         LOGD("AudioHardware pcm playback is going to standby.");
-        release_wake_lock("AudioOutLock");
         // stop echo reference capture
         if (mEchoReference != NULL) {
             mEchoReference->write(NULL);
@@ -1768,8 +1763,6 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             AutoMutex hwLock(mHardware->lock());
 
             LOGD("AudioHardware pcm capture is exiting standby.");
-            acquire_wake_lock (PARTIAL_WAKE_LOCK, "AudioInLock");
-
             sp<AudioStreamOutALSA> spOut = mHardware->output();
             while (spOut != 0) {
                 spOut->prepareLock();
@@ -1809,7 +1802,6 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             open_l();
 
             if (mPcm == NULL) {
-                release_wake_lock("AudioInLock");
                 goto Error;
             }
             mStandby = false;
@@ -1866,8 +1858,6 @@ void AudioHardware::AudioStreamInALSA::doStandby_l()
 
     if (!mStandby) {
         LOGD("AudioHardware pcm capture is going to standby.");
-        release_wake_lock("AudioInLock");
-
         if (mEchoReference != NULL) {
             // stop reading from echo reference
             mEchoReference->read(NULL);
