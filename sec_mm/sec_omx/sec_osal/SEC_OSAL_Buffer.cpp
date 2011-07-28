@@ -194,7 +194,7 @@ OMX_ERRORTYPE getAndroidNativeBuffer(OMX_HANDLETYPE hComponent, OMX_PTR Componen
 
     pganbp = (GetAndroidNativeBufferUsageParams *)ComponentParameterStructure;
 
-    pganbp->nUsage = GRALLOC_USAGE_PROTECTED; /* Need Change */
+    pganbp->nUsage = GRALLOC_USAGE_SW_WRITE_OFTEN;
 
     ret = OMX_ErrorNone;
 
@@ -423,4 +423,3 @@ EXIT:
 }
 
 #endif
-
