@@ -66,6 +66,7 @@ inline void SEC_UpdateFrameSize(OMX_COMPONENTTYPE *pOMXComponent)
         switch(secOutputPort->portDefinition.format.video.eColorFormat) {
         case OMX_COLOR_FormatYUV420Planar:
         case OMX_COLOR_FormatYUV420SemiPlanar:
+        case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
             if (width && height)
                 secOutputPort->portDefinition.nBufferSize = (width * height * 3) / 2;
             break;

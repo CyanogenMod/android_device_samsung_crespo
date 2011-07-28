@@ -74,6 +74,7 @@ typedef enum _SEC_OMX_INDEXTYPE
     OMX_IndexParamGetAndroidNativeBuffer  = 0x7F000012,
 #define SEC_INDEX_PARAM_USE_ANB "OMX.google.android.index.useAndroidNativeBuffer"
     OMX_IndexParamUseAndroidNativeBuffer  = 0x7F000013,
+    /* for Android Store Metadata Inbuffer */
 #define SEC_INDEX_PARAM_STORE_METADATA_BUFFER "OMX.google.android.index.storeMetaDataInBuffers"
     OMX_IndexParamStoreMetaDataBuffer     = 0x7F000014,
 
@@ -106,7 +107,9 @@ typedef enum _SEC_OMX_TRANS_STATETYPE {
 } SEC_OMX_TRANS_STATETYPE;
 
 typedef enum _SEC_OMX_COLOR_FORMATTYPE {
-    OMX_SEC_COLOR_FormatNV12TPhysicalAddress = 0x7F000001 /**< Reserved region for introducing Vendor Extensions */
+    OMX_SEC_COLOR_FormatNV12TPhysicalAddress = 0x7F000001, /**< Reserved region for introducing Vendor Extensions */
+    /* for Android Native Window */
+    OMX_SEC_COLOR_FormatANBYUV420SemiPlanar = 0x100
 }SEC_OMX_COLOR_FORMATTYPE;
 
 typedef enum _SEC_OMX_SUPPORTFORMAT_TYPE

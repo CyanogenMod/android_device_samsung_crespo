@@ -459,6 +459,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_SetParameter(
             case OMX_COLOR_FormatYUV420Planar:
             case OMX_COLOR_FormatYUV420SemiPlanar:
             case OMX_SEC_COLOR_FormatNV12TPhysicalAddress:
+            case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
                 pSECOutputPort->portDefinition.nBufferSize = (width * height * 3) / 2;
                 break;
             default:
@@ -702,8 +703,7 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_GetExtensionIndex(
         SEC_H264DEC_HANDLE *pH264Dec = (SEC_H264DEC_HANDLE *)pSECComponent->hCodecHandle;
         *pIndexType = OMX_IndexVendorThumbnailMode;
         ret = OMX_ErrorNone;
-#if 0
-// #ifdef USE_ANDROID_EXTENSION
+#ifdef USE_ANDROID_EXTENSION
     } else if (SEC_OSAL_Strcmp(cParameterName, SEC_INDEX_PARAM_ENABLE_ANB) == 0) {
         *pIndexType = OMX_IndexParamEnableAndroidBuffers;
         ret = OMX_ErrorNone;
@@ -883,8 +883,27 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             secOutputPort->cropRectangle.nHeight = imgResol.height - cropInfo.crop_top_offset - cropInfo.crop_bottom_offset;
 
             /** Update Frame Size **/
-            if((secInputPort->portDefinition.format.video.nFrameWidth != imgResol.width) ||
-               (secInputPort->portDefinition.format.video.nFrameHeight != imgResol.height)) {
+
+            if ((cropInfo.crop_left_offset != 0) || (cropInfo.crop_right_offset != 0) ||
+                (cropInfo.crop_top_offset != 0) || (cropInfo.crop_bottom_offset != 0)) {
+                /* change width and height information */
+                secInputPort->portDefinition.format.video.nFrameWidth = imgResol.width;
+                secInputPort->portDefinition.format.video.nFrameHeight = imgResol.height;
+                secInputPort->portDefinition.format.video.nStride      = ((imgResol.width + 15) & (~15));
+                secInputPort->portDefinition.format.video.nSliceHeight = ((imgResol.height + 15) & (~15));
+
+                SEC_UpdateFrameSize(pOMXComponent);
+
+                /** Send crop info call back */
+                (*(pSECComponent->pCallbacks->EventHandler))
+                      (pOMXComponent,
+                       pSECComponent->callbackData,
+                       OMX_EventPortSettingsChanged, /* The command was completed */
+                       OMX_DirOutput, /* This is the port index */
+                       OMX_IndexConfigCommonOutputCrop,
+                       NULL);
+            } else if((secInputPort->portDefinition.format.video.nFrameWidth != imgResol.width) ||
+                      (secInputPort->portDefinition.format.video.nFrameHeight != imgResol.height)) {
                 SEC_OSAL_Log(SEC_LOG_TRACE, "change width height information : OMX_EventPortSettingsChanged");
                 /* change width and height information */
                 secInputPort->portDefinition.format.video.nFrameWidth = imgResol.width;
@@ -901,17 +920,6 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                        OMX_EventPortSettingsChanged, /* The command was completed */
                        OMX_DirOutput, /* This is the port index */
                        0,
-                       NULL);
-            }
-            if ((secOutputPort->cropRectangle.nWidth != secOutputPort->portDefinition.format.video.nFrameWidth) ||
-                (secOutputPort->cropRectangle.nHeight != secOutputPort->portDefinition.format.video.nFrameHeight)) {
-                /** Send crop info call back */
-                (*(pSECComponent->pCallbacks->EventHandler))
-                      (pOMXComponent,
-                       pSECComponent->callbackData,
-                       OMX_EventPortSettingsChanged, /* The command was completed */
-                       OMX_DirOutput, /* This is the port index */
-                       OMX_IndexConfigCommonOutputCrop,
                        NULL);
             }
 
@@ -958,8 +966,8 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pH264Dec->hMFCH264Handle.indexTimestamp %= MAX_TIMESTAMP;
 
         status = SsbSipMfcDecGetOutBuf(pH264Dec->hMFCH264Handle.hMFCHandle, &outputInfo);
-        bufWidth =    (outputInfo.img_width + 15) & (~15);
-        bufHeight =  (outputInfo.img_height + 15) & (~15);
+        bufWidth  = (outputInfo.img_width + 15) & (~15);
+        bufHeight = (outputInfo.img_height + 15) & (~15);
 
         if ((SsbSipMfcDecGetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
             (((indexTimestamp < 0) || (indexTimestamp >= MAX_TIMESTAMP)))) {
@@ -977,26 +985,33 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             int imageSize = outputInfo.img_width * outputInfo.img_height;
             SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
             SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
-            void *pOutBuf = (void *)pOutputData->dataBuffer;
+            void *pOutputBuf[3];
 
-#if 0
-// #ifdef USE_ANDROID_EXTENSION
+            pOutputBuf[0] = (void *)pOutputData->dataBuffer;
+            pOutputBuf[1] = (void *)pOutputData->dataBuffer + imageSize;
+            pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((imageSize * 5) / 4);
+
+#ifdef USE_ANDROID_EXTENSION
             if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
-                pOutBuf = (void *)getVADDRfromANB
-                                    (pOutputData->dataBuffer,
-                                    (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
-                                    (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight);
+                void *pVirAddrs[2];
+                getVADDRfromANB (pOutputData->dataBuffer,
+                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
+                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
+                                pVirAddrs);
+                pOutputBuf[0] = pVirAddrs[0];
+                pOutputBuf[1] = pVirAddrs[1];
+                pOutputBuf[2] = pVirAddrs[1] + (imageSize / 4);
             }
 #endif
             if ((pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_FALSE) &&
                 (pSECOutputPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress))
             {
                 /* if use Post copy address structure */
-                SEC_OSAL_Memcpy(pOutBuf, &frameSize, sizeof(frameSize));
-                SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
-                SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
-                SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
-                SEC_OSAL_Memcpy(pOutBuf + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
+                SEC_OSAL_Memcpy(pOutputBuf[0], &frameSize, sizeof(frameSize));
+                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
+                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
+                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
+                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
                 pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
             } else {
                 switch (pSECOutputPort->portDefinition.format.video.eColorFormat) {
@@ -1004,13 +1019,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                 {
                     SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420P out");
                     csc_tiled_to_linear(
-                        (unsigned char *)pOutBuf,
+                        (unsigned char *)pOutputBuf[0],
                         (unsigned char *)outputInfo.YVirAddr,
                         outputInfo.img_width,
                         outputInfo.img_height);
                     csc_tiled_to_linear_deinterleave(
-                        (unsigned char *)pOutBuf + imageSize,
-                        (unsigned char *)pOutBuf + (imageSize * 5) / 4,
+                        (unsigned char *)pOutputBuf[1],
+                        (unsigned char *)pOutputBuf[2],
                         (unsigned char *)outputInfo.CVirAddr,
                         outputInfo.img_width,
                         outputInfo.img_height >> 1);
@@ -1018,16 +1033,17 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                 }
                     break;
                 case OMX_COLOR_FormatYUV420SemiPlanar:
+                case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
                 default:
                 {
                     SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420SP out");
                     csc_tiled_to_linear(
-                        (unsigned char *)pOutBuf,
+                        (unsigned char *)pOutputBuf[0],
                         (unsigned char *)outputInfo.YVirAddr,
                         outputInfo.img_width,
                         outputInfo.img_height);
                     csc_tiled_to_linear(
-                        (unsigned char *)pOutBuf + imageSize,
+                        (unsigned char *)pOutputBuf[1],
                         (unsigned char *)outputInfo.CVirAddr,
                         outputInfo.img_width,
                         outputInfo.img_height >> 1);
@@ -1036,8 +1052,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                     break;
                 }
             }
-#if 0
-//#ifdef USE_ANDROID_EXTENSION
+#ifdef USE_ANDROID_EXTENSION
             if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE)
                 putVADDRtoANB(pOutputData->dataBuffer);
 #endif

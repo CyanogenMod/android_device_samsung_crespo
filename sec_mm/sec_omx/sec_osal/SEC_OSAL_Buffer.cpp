@@ -104,7 +104,7 @@ OMX_U32 getMetadataBufferType(const uint8_t *ptr)
     return ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3];
 }
 
-OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height)
+OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height, void *pVirAddrs[])
 {
     android_native_buffer_t *buf;
     void *readableBuffer;
@@ -117,12 +117,12 @@ OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height
     SEC_OSAL_Log(SEC_LOG_TRACE, "pUnreadableBuffer:0x%x, buf:0x%x, buf->handle:0x%x",
                                 pUnreadableBuffer, buf, buf->handle);
 
-    if (0 != mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, &readableBuffer))
+    if (0 != mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, pVirAddrs))
         return -1;
 
     FunctionOut();
 
-    return (OMX_U32)readableBuffer;
+    return 0;
 }
 
 OMX_U32 putVADDRtoANB(OMX_PTR pUnreadableBuffer)
@@ -171,6 +171,7 @@ OMX_ERRORTYPE enableAndroidNativeBuffer(OMX_HANDLETYPE hComponent, OMX_PTR Compo
     } else {
         SEC_OSAL_Log(SEC_LOG_TRACE, "enable AndroidNativeBuffer");
         pSECPort->bUseAndroidNativeBuffer = OMX_TRUE;
+        pSECPort->portDefinition.format.video.eColorFormat = (OMX_COLOR_FORMATTYPE)OMX_SEC_COLOR_FormatANBYUV420SemiPlanar;
     }
 
     ret = OMX_ErrorNone;
@@ -390,12 +391,14 @@ OMX_ERRORTYPE preprocessMetaDataInBuffers(OMX_HANDLETYPE hComponent, OMX_BYTE pI
 
         OMX_PTR pUnreadableBuffer = NULL;
         OMX_PTR pReadableBuffer = NULL;
+        void *pVirAddrs[2];
         OMX_PTR dstYAddr = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YVirAddr;
         OMX_PTR dstCAddr = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CVirAddr;
         SEC_OSAL_Memcpy(&pUnreadableBuffer, pInputDataBuffer + 4, sizeof(void *));
         pReadableBuffer = (OMX_PTR)getVADDRfromANB(pUnreadableBuffer,
                     (OMX_U32)pSECPort->portDefinition.format.video.nFrameWidth,
-                    (OMX_U32)pSECPort->portDefinition.format.video.nFrameHeight);
+                    (OMX_U32)pSECPort->portDefinition.format.video.nFrameHeight,
+                    pVirAddrs);
 
 
         /**************************************/
