@@ -680,7 +680,7 @@ int CameraHardwareSec::previewThread()
 callbacks:
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME)
-        mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewHeap, index, mCallbackCookie);
+        mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewHeap, index, NULL, mCallbackCookie);
 
     Mutex::Autolock lock(mRecordLock);
     if (mRecordRunning == true) {
@@ -1203,7 +1203,7 @@ int CameraHardwareSec::pictureThread()
     memcpy(mRawHeap->data, PostviewHeap->base(), postviewHeapSize);
 
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
-        mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, mCallbackCookie);
+        mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
     }
 
     if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
@@ -1225,7 +1225,7 @@ int CameraHardwareSec::pictureThread()
         memmove(ImageStart, ExifStart, JpegImageSize - 2);
         memcpy(ExifStart, ExifHeap->data, JpegExifSize);
 
-        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, JpegHeap, 0, mCallbackCookie);
+        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, JpegHeap, 0, NULL, mCallbackCookie);
     }
 
     LOG_TIME_END(0)
