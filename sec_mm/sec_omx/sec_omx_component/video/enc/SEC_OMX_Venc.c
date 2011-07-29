@@ -756,6 +756,7 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
 
                     switch (pSECPort->portDefinition.format.video.eColorFormat) {
                     case OMX_COLOR_FormatYUV420Planar:
+                        /* Real YUV420P Data */
                         csc_linear_to_tiled(inputData->specificBufferHeader.YVirAddr,
                                                 checkInputStream, width, height);
                         csc_linear_to_tiled_interleave(inputData->specificBufferHeader.CVirAddr,

@@ -123,6 +123,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw \
+	libyv12colorconvert \
 	com.android.future.usb.accessory
 
 # Input device calibration files

@@ -1046,12 +1046,12 @@ OMX_ERRORTYPE SEC_OMX_VideoDecodeGetParameter(
             switch (index) {
             case supportFormat_0:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
-                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420SemiPlanar;
+                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420Planar;//OMX_COLOR_FormatYUV420SemiPlanar;
                 portFormat->xFramerate           = portDefinition->format.video.xFramerate;
                 break;
             case supportFormat_1:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
-                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420Planar;
+                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420SemiPlanar;//OMX_COLOR_FormatYUV420Planar;
                 portFormat->xFramerate         = portDefinition->format.video.xFramerate;
                 break;
             case supportFormat_2:
