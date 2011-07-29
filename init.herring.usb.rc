@@ -7,12 +7,6 @@ on boot
     write /sys/class/android_usb/android0/f_rndis/vendorID 18d1
     write /sys/class/android_usb/android0/f_rndis/wceis 1
 
-on property:sys.usb.config=none
-    stop adbd
-    write /sys/class/android_usb/android0/enable 0
-    write /sys/class/android_usb/android0/bDeviceClass 0
-    setprop sys.usb.state $sys.usb.config
-
 on property:sys.usb.config=mass_storage
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 18d1
