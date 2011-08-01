@@ -773,6 +773,9 @@ struct pcm *AudioHardware::openPcmOut_l()
             period_size : AUDIO_HW_OUT_PERIOD_SZ,
             period_count : AUDIO_HW_OUT_PERIOD_CNT,
             format : PCM_FORMAT_S16_LE,
+            start_threshold : 0,
+            stop_threshold : 0,
+            silence_threshold : 0,
         };
 
         TRACE_DRIVER_IN(DRV_PCM_OPEN)
@@ -1914,6 +1917,9 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
         period_size : AUDIO_HW_IN_PERIOD_SZ,
         period_count : AUDIO_HW_IN_PERIOD_CNT,
         format : PCM_FORMAT_S16_LE,
+        start_threshold : 0,
+        stop_threshold : 0,
+        silence_threshold : 0,
     };
 
     LOGV("open pcm_in driver");
