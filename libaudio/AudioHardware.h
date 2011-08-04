@@ -254,6 +254,7 @@ private:
     private:
 
                 int computeEchoReferenceDelay(size_t frames, struct timespec *echoRefRenderTime);
+                int getPlaybackDelay(size_t frames, EchoReference::Buffer *buffer);
 
         Mutex mLock;
         AudioHardware* mHardware;
@@ -320,9 +321,10 @@ private:
 
         ssize_t readFrames(void* buffer, ssize_t frames);
         ssize_t processFrames(void* buffer, ssize_t frames);
-        void updateEchoReference(size_t frames);
+        int32_t updateEchoReference(size_t frames);
         void pushEchoReference(size_t frames);
         void updateEchoDelay(size_t frames, struct timespec *echoRefRenderTime);
+        void getCaptureDelay(size_t frames, EchoReference::Buffer *buffer);
         status_t setPreProcessorEchoDelay(effect_handle_t handle, int32_t delayUs);
         status_t setPreprocessorParam(effect_handle_t handle, effect_param_t *param);
 
@@ -355,7 +357,6 @@ private:
         size_t mRefFramesIn;
         EchoReference *mEchoReference;
         bool mNeedEchoReference;
-        int32_t mEchoDelayUs;
     };
 
 };
