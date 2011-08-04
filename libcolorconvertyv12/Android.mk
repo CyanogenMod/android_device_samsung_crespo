@@ -1,3 +1,5 @@
+ifneq ($(filter crespo crespo4g,$(TARGET_DEVICE)),)
+
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -21,4 +23,5 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/frameworks/media/libvideoeditor/include
 
 include $(BUILD_SHARED_LIBRARY)
+endif
 
