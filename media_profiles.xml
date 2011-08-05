@@ -111,6 +111,33 @@
 
         </EncoderProfile>
 
+        <EncoderProfile quality="timelapse480p" fileFormat="mp4" duration="60">
+            <Video codec="h264"
+                   bitRate="3000000"
+                   width="720"
+                   height="480"
+                   frameRate="30" />
+
+            <!-- Audio settings are not used for timealpse video recording -->
+            <Audio codec="aac"
+                   bitRate="96000"
+                   sampleRate="16000"
+                   channels="1" />
+        </EncoderProfile>
+
+        <EncoderProfile quality="timelapseqcif" fileFormat="3gp" duration="30">
+            <Video codec="h264"
+                   bitRate="256000"
+                   width="176"
+                   height="144"
+                   frameRate="30" />
+            <!-- Audio settings are not used for timealpse video recording -->
+            <Audio codec="amrnb"
+                   bitRate="12200"
+                   sampleRate="8000"
+                   channels="1" />
+        </EncoderProfile>
+
         <ImageEncoding quality="90" />
         <ImageEncoding quality="80" />
         <ImageEncoding quality="70" />
@@ -145,6 +172,33 @@
                    sampleRate="8000"
                    channels="1" />
 
+        </EncoderProfile>
+
+        <EncoderProfile quality="timelapse480p" fileFormat="mp4" duration="60">
+            <Video codec="h264"
+                   bitRate="1000000"
+                   width="640"
+                   height="480"
+                   frameRate="15" />
+
+            <!-- Audio settings are not used for timealpse video recording -->
+            <Audio codec="aac"
+                   bitRate="96000"
+                   sampleRate="16000"
+                   channels="1" />
+        </EncoderProfile>
+
+        <EncoderProfile quality="timelapseqcif" fileFormat="3gp" duration="30">
+            <Video codec="h264"
+                   bitRate="256000"
+                   width="176"
+                   height="144"
+                   frameRate="15" />
+            <!-- Audio settings are not used for timealpse video recording -->
+            <Audio codec="amrnb"
+                   bitRate="12200"
+                   sampleRate="8000"
+                   channels="1" />
         </EncoderProfile>
 
         <ImageEncoding quality="90" />
