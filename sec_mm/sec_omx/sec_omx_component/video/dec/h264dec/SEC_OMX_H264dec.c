@@ -884,6 +884,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
 
             /** Update Frame Size **/
 
+            pH264Dec->hMFCH264Handle.bConfiguredMFC = OMX_TRUE;
             if ((cropInfo.crop_left_offset != 0) || (cropInfo.crop_right_offset != 0) ||
                 (cropInfo.crop_top_offset != 0) || (cropInfo.crop_bottom_offset != 0)) {
                 /* change width and height information */
@@ -923,7 +924,6 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                        NULL);
             }
 
-            pH264Dec->hMFCH264Handle.bConfiguredMFC = OMX_TRUE;
 #ifdef ADD_SPS_PPS_I_FRAME
             ret = OMX_ErrorInputDataDecodeYet;
 #else
