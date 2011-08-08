@@ -1208,6 +1208,17 @@ OMX_ERRORTYPE SEC_OMX_VideoDecodeSetParameter(
         }
 
         ret = enableAndroidNativeBuffer(hComponent, ComponentParameterStructure);
+        if (ret == OMX_ErrorNone) {
+            SEC_OMX_BASECOMPONENT *pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+            SEC_OMX_BASEPORT      *pSECPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
+            if (pSECPort->bUseAndroidNativeBuffer) {
+                pSECPort->portDefinition.nBufferCountActual = ANDROID_MAX_VIDEO_OUTPUTBUFFER_NUM;
+                pSECPort->portDefinition.nBufferCountMin = ANDROID_MAX_VIDEO_OUTPUTBUFFER_NUM;
+            } else {
+                pSECPort->portDefinition.nBufferCountActual = MAX_VIDEO_OUTPUTBUFFER_NUM;
+                pSECPort->portDefinition.nBufferCountMin = MAX_VIDEO_OUTPUTBUFFER_NUM;
+            }
+        }
     }
         break;
     case OMX_IndexParamUseAndroidNativeBuffer:
