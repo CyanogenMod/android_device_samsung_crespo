@@ -1094,7 +1094,7 @@ OMX_ERRORTYPE SEC_OMX_SetParameter(
     {
         OMX_PARAM_BUFFERSUPPLIERTYPE *bufferSupplier = (OMX_PARAM_BUFFERSUPPLIERTYPE *)ComponentParameterStructure;
         OMX_U32               portIndex = bufferSupplier->nPortIndex;
-        SEC_OMX_BASEPORT         *pSECPort;
+        SEC_OMX_BASEPORT      *pSECPort = &pSECComponent->pSECPort[portIndex];
 
         if ((pSECComponent->currentState != OMX_StateLoaded) && (pSECComponent->currentState != OMX_StateWaitForResources)) {
             if (pSECPort->portDefinition.bEnabled == OMX_TRUE) {
@@ -1112,7 +1112,6 @@ OMX_ERRORTYPE SEC_OMX_SetParameter(
             goto EXIT;
         }
 
-        pSECPort = &pSECComponent->pSECPort[portIndex];
         if (bufferSupplier->eBufferSupplier == OMX_BufferSupplyUnspecified) {
             ret = OMX_ErrorNone;
             goto EXIT;
@@ -1481,5 +1480,3 @@ EXIT:
 
     return ret;
 }
-
-
