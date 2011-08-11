@@ -1427,7 +1427,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     memcpy(pInBuf, yuv_buf, snapshot_size);
 
     setExifChangedAttribute();
-    jpgEnc.encode(output_size, &mExifInfo);
+    jpgEnc.encode(output_size, NULL);
 
     uint64_t outbuf_size;
     unsigned char *pOutBuf = (unsigned char *)jpgEnc.getOutBuf(&outbuf_size);
