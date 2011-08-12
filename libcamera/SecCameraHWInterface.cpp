@@ -1817,6 +1817,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
         if (!strcmp(new_scene_mode_str, CameraParameters::SCENE_MODE_AUTO)) {
             new_scene_mode = SCENE_MODE_NONE;
+            mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "on,off,auto,torch");
         } else {
             // defaults for non-auto scene modes
             if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
@@ -1828,36 +1829,52 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                        CameraParameters::SCENE_MODE_PORTRAIT)) {
                 new_scene_mode = SCENE_MODE_PORTRAIT;
                 new_flash_mode_str = CameraParameters::FLASH_MODE_AUTO;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "auto");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_LANDSCAPE)) {
                 new_scene_mode = SCENE_MODE_LANDSCAPE;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_SPORTS)) {
                 new_scene_mode = SCENE_MODE_SPORTS;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_PARTY)) {
                 new_scene_mode = SCENE_MODE_PARTY_INDOOR;
                 new_flash_mode_str = CameraParameters::FLASH_MODE_AUTO;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "auto");
             } else if ((!strcmp(new_scene_mode_str,
                                 CameraParameters::SCENE_MODE_BEACH)) ||
                         (!strcmp(new_scene_mode_str,
                                  CameraParameters::SCENE_MODE_SNOW))) {
                 new_scene_mode = SCENE_MODE_BEACH_SNOW;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_SUNSET)) {
                 new_scene_mode = SCENE_MODE_SUNSET;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_NIGHT)) {
                 new_scene_mode = SCENE_MODE_NIGHTSHOT;
                 mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(4000,30000)");
                 mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE,
                                 "4000,30000");
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_FIREWORKS)) {
                 new_scene_mode = SCENE_MODE_FIREWORKS;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else if (!strcmp(new_scene_mode_str,
                                CameraParameters::SCENE_MODE_CANDLELIGHT)) {
                 new_scene_mode = SCENE_MODE_CANDLE_LIGHT;
+                new_flash_mode_str = CameraParameters::FLASH_MODE_OFF;
+                mParameters.set(CameraParameters::KEY_SUPPORTED_FLASH_MODES, "off");
             } else {
                 LOGE("%s::unmatched scene_mode(%s)",
                         __func__, new_scene_mode_str); //action, night-portrait, theatre, steadyphoto
