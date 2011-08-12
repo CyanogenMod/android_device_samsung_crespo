@@ -882,9 +882,9 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             secOutputPort->cropRectangle.nWidth  = imgResol.width - cropInfo.crop_left_offset - cropInfo.crop_right_offset;
             secOutputPort->cropRectangle.nHeight = imgResol.height - cropInfo.crop_top_offset - cropInfo.crop_bottom_offset;
 
-            /** Update Frame Size **/
-
             pH264Dec->hMFCH264Handle.bConfiguredMFC = OMX_TRUE;
+
+            /** Update Frame Size **/
             if ((cropInfo.crop_left_offset != 0) || (cropInfo.crop_right_offset != 0) ||
                 (cropInfo.crop_top_offset != 0) || (cropInfo.crop_bottom_offset != 0)) {
                 /* change width and height information */
@@ -987,20 +987,32 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
             void *pOutputBuf[3];
 
+            int actualWidth  = outputInfo.img_width;
+            int actualHeight = outputInfo.img_height;
+            int actualImageSize = imageSize;
+
             pOutputBuf[0] = (void *)pOutputData->dataBuffer;
-            pOutputBuf[1] = (void *)pOutputData->dataBuffer + imageSize;
-            pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((imageSize * 5) / 4);
+            pOutputBuf[1] = (void *)pOutputData->dataBuffer + actualImageSize;
+            pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((actualImageSize * 5) / 4);
 
 #ifdef USE_ANDROID_EXTENSION
             if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
+                OMX_U32 retANB = 0;
                 void *pVirAddrs[2];
-                getVADDRfromANB (pOutputData->dataBuffer,
+                actualWidth  = (outputInfo.img_width + 15) & (~15);
+                actualImageSize = actualWidth * actualHeight;
+
+                retANB = getVADDRfromANB (pOutputData->dataBuffer,
                                 (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
                                 (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
                                 pVirAddrs);
+                if (retANB != 0) {
+                    SEC_OSAL_Log(SEC_LOG_ERROR, "Error getVADDRfromANB, Error code:%d", retANB);
+                    ret = OMX_ErrorOverflow;
+                    goto EXIT;
+                }
                 pOutputBuf[0] = pVirAddrs[0];
                 pOutputBuf[1] = pVirAddrs[1];
-                pOutputBuf[2] = pVirAddrs[1] + (imageSize / 4);
             }
 #endif
             if ((pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_FALSE) &&
@@ -1021,15 +1033,15 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                     csc_tiled_to_linear(
                         (unsigned char *)pOutputBuf[0],
                         (unsigned char *)outputInfo.YVirAddr,
-                        outputInfo.img_width,
-                        outputInfo.img_height);
+                        actualWidth,
+                        actualHeight);
                     csc_tiled_to_linear_deinterleave(
                         (unsigned char *)pOutputBuf[1],
                         (unsigned char *)pOutputBuf[2],
                         (unsigned char *)outputInfo.CVirAddr,
-                        outputInfo.img_width,
-                        outputInfo.img_height >> 1);
-                    pOutputData->dataLen = (outputInfo.img_width * outputInfo.img_height) * 3 / 2;
+                        actualWidth,
+                        actualHeight >> 1);
+                    pOutputData->dataLen = actualImageSize * 3 / 2;
                 }
                     break;
                 case OMX_COLOR_FormatYUV420SemiPlanar:
@@ -1040,14 +1052,14 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
                     csc_tiled_to_linear(
                         (unsigned char *)pOutputBuf[0],
                         (unsigned char *)outputInfo.YVirAddr,
-                        outputInfo.img_width,
-                        outputInfo.img_height);
+                        actualWidth,
+                        actualHeight);
                     csc_tiled_to_linear(
                         (unsigned char *)pOutputBuf[1],
                         (unsigned char *)outputInfo.CVirAddr,
-                        outputInfo.img_width,
-                        outputInfo.img_height >> 1);
-                    pOutputData->dataLen = (outputInfo.img_width * outputInfo.img_height) * 3 / 2;
+                        actualWidth,
+                        actualHeight >> 1);
+                    pOutputData->dataLen = actualImageSize * 3 / 2;
                 }
                     break;
                 }

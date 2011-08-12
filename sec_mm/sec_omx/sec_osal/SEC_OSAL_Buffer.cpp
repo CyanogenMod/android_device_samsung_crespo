@@ -106,6 +106,7 @@ OMX_U32 getMetadataBufferType(const uint8_t *ptr)
 
 OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height, void *pVirAddrs[])
 {
+    OMX_U32 ret = 0;
     android_native_buffer_t *buf;
     void *readableBuffer;
     GraphicBufferMapper &mapper = GraphicBufferMapper::get();
@@ -117,12 +118,13 @@ OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height
     SEC_OSAL_Log(SEC_LOG_TRACE, "pUnreadableBuffer:0x%x, buf:0x%x, buf->handle:0x%x",
                                 pUnreadableBuffer, buf, buf->handle);
 
-    if (0 != mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, pVirAddrs))
-        return -1;
-
+    ret = mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, pVirAddrs);
+    if (ret != 0) {
+        SEC_OSAL_Log(SEC_LOG_ERROR, "mapper.lock Error, Error code:%d", ret);
+    }
     FunctionOut();
 
-    return 0;
+    return ret;
 }
 
 OMX_U32 putVADDRtoANB(OMX_PTR pUnreadableBuffer)
