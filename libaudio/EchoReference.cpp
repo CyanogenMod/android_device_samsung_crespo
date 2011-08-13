@@ -60,7 +60,6 @@ EchoReference::EchoReference(audio_format_t rdFormat,
 
     mRdFrameSize = audio_bytes_per_sample(rdFormat) * rdChannelCount;
     mWrFrameSize = audio_bytes_per_sample(wrFormat) * wrChannelCount;
-
     mStatus = NO_ERROR;
 }
 
@@ -71,9 +70,10 @@ EchoReference::~EchoReference() {
     delete mDownSampler;
 }
 
-status_t EchoReference::write(EchoReference::Buffer *buffer)
+status_t EchoReference::write(Buffer *buffer)
 {
     if (mStatus != NO_ERROR) {
+        LOGV("EchoReference::write() ERROR, exiting early");
         return mStatus;
     }
 
@@ -86,7 +86,18 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
         return NO_ERROR;
     }
 
-//    LOGV("EchoReference::write() %d frames", buffer->frameCount);
+    LOGV("EchoReference::write() START trying to write %d frames", buffer->frameCount);
+    LOGV("EchoReference::write() playbackTimestamp:[%lld].[%lld], mPlaybackDelay:[%ld]",
+    (int64_t)buffer->timeStamp.tv_sec,
+    (int64_t)buffer->timeStamp.tv_nsec, mPlaybackDelay);
+
+    //LOGV("EchoReference::write() %d frames", buffer->frameCount);
+    // discard writes until a valid time stamp is provided.
+
+    if ((buffer->timeStamp.tv_sec == 0) && (buffer->timeStamp.tv_nsec == 0) &&
+        (mWrRenderTime.tv_sec     == 0) && (mWrRenderTime.tv_nsec     == 0)) {
+            return NO_ERROR;
+    }
 
     if ((mState & ECHOREF_WRITING) == 0) {
         LOGV("EchoReference::write() start write");
@@ -100,17 +111,10 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
         return NO_ERROR;
     }
 
+    mWrRenderTime.tv_sec  = buffer->timeStamp.tv_sec;
+    mWrRenderTime.tv_nsec = buffer->timeStamp.tv_nsec;
 
-    // discard writes until a valid time stamp is provided. Once a valid TS has been received
-    // reuse last good TS if none is provided.
-    if (buffer->tstamp.tv_sec == 0 && buffer->tstamp.tv_nsec == 0 ) {
-        if (mWrRenderTime.tv_sec == 0 && mWrRenderTime.tv_nsec == 0) {
-            return NO_ERROR;
-        }
-    } else {
-        mWrRenderTime.tv_sec = buffer->tstamp.tv_sec;
-        mWrRenderTime.tv_nsec = buffer->tstamp.tv_nsec;
-    }
+    mPlaybackDelay = buffer->delayNs;
 
     void *srcBuf;
     size_t inFrames;
@@ -119,8 +123,8 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
             mRdSamplingRate != mWrSamplingRate) {
         if (mWrBufSize < buffer->frameCount) {
             mWrBufSize = buffer->frameCount;
-            // max buffer size is normally function of read sampling rate but as write sampling rate
-            // is always more than read sampling rate this works
+            //max buffer size is normally function of read sampling rate but as write sampling rate
+            //is always more than read sampling rate this works
             mWrBuf = realloc(mWrBuf, mWrBufSize * mRdFrameSize);
         }
 
@@ -137,7 +141,8 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
         }
         if (mWrSamplingRate != mRdSamplingRate) {
             if (mDownSampler == NULL) {
-                LOGV("EchoReference::write() new ReSampler(%d, %d)", mWrSamplingRate, mRdSamplingRate);
+                LOGV("EchoReference::write() new ReSampler(%d, %d)",
+                      mWrSamplingRate, mRdSamplingRate);
                 mDownSampler = new ReSampler(mWrSamplingRate,
                                              mRdSamplingRate,
                                              mRdChannelCount,
@@ -154,9 +159,12 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
             mWrFramesIn = buffer->frameCount;
             // inFrames is always more than we need here to get frames remaining from previous runs
             // inFrames is updated by resample() with the number of frames produced
+            LOGV("EchoReference::write() ReSampling(%d, %d)",
+                  mWrSamplingRate, mRdSamplingRate);
             mDownSampler->resample((int16_t *)mWrBuf, &inFrames);
             LOGV_IF(mWrFramesIn != 0,
-                    "EchoReference::write() mWrFramesIn not 0 (%d) after resampler", mWrFramesIn);
+                    "EchoReference::write() mWrFramesIn not 0 (%d) after resampler",
+                    mWrFramesIn);
         }
         srcBuf = mWrBuf;
     } else {
@@ -164,20 +172,24 @@ status_t EchoReference::write(EchoReference::Buffer *buffer)
         srcBuf = buffer->raw;
     }
 
-
     if (mFramesIn + inFrames > mBufSize) {
+        LOGV("EchoReference::write() increasing buffer size from %d to %d",
+        mBufSize, mFramesIn + inFrames);
         mBufSize = mFramesIn + inFrames;
         mBuffer = realloc(mBuffer, mBufSize * mRdFrameSize);
-        LOGV("EchoReference::write() increasing buffer size to %d", mBufSize);
     }
     memcpy((char *)mBuffer + mFramesIn * mRdFrameSize,
            srcBuf,
            inFrames * mRdFrameSize);
     mFramesIn += inFrames;
 
-    LOGV("EchoReference::write() frames %d, total frames in %d", inFrames, mFramesIn);
+    LOGV("EchoReference::write_log() inFrames:[%d], mFramesInOld:[%d], "\
+         "mFramesInNew:[%d], mBufSize:[%d], mWrRenderTime:[%lld].[%lld], mPlaybackDelay:[%ld]",
+         inFrames, mFramesIn - inFrames, mFramesIn, mBufSize,  (int64_t)mWrRenderTime.tv_sec,
+         (int64_t)mWrRenderTime.tv_nsec, mPlaybackDelay);
 
     mCond.signal();
+    LOGV("EchoReference::write() END");
     return NO_ERROR;
 }
 
@@ -194,6 +206,9 @@ status_t EchoReference::read(EchoReference::Buffer *buffer)
         return NO_ERROR;
     }
 
+    LOGV("EchoReference::read() START, delayCapture:[%ld],mFramesIn:[%d],buffer->frameCount:[%d]",
+    buffer->delayNs, mFramesIn, buffer->frameCount);
+
     if ((mState & ECHOREF_READING) == 0) {
         LOGV("EchoReference::read() start read");
         reset_l();
@@ -202,8 +217,7 @@ status_t EchoReference::read(EchoReference::Buffer *buffer)
 
     if ((mState & ECHOREF_WRITING) == 0) {
         memset(buffer->raw, 0, mRdFrameSize * buffer->frameCount);
-        buffer->tstamp.tv_sec = 0;
-        buffer->tstamp.tv_nsec = 0;
+        buffer->delayNs = 0;
         return NO_ERROR;
     }
 
@@ -215,17 +229,97 @@ status_t EchoReference::read(EchoReference::Buffer *buffer)
 
         mCond.waitRelative(mLock, milliseconds(timeoutMs));
         if (mFramesIn < buffer->frameCount) {
+            LOGV("EchoReference::read() waited %d ms but still not enough frames"\
+                 " mFramesIn: %d, buffer->frameCount = %d",
+                timeoutMs, mFramesIn, buffer->frameCount);
             buffer->frameCount = mFramesIn;
-            LOGV("EchoReference::read() waited %d ms but still not enough frames", timeoutMs);
         }
     }
 
-    // computeRenderTime() must be called before subtracting frames read from mFramesIn because
-    // we subtract the duration of the whole echo reference buffer including the buffer being read.
-    // This is because the time stamp stored in mWrRenderTime corresponds to the last sample written
-    // to the echo reference buffer and we want to return the render time of the first sample of
-    // the buffer being read.
-    computeRenderTime(&buffer->tstamp);
+    int64_t timeDiff;
+    struct timespec tmp;
+
+    if ((mWrRenderTime.tv_sec == 0 && mWrRenderTime.tv_nsec == 0) ||
+        (buffer->timeStamp.tv_sec == 0 && buffer->timeStamp.tv_nsec == 0)) {
+        LOGV("read: NEW:timestamp is zero---------setting timeDiff = 0, "\
+             "not updating delay this time");
+        timeDiff = 0;
+    } else {
+        if (buffer->timeStamp.tv_nsec < mWrRenderTime.tv_nsec) {
+            tmp.tv_sec = buffer->timeStamp.tv_sec - mWrRenderTime.tv_sec - 1;
+            tmp.tv_nsec = 1000000000 + buffer->timeStamp.tv_nsec - mWrRenderTime.tv_nsec;
+        } else {
+            tmp.tv_sec = buffer->timeStamp.tv_sec - mWrRenderTime.tv_sec;
+            tmp.tv_nsec = buffer->timeStamp.tv_nsec - mWrRenderTime.tv_nsec;
+        }
+        timeDiff = (((int64_t)tmp.tv_sec * 1000000000 + tmp.tv_nsec));
+
+        int64_t expectedDelayNs =  mPlaybackDelay + buffer->delayNs - timeDiff;
+
+        LOGV("expectedDelayNs[%lld] =  mPlaybackDelay[%ld] + delayCapture[%ld] - timeDiff[%lld]",
+        expectedDelayNs, mPlaybackDelay, buffer->delayNs, timeDiff);
+
+        if (expectedDelayNs > 0) {
+            int64_t delayNs = ((int64_t)mFramesIn * 1000000000) / mRdSamplingRate;
+
+            delayNs -= expectedDelayNs;
+
+            if (abs(delayNs) >= sMinDelayUpdate) {
+                if (delayNs < 0) {
+                    size_t previousFrameIn = mFramesIn;
+                    mFramesIn = (expectedDelayNs * mRdSamplingRate)/1000000000;
+                    int    offset = mFramesIn - previousFrameIn;
+                    LOGV("EchoReference::readlog: delayNs = NEGATIVE and ENOUGH : "\
+                         "setting %d frames to zero mFramesIn: %d, previousFrameIn = %d",
+                         offset, mFramesIn, previousFrameIn);
+
+                    if (mFramesIn > mBufSize) {
+                        mBufSize = mFramesIn;
+                        mBuffer  = realloc(mBuffer, mFramesIn * mRdFrameSize);
+                        LOGV("EchoReference::read: increasing buffer size to %d", mBufSize);
+                    }
+
+                    if (offset > 0)
+                        memset((char *)mBuffer + previousFrameIn * mRdFrameSize,
+                               0, offset * mRdFrameSize);
+                } else {
+                    size_t  previousFrameIn = mFramesIn;
+                    int     framesInInt = (int)(((int64_t)expectedDelayNs *
+                                           (int64_t)mRdSamplingRate)/1000000000);
+                    int     offset = previousFrameIn - framesInInt;
+
+                    LOGV("EchoReference::readlog: delayNs = POSITIVE/ENOUGH :previousFrameIn: %d,"\
+                         "framesInInt: [%d], offset:[%d], buffer->frameCount:[%d]",
+                         previousFrameIn, framesInInt, offset, buffer->frameCount);
+
+                    if (framesInInt < (int)buffer->frameCount) {
+                        if (framesInInt > 0) {
+                            memset((char *)mBuffer + framesInInt * mRdFrameSize,
+                                   0, (buffer->frameCount-framesInInt) * mRdFrameSize);
+                            LOGV("EchoReference::read: pushing [%d] zeros into ref buffer",
+                                 (buffer->frameCount-framesInInt));
+                        } else {
+                            LOGV("framesInInt = %d", framesInInt);
+                        }
+                        framesInInt = buffer->frameCount;
+                    } else {
+                        if (offset > 0) {
+                            memcpy(mBuffer, (char *)mBuffer + (offset * mRdFrameSize),
+                                   framesInInt * mRdFrameSize);
+                            LOGV("EchoReference::read: shifting ref buffer by [%d]",framesInInt);
+                        }
+                    }
+                    mFramesIn = (size_t)framesInInt;
+                }
+            } else {
+                LOGV("EchoReference::read: NOT ENOUGH samples to update %lld", delayNs);
+            }
+        } else {
+            LOGV("NEGATIVE expectedDelayNs[%lld] =  "\
+                 "mPlaybackDelay[%ld] + delayCapture[%ld] - timeDiff[%lld]",
+                 expectedDelayNs, mPlaybackDelay, buffer->delayNs, timeDiff);
+        }
+    }
 
     memcpy(buffer->raw,
            (char *)mBuffer,
@@ -236,32 +330,14 @@ status_t EchoReference::read(EchoReference::Buffer *buffer)
            (char *)mBuffer + buffer->frameCount * mRdFrameSize,
            mFramesIn * mRdFrameSize);
 
-    LOGV("EchoReference::read() %d frames, total frames in %d", buffer->frameCount, mFramesIn);
+    // As the reference buffer is now time aligned to the microphone signal there is a zero delay
+    buffer->delayNs = 0;
+
+    LOGV("EchoReference::read() END %d frames, total frames in %d",
+          buffer->frameCount, mFramesIn);
 
     mCond.signal();
     return NO_ERROR;
-}
-
-void EchoReference::computeRenderTime(struct timespec *renderTime)
-{
-    int64_t delayNs = ((int64_t)mFramesIn * 1000000000) / mRdSamplingRate;
-
-    if (mDownSampler != NULL) {
-        delayNs += mDownSampler->delayNs();
-    }
-
-    struct timespec tmp;
-    tmp.tv_nsec = delayNs % 1000000000;
-    tmp.tv_sec = delayNs / 1000000000;
-
-    if (mWrRenderTime.tv_nsec < tmp.tv_nsec)
-    {
-        renderTime->tv_sec = mWrRenderTime.tv_sec - tmp.tv_sec - 1;
-        renderTime->tv_nsec = 1000000000 + mWrRenderTime.tv_nsec - tmp.tv_nsec;
-    } else {
-        renderTime->tv_sec = mWrRenderTime.tv_sec - tmp.tv_sec;
-        renderTime->tv_nsec = mWrRenderTime.tv_nsec - tmp.tv_nsec;
-    }
 }
 
 void EchoReference::reset_l() {

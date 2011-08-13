@@ -1085,16 +1085,17 @@ AudioHardware::AudioStreamOutALSA::~AudioStreamOutALSA()
     standby();
 }
 
-int AudioHardware::AudioStreamOutALSA::computeEchoReferenceDelay(size_t frames,
-                                                                 struct timespec *echoRefRenderTime)
+int AudioHardware::AudioStreamOutALSA::getPlaybackDelay(size_t frames,
+                                                        EchoReference::Buffer *buffer)
 {
     size_t kernelFr;
 
-    int rc = pcm_get_htimestamp(mPcm, &kernelFr, echoRefRenderTime);
+    int rc = pcm_get_htimestamp(mPcm, &kernelFr, &buffer->timeStamp);
     if (rc < 0) {
-        LOGV("computeEchoReferenceDelay(): pcm_get_htimestamp error");
-        echoRefRenderTime->tv_sec = 0;
-        echoRefRenderTime->tv_nsec = 0;
+        buffer->timeStamp.tv_sec  = 0;
+        buffer->timeStamp.tv_nsec = 0;
+        buffer->delayNs           = 0;
+        LOGV("getPlaybackDelay(): pcm_get_htimestamp error, setting playbackTimestamp to 0");
         return rc;
     }
 
@@ -1103,19 +1104,23 @@ int AudioHardware::AudioStreamOutALSA::computeEchoReferenceDelay(size_t frames,
     // adjust render time stamp with delay added by current driver buffer.
     // Add the duration of current frame as we want the render time of the last
     // sample being written.
-    long delayNs = (long)(((int64_t)(kernelFr + frames)* 1000000000) /
-                                                AUDIO_HW_OUT_SAMPLERATE);
-    delayNs += echoRefRenderTime->tv_nsec;
+    long delayNs = (long)(((int64_t)(kernelFr + frames)* 1000000000) /AUDIO_HW_OUT_SAMPLERATE);
 
-    echoRefRenderTime->tv_nsec = delayNs % 1000000000;
-    echoRefRenderTime->tv_sec += delayNs / 1000000000;
+    LOGV("AudioStreamOutALSA::getPlaybackDelay2 delayNs: [%ld], "\
+         "kernelFr:[%d], frames:[%d], buffSize:[%d], timeStamp:[%ld].[%ld]",
+         delayNs, (int)kernelFr, (int)frames, pcm_get_buffer_size(mPcm),
+         (long)buffer->timeStamp.tv_sec, buffer->timeStamp.tv_nsec);
+
+    buffer->delayNs = delayNs;
+    LOGV("NXPWritehTimestamps: FrameAvailable = [%d], hTimestamps = [%d]s.[%d]ns",
+    (int)kernelFr, (int)buffer->timeStamp.tv_sec, (int)(buffer->timeStamp.tv_nsec/1000));
 
     return 0;
 }
 
 ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t bytes)
 {
-    //    LOGV("AudioStreamOutALSA::write(%p, %u)", buffer, bytes);
+    LOGV("-----AudioStreamInALSA::write(%p, %d) START", buffer, (int)bytes);
     status_t status = NO_INIT;
     const uint8_t* p = static_cast<const uint8_t*>(buffer);
     int ret;
@@ -1176,7 +1181,8 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
             EchoReference::Buffer b;
             b.raw = (void *)buffer;
             b.frameCount = bytes / frameSize();
-            computeEchoReferenceDelay(bytes / frameSize(), &b.tstamp);
+
+            getPlaybackDelay(bytes / frameSize(), &b);
             mEchoReference->write(&b);
         }
 
@@ -1185,18 +1191,18 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
         TRACE_DRIVER_OUT
 
         if (ret == 0) {
+            LOGV("-----AudioStreamInALSA::write(%p, %d) END", buffer, (int)bytes);
             return bytes;
         }
         LOGW("write error: %d", errno);
         status = -errno;
     }
 Error:
-
     standby();
 
     // Simulate audio output timing in case of error
     usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
-
+    LOGE("AudioStreamOutALSA::write END WITH ERROR !!!!!!!!!(%p, %u)", buffer, bytes);
     return status;
 }
 
@@ -1549,8 +1555,8 @@ ssize_t AudioHardware::AudioStreamInALSA::processFrames(void* buffer, ssize_t fr
             pushEchoReference(mProcFramesIn);
         }
 
-        // inBuf.frameCount and outBuf.frameCount indicate respectively the maximum number of frames
-        // to be consumed and produced by process()
+        //inBuf.frameCount and outBuf.frameCount indicate respectively the maximum number of frames
+        //to be consumed and produced by process()
         audio_buffer_t inBuf = {
                 mProcFramesIn,
                 {mProcBuf}
@@ -1585,8 +1591,13 @@ ssize_t AudioHardware::AudioStreamInALSA::processFrames(void* buffer, ssize_t fr
     return framesWr;
 }
 
-void AudioHardware::AudioStreamInALSA::updateEchoReference(size_t frames)
+int32_t AudioHardware::AudioStreamInALSA::updateEchoReference(size_t frames)
 {
+    EchoReference::Buffer b;
+    b.delayNs = 0;
+
+    LOGV("updateEchoReference1 START, frames = [%d], mRefFramesIn = [%d],  b.frameCount = [%d]",
+         frames, mRefFramesIn, frames - mRefFramesIn);
     if (mRefFramesIn < frames) {
         if (mRefBufSize < frames) {
             mRefBufSize = frames;
@@ -1594,24 +1605,29 @@ void AudioHardware::AudioStreamInALSA::updateEchoReference(size_t frames)
                                          mRefBufSize * mChannelCount * sizeof(int16_t));
         }
 
-        EchoReference::Buffer b;
         b.frameCount = frames - mRefFramesIn;
         b.raw = (void *)(mRefBuf + mRefFramesIn * mChannelCount);
-        if (mEchoReference->read(&b) == NO_ERROR) {
+
+        getCaptureDelay(frames, &b);
+
+        if (mEchoReference->read(&b) == NO_ERROR)
+        {
             mRefFramesIn += b.frameCount;
-            // Echo delay calculation: updates mEchoDelayUs
-            updateEchoDelay(frames, &b.tstamp);
-        } else {
-            mEchoDelayUs = 0;
+            LOGV("updateEchoReference2: mRefFramesIn:[%d], mRefBufSize:[%d], "\
+                 "frames:[%d], b.frameCount:[%d]", mRefFramesIn, mRefBufSize,frames,b.frameCount);
         }
+
+    }else{
+        LOGV("updateEchoReference3: NOT enough frames to read ref buffer");
     }
+    return b.delayNs;
 }
 
 void AudioHardware::AudioStreamInALSA::pushEchoReference(size_t frames)
 {
     // read frames from echo reference buffer and update echo delay
     // mRefFramesIn is updated with frames available in mRefBuf
-    updateEchoReference(frames);
+    int32_t delayUs = (int32_t)(updateEchoReference(frames)/1000);
 
     if (mRefFramesIn < frames) {
         frames = mRefFramesIn;
@@ -1629,11 +1645,12 @@ void AudioHardware::AudioStreamInALSA::pushEchoReference(size_t frames)
         (*mPreprocessors[i])->process_reverse(mPreprocessors[i],
                                                &refBuf,
                                                NULL);
-        setPreProcessorEchoDelay(mPreprocessors[i], mEchoDelayUs);
+        setPreProcessorEchoDelay(mPreprocessors[i], delayUs);
     }
 
     mRefFramesIn -= refBuf.frameCount;
     if (mRefFramesIn) {
+    LOGV("pushEchoReference5: shifting mRefBuf down by = %d frames", mRefFramesIn);
         memcpy(mRefBuf,
                mRefBuf + refBuf.frameCount * mChannelCount,
                mRefFramesIn * mChannelCount * sizeof(int16_t));
@@ -1674,81 +1691,54 @@ status_t AudioHardware::AudioStreamInALSA::setPreprocessorParam(effect_handle_t 
     return status;
 }
 
-void AudioHardware::AudioStreamInALSA::updateEchoDelay(size_t frames,
-                                                       struct timespec *echoRefRenderTime)
+void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
+                                                       EchoReference::Buffer *buffer)
 {
+
     // read frames available in kernel driver buffer
     size_t kernelFr;
     struct timespec tstamp;
+
     if (pcm_get_htimestamp(mPcm, &kernelFr, &tstamp) < 0) {
-        mEchoDelayUs = 0;
-        LOGW("read updateEchoDelay(): pcm_get_htimestamp error");
+        buffer->timeStamp.tv_sec  = 0;
+        buffer->timeStamp.tv_nsec = 0;
+        buffer->delayNs           = 0;
+        LOGW("read getCaptureDelay(): pcm_htimestamp error");
         return;
     }
-
-    if (echoRefRenderTime->tv_sec == 0 && echoRefRenderTime->tv_nsec == 0) {
-        mEchoDelayUs = 0;
-        LOGV("read updateEchoDelay(): echo ref render time is 0");
-        return;
-    }
-
-    long kernelDelay = (long)(((int64_t)kernelFr * 1000000000) / AUDIO_HW_IN_SAMPLERATE);
 
     // read frames available in audio HAL input buffer
     // add number of frames being read as we want the capture time of first sample in current
     // buffer
-    long bufDelay = (long)(((int64_t)(mInputFramesIn + mProcFramesIn + frames) * 1000000000)
+    long bufDelay = (long)(((int64_t)(mInputFramesIn + mProcFramesIn) * 1000000000)
                                     / AUDIO_HW_IN_SAMPLERATE);
-
     // add delay introduced by resampler
     long rsmpDelay = 0;
     if (mDownSampler) {
         rsmpDelay = mDownSampler->delayNs();
     }
 
+    long kernelDelay = (long)(((int64_t)kernelFr * 1000000000) / AUDIO_HW_IN_SAMPLERATE);
+
     // correct capture time stamp
-    long delay = kernelDelay + bufDelay + rsmpDelay;
-    struct timespec tmp;
-    tmp.tv_sec = delay / 1000000000;
-    tmp.tv_nsec = delay % 1000000000;
+    long delayNs = kernelDelay + bufDelay + rsmpDelay;
 
-    if (tstamp.tv_nsec < tmp.tv_nsec)
-    {
-        tmp.tv_sec = tstamp.tv_sec - tmp.tv_sec - 1;
-        tmp.tv_nsec = 1000000000 + tstamp.tv_nsec - tmp.tv_nsec;
-    } else {
-        tmp.tv_sec = tstamp.tv_sec - tmp.tv_sec;
-        tmp.tv_nsec = tstamp.tv_nsec - tmp.tv_nsec;
-    }
+    buffer->timeStamp = tstamp;
+    buffer->delayNs   = delayNs;
+    LOGV("AudioStreamInALSA::getCaptureDelay2 TimeStamp = [%lld].[%lld], delayCaptureNs: [%ld],"\
+         " kernelDelay:[%ld], bufDelay:[%ld], rsmpDelay:[%ld], kernelFr:[%d], "\
+         "mInputFramesIn:[%d], mProcFramesIn:[%d], frames:[%d]",
+         (int64_t)buffer->timeStamp.tv_sec , (int64_t)buffer->timeStamp.tv_nsec, buffer->delayNs,
+         kernelDelay, bufDelay, rsmpDelay, kernelFr, mInputFramesIn,mProcFramesIn,frames);
 
-    // caculate echo delay = echo reference render time - capture time
-    if (echoRefRenderTime->tv_nsec < tmp.tv_nsec)
-    {
-        tmp.tv_sec = echoRefRenderTime->tv_sec - tmp.tv_sec - 1;
-        tmp.tv_nsec = 1000000000 + echoRefRenderTime->tv_nsec - tmp.tv_nsec;
-    } else {
-        tmp.tv_sec = echoRefRenderTime->tv_sec - tmp.tv_sec;
-        tmp.tv_nsec = echoRefRenderTime->tv_nsec - tmp.tv_nsec;
-    }
+    LOGV("NXPReadhTimestamps: FrameAvailable = [%d], hTimestamps = [%d]s.[%d]ns",
+        (int)kernelFr, (int)buffer->timeStamp.tv_sec, (int)(buffer->timeStamp.tv_nsec/1000));
 
-    mEchoDelayUs = (int32_t)(((int64_t)tmp.tv_sec * 1000000000 + tmp.tv_nsec) / 1000);
-
-    if (mEchoDelayUs < 0) {
-        LOGW("negative echo delay !!! %d", mEchoDelayUs);
-        mEchoDelayUs = 0;
-    }
-
-//    LOGV("updateEchoDelay() ref render TS %d.%d capture TS %d.%d delta TS %d.%d"
-//            " mEchoDelayUs %d kernelDelay %d bufDelay %d rsmpDelay %d",
-//            (int)echoRefRenderTime->tv_sec, (int)echoRefRenderTime->tv_nsec,
-//            (int)tstamp.tv_sec, (int)tstamp.tv_nsec,
-//            (int)tmp.tv_sec, (int)tmp.tv_nsec,
-//         mEchoDelayUs, (int)kernelDelay, (int)bufDelay, (int)rsmpDelay);
 }
 
 ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
 {
-    //    LOGV("AudioStreamInALSA::read(%p, %d)", buffer, (int)bytes);
+    LOGV("-----AudioStreamInALSA::read(%p, %d) START", buffer, (int)bytes);
     status_t status = NO_INIT;
 
     if (mHardware == NULL) return NO_INIT;
@@ -1820,6 +1810,7 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
         }
 
         if (framesRd >= 0) {
+            LOGV("-----AudioStreamInALSA::read(%p, %d) END", buffer, (int)bytes);
             return framesRd * mChannelCount * sizeof(int16_t);
         }
 
@@ -1833,7 +1824,7 @@ Error:
 
     // Simulate audio output timing in case of error
     usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
-
+    LOGE("-----AudioStreamInALSA::read(%p, %d) END ERROR", buffer, (int)bytes);
     return status;
 }
 
@@ -1944,7 +1935,6 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     mProcFramesIn = 0;
     mRefBufSize = 0;
     mRefFramesIn = 0;
-    mEchoDelayUs = 0;
 
     mMixer = mHardware->openMixer_l();
     if (mMixer) {
@@ -2143,7 +2133,7 @@ status_t AudioHardware::AudioStreamInALSA::getNextBuffer(ReSampler::BufferProvid
         mInputFramesIn = AUDIO_HW_IN_PERIOD_SZ;
     }
 
-    buffer->frameCount = (buffer->frameCount > mInputFramesIn) ? mInputFramesIn : buffer->frameCount;
+    buffer->frameCount = (buffer->frameCount > mInputFramesIn) ? mInputFramesIn:buffer->frameCount;
     buffer->i16 = mInputBuf + (AUDIO_HW_IN_PERIOD_SZ - mInputFramesIn) * mChannelCount;
 
     return mReadStatus;

@@ -46,15 +46,29 @@ public:
         ECHOREF_WRITING = 0x02      // writing is active
     };
 
-    // Buffer descriptor used by read() and write() methods, including the render time stamp.
-    // for write(), The time stamp is the render time for the last sample in the buffer written
-    // for read(), the time stamp is the render time for the first sample in the buffer read
+    // Buffer descriptor used by read() and write() methods, including the time stamp and delay.
     class Buffer {
      public:
-        void *raw;
-        size_t frameCount;
-        struct timespec tstamp;     // render time stamp of buffer. 0.0 means if unknown
+        void *raw;                  // pointer to audio frame
+        size_t frameCount;          // number of frames in buffer
+        int32_t delayNs;            // delay for this buffer (see comment below)
+        struct timespec timeStamp;  // time stamp for this buffer (see comment below)
     };
+    // when used for EchoReference::write():
+    // + as input:
+    //      - delayNs is the delay introduced by playback buffers
+    //      - timeStamp is the time stamp corresponding to the delay calculation
+    // + as output:
+    //      unused
+    // when used for EchoReference::read():
+    // + as input:
+    //      - delayNs is the delay introduced by capture buffers
+    //      - timeStamp is the time stamp corresponding to the delay calculation
+    // + as output:
+    //      - delayNs is the delay between the returned frames and the capture time derived from
+    //      delay and time stamp indicated as input. This delay is to be communicated to the AEC.
+    //      - frameCount is updated with the actual number of frames returned
+
 
     // BufferProvider
     status_t getNextBuffer(ReSampler::BufferProvider::Buffer* buffer);
@@ -65,10 +79,10 @@ public:
     status_t read(Buffer *buffer);
     status_t write(Buffer *buffer);
 
+
 private:
 
     void reset_l();
-    void computeRenderTime(struct timespec *renderTime);
 
     status_t mStatus;               // init status
     uint32_t mState;                // active state: reading, writing or both
@@ -88,10 +102,15 @@ private:
     size_t mWrFramesIn;             // number of frames in conversion buffer
     void *mWrSrcBuf;                // resampler input buf (either mWrBuf or buffer used by write()
     struct timespec mWrRenderTime;  // latest render time indicated by write()
+    int32_t  mPlaybackDelay;
+
     uint32_t mRdDurationUs;         // Duration of last buffer read (used for mCond wait timeout)
     android::Mutex   mLock;         // Mutex protecting read/write concurrency
     android::Condition mCond;       // Condition signaled when data is ready to read
     ReSampler *mDownSampler;        // input resampler
+
+    static const int sMinDelayUpdate = 62500; // delay jump threshold to update ref buffer
+                                              // 0.5 samples at 8kHz in nsecs
 };
 
 }; // namespace android
