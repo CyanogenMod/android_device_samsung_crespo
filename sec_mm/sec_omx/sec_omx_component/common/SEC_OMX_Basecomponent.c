@@ -905,6 +905,13 @@ OMX_ERRORTYPE SEC_OMX_GetParameter(
 
         pSECPort = &pSECComponent->pSECPort[portIndex];
         SEC_OSAL_Memcpy(portDefinition, &pSECPort->portDefinition, portDefinition->nSize);
+
+#ifdef USE_ANDROID_EXTENSION
+        if (portIndex == 0 && pSECPort->bStoreMetaDataInBuffer == OMX_TRUE) {
+            portDefinition->nBufferSize = MAX_INPUT_METADATA_BUFFER_SIZE;
+        }
+#endif
+
     }
         break;
     case OMX_IndexParamPriorityMgmt:
