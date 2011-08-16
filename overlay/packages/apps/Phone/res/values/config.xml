@@ -17,15 +17,6 @@
 <!-- Crespo-specific phone app resources. -->
 <resources>
 
-    <!-- This is a device with capacitive buttons, so disable the feature
-         where BACK rejects the current incoming call.  (Since it's so
-         easy to press the key accidentally as you pull the phone out of
-         your pocket.) -->
-    <bool name="allow_back_key_to_reject_incoming_call">false</bool>
-
-    <!-- Enable the onscreen "Dial" button in the emergency dialer. -->
-    <bool name="config_show_onscreen_dial_button">true</bool>
-
     <!-- This device implements a noise suppression device for in call audio-->
     <bool name="has_in_call_noise_suppression">true</bool>
 
