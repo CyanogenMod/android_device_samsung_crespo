@@ -251,18 +251,30 @@ void Set_H264ENC_Param(SSBSIP_MFC_ENC_H264_PARAM *pH264Arg, SEC_OMX_BASECOMPONEN
     }
 #endif
 
+/*
     SEC_OSAL_Log(SEC_LOG_TRACE, "pSECPort->eControlRate: 0x%x", pSECOutputPort->eControlRate);
     switch (pSECOutputPort->eControlRate) {
-    case OMX_Video_ControlRateDisable:
-        /* TBD */
-        break;
     case OMX_Video_ControlRateVariable:
-        /* TBD */
+        SEC_OSAL_Log(SEC_LOG_TRACE, "Video Encode VBR");
+        pH264Arg->EnableFRMRateControl = 0;        // 0: Disable, 1: Frame level RC
+        pH264Arg->EnableMBRateControl  = 0;        // 0: Disable, 1:MB level RC
+        pH264Arg->CBRPeriodRf  = 100;
         break;
-    default:
+    case OMX_Video_ControlRateConstant:
+        SEC_OSAL_Log(SEC_LOG_TRACE, "Video Encode CBR");
+        pH264Arg->EnableFRMRateControl = 1;        // 0: Disable, 1: Frame level RC
+        pH264Arg->EnableMBRateControl  = 1;        // 0: Disable, 1:MB level RC
+        pH264Arg->CBRPeriodRf  = 10;
+        break;
+    case OMX_Video_ControlRateDisable:
+    default: //Android default
+        SEC_OSAL_Log(SEC_LOG_TRACE, "Video Encode VBR");
+        pH264Arg->EnableFRMRateControl = 0;
+        pH264Arg->EnableMBRateControl  = 0;
+        pH264Arg->CBRPeriodRf  = 100;
         break;
     }
-
+*/
     H264PrintParams(*pH264Arg);
 }
 
@@ -723,11 +735,45 @@ EXIT:
     return ret;
 }
 
+OMX_ERRORTYPE SEC_MFC_EncodeThread(OMX_HANDLETYPE hComponent)
+{
+    OMX_ERRORTYPE          ret = OMX_ErrorNone;
+    OMX_COMPONENTTYPE     *pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
+    SEC_H264ENC_HANDLE    *pH264Enc = NULL;
+
+    FunctionIn();
+
+    if (hComponent == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+
+    pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+    pH264Enc = (SEC_H264ENC_HANDLE *)pSECComponent->hCodecHandle;
+
+    while (pH264Enc->NBEncThread.bExitEncodeThread == OMX_FALSE) {
+        SEC_OSAL_SemaphoreWait(pH264Enc->NBEncThread.hEncFrameStart);
+
+        if (pH264Enc->NBEncThread.bExitEncodeThread == OMX_FALSE) {
+            pH264Enc->hMFCH264Handle.returnCodec = SsbSipMfcEncExe(pH264Enc->hMFCH264Handle.hMFCHandle);
+            SEC_OSAL_SemaphorePost(pH264Enc->NBEncThread.hEncFrameEnd);
+        }
+    }
+
+EXIT:
+    FunctionOut();
+    SEC_OSAL_ThreadExit(NULL);
+
+    return ret;
+}
+
 /* MFC Init */
 OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
 {
     OMX_ERRORTYPE              ret = OMX_ErrorNone;
     SEC_OMX_BASECOMPONENT     *pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+    SEC_OMX_BASEPORT          *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
     SEC_OMX_BASEPORT          *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
     SEC_H264ENC_HANDLE        *pH264Enc = NULL;
     OMX_PTR                    hMFCHandle = NULL;
@@ -741,7 +787,8 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->bSaveFlagEOS = OMX_FALSE;
 
     /* MFC(Multi Function Codec) encoder and CMM(Codec Memory Management) driver open */
-    hMFCHandle = (OMX_PTR)SsbSipMfcEncOpen();
+    SSBIP_MFC_BUFFER_TYPE buf_type = CACHE;
+    hMFCHandle = (OMX_PTR)SsbSipMfcEncOpen(&buf_type);
     if (hMFCHandle == NULL) {
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
@@ -758,16 +805,52 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-
+    pH264Enc->MFCEncInputBuffer[0].YPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.YPhyAddr;
+    pH264Enc->MFCEncInputBuffer[0].CPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.CPhyAddr;
+    pH264Enc->MFCEncInputBuffer[0].YVirAddr = pH264Enc->hMFCH264Handle.inputInfo.YVirAddr;
+    pH264Enc->MFCEncInputBuffer[0].CVirAddr = pH264Enc->hMFCH264Handle.inputInfo.CVirAddr;
+    pH264Enc->MFCEncInputBuffer[0].YBufferSize = pH264Enc->hMFCH264Handle.inputInfo.YSize;
+    pH264Enc->MFCEncInputBuffer[0].CBufferSize = pH264Enc->hMFCH264Handle.inputInfo.CSize;
+    pH264Enc->MFCEncInputBuffer[0].YDataSize = 0;
+    pH264Enc->MFCEncInputBuffer[0].CDataSize = 0;
     SEC_OSAL_Log(SEC_LOG_TRACE, "pH264Enc->hMFCH264Handle.inputInfo.YVirAddr : 0x%x", pH264Enc->hMFCH264Handle.inputInfo.YVirAddr);
     SEC_OSAL_Log(SEC_LOG_TRACE, "pH264Enc->hMFCH264Handle.inputInfo.CVirAddr : 0x%x", pH264Enc->hMFCH264Handle.inputInfo.CVirAddr);
 
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.YPhyAddr;
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.CPhyAddr;
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YVirAddr = pH264Enc->hMFCH264Handle.inputInfo.YVirAddr;
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CVirAddr = pH264Enc->hMFCH264Handle.inputInfo.CVirAddr;
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YSize = pH264Enc->hMFCH264Handle.inputInfo.YSize;
-    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CSize = pH264Enc->hMFCH264Handle.inputInfo.CSize;
+    returnCodec = SsbSipMfcEncGetInBuf(hMFCHandle, &(pH264Enc->hMFCH264Handle.inputInfo));
+    if (returnCodec != MFC_RET_OK) {
+        ret = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
+    pH264Enc->MFCEncInputBuffer[1].YPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.YPhyAddr;
+    pH264Enc->MFCEncInputBuffer[1].CPhyAddr = pH264Enc->hMFCH264Handle.inputInfo.CPhyAddr;
+    pH264Enc->MFCEncInputBuffer[1].YVirAddr = pH264Enc->hMFCH264Handle.inputInfo.YVirAddr;
+    pH264Enc->MFCEncInputBuffer[1].CVirAddr = pH264Enc->hMFCH264Handle.inputInfo.CVirAddr;
+    pH264Enc->MFCEncInputBuffer[1].YBufferSize = pH264Enc->hMFCH264Handle.inputInfo.YSize;
+    pH264Enc->MFCEncInputBuffer[1].CBufferSize = pH264Enc->hMFCH264Handle.inputInfo.CSize;
+    pH264Enc->MFCEncInputBuffer[1].YDataSize = 0;
+    pH264Enc->MFCEncInputBuffer[1].CDataSize = 0;
+    SEC_OSAL_Log(SEC_LOG_TRACE, "pH264Enc->hMFCH264Handle.inputInfo.YVirAddr : 0x%x", pH264Enc->hMFCH264Handle.inputInfo.YVirAddr);
+    SEC_OSAL_Log(SEC_LOG_TRACE, "pH264Enc->hMFCH264Handle.inputInfo.CVirAddr : 0x%x", pH264Enc->hMFCH264Handle.inputInfo.CVirAddr);
+
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YPhyAddr = pH264Enc->MFCEncInputBuffer[0].YPhyAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CPhyAddr = pH264Enc->MFCEncInputBuffer[0].CPhyAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YVirAddr = pH264Enc->MFCEncInputBuffer[0].YVirAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CVirAddr = pH264Enc->MFCEncInputBuffer[0].CVirAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YSize = pH264Enc->MFCEncInputBuffer[0].YBufferSize;
+    pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CSize = pH264Enc->MFCEncInputBuffer[0].CBufferSize;
+
+    pH264Enc->indexInputBuffer = 0;
+    pH264Enc->bFirstFrame = OMX_TRUE;
+
+    pH264Enc->NBEncThread.bExitEncodeThread = OMX_FALSE;
+    pH264Enc->NBEncThread.bEncoderRun = OMX_FALSE;
+    SEC_OSAL_SemaphoreCreate(&(pH264Enc->NBEncThread.hEncFrameStart));
+    SEC_OSAL_SemaphoreCreate(&(pH264Enc->NBEncThread.hEncFrameEnd));
+    if (OMX_ErrorNone == SEC_OSAL_ThreadCreate(&pH264Enc->NBEncThread.hNBEncodeThread,
+                                                SEC_MFC_EncodeThread,
+                                                pOMXComponent)) {
+        pH264Enc->hMFCH264Handle.returnCodec = MFC_RET_OK;
+    }
 
     SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
     SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
@@ -790,8 +873,25 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Terminate(OMX_COMPONENTTYPE *pOMXComponent)
     FunctionIn();
 
     pH264Enc = (SEC_H264ENC_HANDLE *)pSECComponent->hCodecHandle;
-    hMFCHandle = pH264Enc->hMFCH264Handle.hMFCHandle;
 
+    if (pH264Enc->NBEncThread.hNBEncodeThread != NULL) {
+        pH264Enc->NBEncThread.bExitEncodeThread = OMX_TRUE;
+        SEC_OSAL_SemaphorePost(pH264Enc->NBEncThread.hEncFrameStart);
+        SEC_OSAL_ThreadTerminate(pH264Enc->NBEncThread.hNBEncodeThread);
+        pH264Enc->NBEncThread.hNBEncodeThread = NULL;
+    }
+
+    if(pH264Enc->NBEncThread.hEncFrameEnd != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pH264Enc->NBEncThread.hEncFrameEnd);
+        pH264Enc->NBEncThread.hEncFrameEnd = NULL;
+    }
+
+    if(pH264Enc->NBEncThread.hEncFrameStart != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pH264Enc->NBEncThread.hEncFrameStart);
+        pH264Enc->NBEncThread.hEncFrameStart = NULL;
+    }
+
+    hMFCHandle = pH264Enc->hMFCH264Handle.hMFCHandle;
     if (hMFCHandle != NULL) {
         SsbSipMfcEncClose(hMFCHandle);
         hMFCHandle = pH264Enc->hMFCH264Handle.hMFCHandle = NULL;
@@ -813,20 +913,19 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     SEC_OMX_BASEPORT          *pSECPort = NULL;
     MFC_ENC_ADDR_INFO          addrInfo;
     OMX_U32                    oneFrameSize = pInputData->dataLen;
-    OMX_S32                    returnCodec = 0;
 
     FunctionIn();
 
     if (pH264Enc->hMFCH264Handle.bConfiguredMFC == OMX_FALSE) {
         Set_H264ENC_Param(&(pH264Enc->hMFCH264Handle.mfcVideoAvc), pSECComponent);
-        returnCodec = SsbSipMfcEncInit(pH264Enc->hMFCH264Handle.hMFCHandle, &(pH264Enc->hMFCH264Handle.mfcVideoAvc));
-        if (returnCodec != MFC_RET_OK) {
+        pH264Enc->hMFCH264Handle.returnCodec = SsbSipMfcEncInit(pH264Enc->hMFCH264Handle.hMFCHandle, &(pH264Enc->hMFCH264Handle.mfcVideoAvc));
+        if (pH264Enc->hMFCH264Handle.returnCodec != MFC_RET_OK) {
             ret = OMX_ErrorInsufficientResources;
             goto EXIT;
         }
 
-        returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
-        if (returnCodec != MFC_RET_OK)
+        pH264Enc->hMFCH264Handle.returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
+        if (pH264Enc->hMFCH264Handle.returnCodec != MFC_RET_OK)
         {
             SEC_OSAL_Log(SEC_LOG_TRACE, "%s - SsbSipMfcEncGetOutBuf Failed\n", __func__);
             ret = OMX_ErrorUndefined;
@@ -866,12 +965,6 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pSECComponent->bUseFlagEOF = OMX_TRUE;
     }
 
-    pSECComponent->timeStamp[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
-    pSECComponent->nFlags[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
-    SsbSipMfcEncSetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pH264Enc->hMFCH264Handle.indexTimestamp));
-    pH264Enc->hMFCH264Handle.indexTimestamp++;
-    pH264Enc->hMFCH264Handle.indexTimestamp %= MAX_TIMESTAMP;
-
     if (oneFrameSize <= 0) {
         pOutputData->timeStamp = pInputData->timeStamp;
         pOutputData->nFlags = pInputData->nFlags;
@@ -898,18 +991,20 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pInputInfo->CPhyAddr = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CPhyAddr;
     }
 
-    ret = SsbSipMfcEncSetInBuf(pH264Enc->hMFCH264Handle.hMFCHandle, pInputInfo);
-    if (ret != MFC_RET_OK) {
-        SEC_OSAL_Log(SEC_LOG_TRACE, "Error : SsbSipMfcEncSetInBuf() \n");
-        ret = OMX_ErrorUndefined;
-        goto EXIT;
-    }
+    pSECComponent->timeStamp[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pH264Enc->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
 
-    returnCodec = SsbSipMfcEncExe(pH264Enc->hMFCH264Handle.hMFCHandle);
-    if (returnCodec == MFC_RET_OK) {
+    if ((pH264Enc->hMFCH264Handle.returnCodec == MFC_RET_OK) &&
+        (pH264Enc->bFirstFrame == OMX_FALSE)) {
         OMX_S32 indexTimestamp = 0;
 
-        returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
+        /* wait for mfc encode done */
+        if (pH264Enc->NBEncThread.bEncoderRun != OMX_FALSE) {
+            SEC_OSAL_SemaphoreWait(pH264Enc->NBEncThread.hEncFrameEnd);
+            pH264Enc->NBEncThread.bEncoderRun = OMX_FALSE;
+        }
+
+        pH264Enc->hMFCH264Handle.returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
         if ((SsbSipMfcEncGetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
             (((indexTimestamp < 0) || (indexTimestamp >= MAX_TIMESTAMP)))){
             pOutputData->timeStamp = pInputData->timeStamp;
@@ -919,7 +1014,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
         }
 
-        if (returnCodec == MFC_RET_OK) {
+        if (pH264Enc->hMFCH264Handle.returnCodec == MFC_RET_OK) {
             /** Fill Output Buffer **/
             pOutputData->dataBuffer = outputInfo.StrmVirAddr;
             pOutputData->allocSize = outputInfo.dataSize;
@@ -933,13 +1028,41 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             SEC_OSAL_Log(SEC_LOG_TRACE, "MFC Encode OK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
             ret = OMX_ErrorNone;
+        } else {
+            SEC_OSAL_Log(SEC_LOG_ERROR, "%s: SsbSipMfcEncGetOutBuf failed, ret:%d", __FUNCTION__, pH264Enc->hMFCH264Handle.returnCodec);
+            ret = OMX_ErrorUndefined;
+            goto EXIT;
         }
     }
-
-    if (returnCodec != MFC_RET_OK) {
-        SEC_OSAL_Log(SEC_LOG_ERROR, "In %s : SsbSipMfcEncExe OR SsbSipMfcEncGetOutBuf Failed!!!\n", __func__);
+    if (pH264Enc->hMFCH264Handle.returnCodec != MFC_RET_OK) {
+        SEC_OSAL_Log(SEC_LOG_ERROR, "In %s : SsbSipMfcEncExe Failed!!!\n", __func__);
         ret = OMX_ErrorUndefined;
     }
+
+    pH264Enc->hMFCH264Handle.returnCodec = SsbSipMfcEncSetInBuf(pH264Enc->hMFCH264Handle.hMFCHandle, pInputInfo);
+    if (pH264Enc->hMFCH264Handle.returnCodec != MFC_RET_OK) {
+        SEC_OSAL_Log(SEC_LOG_TRACE, "Error : SsbSipMfcEncSetInBuf() \n");
+        ret = OMX_ErrorUndefined;
+        goto EXIT;
+    } else {
+        pH264Enc->indexInputBuffer++;
+        pH264Enc->indexInputBuffer %= MFC_INPUT_BUFFER_NUM_MAX;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YPhyAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].YPhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CPhyAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].CPhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YVirAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].YVirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CVirAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].CVirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YSize = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].YBufferSize;
+        pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CSize = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].CBufferSize;
+    }
+
+    SsbSipMfcEncSetConfig(pH264Enc->hMFCH264Handle.hMFCHandle, MFC_ENC_SETCONF_FRAME_TAG, &(pH264Enc->hMFCH264Handle.indexTimestamp));
+
+    /* mfc encode start */
+    SEC_OSAL_SemaphorePost(pH264Enc->NBEncThread.hEncFrameStart);
+    pH264Enc->NBEncThread.bEncoderRun = OMX_TRUE;
+    pH264Enc->hMFCH264Handle.indexTimestamp++;
+    pH264Enc->hMFCH264Handle.indexTimestamp %= MAX_TIMESTAMP;
+    pH264Enc->bFirstFrame = OMX_FALSE;
 
 EXIT:
     FunctionOut();

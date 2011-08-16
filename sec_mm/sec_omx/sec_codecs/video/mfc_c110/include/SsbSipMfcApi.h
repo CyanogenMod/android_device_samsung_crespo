@@ -61,6 +61,11 @@ typedef enum {
 } SSBSIP_MFC_INSTRM_MODE_TYPE;
 
 typedef enum {
+    NO_CACHE = 0,
+    CACHE = 1
+} SSBIP_MFC_BUFFER_TYPE;
+
+typedef enum {
     MFC_DEC_SETCONF_POST_ENABLE = 1,
     MFC_DEC_SETCONF_EXTRA_BUFFER_NUM,
     MFC_DEC_SETCONF_DISPLAY_DELAY,
@@ -289,7 +294,7 @@ extern "C" {
 /*--------------------------------------------------------------------------------*/
 /* Decoding APIs                                                                  */
 /*--------------------------------------------------------------------------------*/
-void *SsbSipMfcDecOpen(void);
+void *SsbSipMfcDecOpen(void *value);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecInit(void *openHandle, SSBSIP_MFC_CODEC_TYPE codec_type, int Frameleng);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecExe(void *openHandle, int lengthBufFill);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecClose(void *openHandle);
@@ -305,7 +310,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecGetConfig(void *openHandle, SSBSIP_MFC_DEC_CON
 /*--------------------------------------------------------------------------------*/
 /* Encoding APIs                                                                  */
 /*--------------------------------------------------------------------------------*/
-void *SsbSipMfcEncOpen(void);
+void *SsbSipMfcEncOpen(void *value);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncExe(void *openHandle);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncClose(void *openHandle);

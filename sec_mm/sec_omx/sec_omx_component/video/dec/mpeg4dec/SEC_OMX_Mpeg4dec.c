@@ -903,6 +903,39 @@ EXIT:
     return ret;
 }
 
+OMX_ERRORTYPE SEC_MFC_DecodeThread(OMX_HANDLETYPE hComponent)
+{
+    OMX_ERRORTYPE          ret = OMX_ErrorNone;
+    OMX_COMPONENTTYPE     *pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
+    SEC_MPEG4_HANDLE      *pMpeg4Dec = NULL;
+
+    FunctionIn();
+
+    if (hComponent == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+
+    pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+    pMpeg4Dec = (SEC_MPEG4_HANDLE *)pSECComponent->hCodecHandle;
+
+    while (pMpeg4Dec->NBDecThread.bExitDecodeThread == OMX_FALSE) {
+        SEC_OSAL_SemaphoreWait(pMpeg4Dec->NBDecThread.hDecFrameStart);
+
+        if (pMpeg4Dec->NBDecThread.bExitDecodeThread == OMX_FALSE) {
+            pMpeg4Dec->hMFCMpeg4Handle.returnCodec = SsbSipMfcDecExe(pMpeg4Dec->hMFCMpeg4Handle.hMFCHandle, pMpeg4Dec->NBDecThread.oneFrameSize);
+            SEC_OSAL_SemaphorePost(pMpeg4Dec->NBDecThread.hDecFrameEnd);
+        }
+    }
+
+EXIT:
+    SEC_OSAL_ThreadExit(NULL);
+    FunctionOut();
+
+    return ret;
+}
+
 /* MFC Init */
 OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
 {
@@ -921,7 +954,8 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->bSaveFlagEOS = OMX_FALSE;
 
     /* MFC(Multi Format Codec) decoder and CMM(Codec Memory Management) driver open */
-    hMFCHandle = SsbSipMfcDecOpen();
+    SSBIP_MFC_BUFFER_TYPE buf_type = CACHE;
+    hMFCHandle = (OMX_PTR)SsbSipMfcDecOpen(&buf_type);
     if (hMFCHandle == NULL) {
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
@@ -934,10 +968,34 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-    pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamBuffer    = pStreamBuffer;
-    pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer = pStreamPhyBuffer;
-    pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pStreamBuffer;
-    pSECComponent->processData[INPUT_PORT_INDEX].allocSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+
+    pMpeg4Dec->MFCDecInputBuffer[0].VirAddr = pStreamBuffer;
+    pMpeg4Dec->MFCDecInputBuffer[0].PhyAddr = pStreamPhyBuffer;
+    pMpeg4Dec->MFCDecInputBuffer[0].bufferSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+    pMpeg4Dec->MFCDecInputBuffer[0].dataSize = 0;
+    pMpeg4Dec->MFCDecInputBuffer[1].VirAddr = (unsigned char *)pStreamBuffer + pMpeg4Dec->MFCDecInputBuffer[0].bufferSize;
+    pMpeg4Dec->MFCDecInputBuffer[1].PhyAddr = (unsigned char *)pStreamPhyBuffer + pMpeg4Dec->MFCDecInputBuffer[0].bufferSize;
+    pMpeg4Dec->MFCDecInputBuffer[1].bufferSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+    pMpeg4Dec->MFCDecInputBuffer[1].dataSize = 0;
+    pMpeg4Dec->indexInputBuffer = 0;
+
+    pMpeg4Dec->bFirstFrame = OMX_TRUE;
+
+    pMpeg4Dec->NBDecThread.bExitDecodeThread = OMX_FALSE;
+    pMpeg4Dec->NBDecThread.bDecoderRun = OMX_FALSE;
+    pMpeg4Dec->NBDecThread.oneFrameSize = 0;
+    SEC_OSAL_SemaphoreCreate(&(pMpeg4Dec->NBDecThread.hDecFrameStart));
+    SEC_OSAL_SemaphoreCreate(&(pMpeg4Dec->NBDecThread.hDecFrameEnd));
+    if (OMX_ErrorNone == SEC_OSAL_ThreadCreate(&pMpeg4Dec->NBDecThread.hNBDecodeThread,
+                                                SEC_MFC_DecodeThread,
+                                                pOMXComponent)) {
+        pMpeg4Dec->hMFCMpeg4Handle.returnCodec = MFC_RET_OK;
+    }
+
+    pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamBuffer    = pMpeg4Dec->MFCDecInputBuffer[0].VirAddr;
+    pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer = pMpeg4Dec->MFCDecInputBuffer[0].PhyAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pMpeg4Dec->MFCDecInputBuffer[0].VirAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pMpeg4Dec->MFCDecInputBuffer[0].bufferSize;
 
     SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
     SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
@@ -968,6 +1026,23 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4Dec_Terminate(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = NULL;
     pSECComponent->processData[INPUT_PORT_INDEX].allocSize = 0;
 
+    if (pMpeg4Dec->NBDecThread.hNBDecodeThread != NULL) {
+        pMpeg4Dec->NBDecThread.bExitDecodeThread = OMX_TRUE;
+        SEC_OSAL_SemaphorePost(pMpeg4Dec->NBDecThread.hDecFrameStart);
+        SEC_OSAL_ThreadTerminate(pMpeg4Dec->NBDecThread.hNBDecodeThread);
+        pMpeg4Dec->NBDecThread.hNBDecodeThread = NULL;
+    }
+
+    if(pMpeg4Dec->NBDecThread.hDecFrameEnd != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pMpeg4Dec->NBDecThread.hDecFrameEnd);
+        pMpeg4Dec->NBDecThread.hDecFrameEnd = NULL;
+    }
+
+    if(pMpeg4Dec->NBDecThread.hDecFrameStart != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pMpeg4Dec->NBDecThread.hDecFrameStart);
+        pMpeg4Dec->NBDecThread.hDecFrameStart = NULL;
+    }
+
     if (hMFCHandle != NULL) {
         SsbSipMfcDecClose(hMFCHandle);
         pMpeg4Dec->hMFCMpeg4Handle.hMFCHandle = NULL;
@@ -987,10 +1062,10 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
     OMX_HANDLETYPE             hMFCHandle = pMpeg4Dec->hMFCMpeg4Handle.hMFCHandle;
     OMX_U32                    oneFrameSize = pInputData->dataLen;
     SSBSIP_MFC_DEC_OUTPUT_INFO outputInfo;
-    OMX_S32                    configValue;
-    OMX_S32                    returnCodec;
-    int                        bufWidth;
-    int                        bufHeight;
+    OMX_S32                    configValue = 0;
+    int                        bufWidth = 0;
+    int                        bufHeight = 0;
+    OMX_BOOL                   outputDataValid = OMX_FALSE;
 
     FunctionIn();
 
@@ -1013,7 +1088,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         }
 
         /* Set the number of extra buffer to prevent tearing */
-        configValue = 5;
+        configValue = 0;
         SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_EXTRA_BUFFER_NUM, &configValue);
 
         /* Set mpeg4 deblocking filter enable */
@@ -1025,8 +1100,8 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_DISPLAY_DELAY, &configValue);
         }
 
-        returnCodec = SsbSipMfcDecInit(hMFCHandle, MFCCodecType, oneFrameSize);
-        if (returnCodec == MFC_RET_OK) {
+        pMpeg4Dec->hMFCMpeg4Handle.returnCodec = SsbSipMfcDecInit(hMFCHandle, MFCCodecType, oneFrameSize);
+        if (pMpeg4Dec->hMFCMpeg4Handle.returnCodec == MFC_RET_OK) {
             SSBSIP_MFC_IMG_RESOLUTION imgResol;
             SEC_OMX_BASEPORT *pInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
 
@@ -1084,25 +1159,19 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pSECComponent->bUseFlagEOF = OMX_TRUE;
 #endif
 
-    if (Check_Stream_PrefixCode(pInputData->dataBuffer, pInputData->dataLen, pMpeg4Dec->hMFCMpeg4Handle.codecType) == OMX_TRUE) {
-        pSECComponent->timeStamp[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
-        pSECComponent->nFlags[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
-        SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp));
+    pSECComponent->timeStamp[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp] = pInputData->nFlags;
 
-        returnCodec = SsbSipMfcDecExe(hMFCHandle, oneFrameSize);
-    } else {
-        pOutputData->timeStamp = pInputData->timeStamp;
-        pOutputData->nFlags = pInputData->nFlags;
-        returnCodec = MFC_RET_OK;
-        goto EXIT;
-    }
-
-    if (returnCodec == MFC_RET_OK) {
+    if ((pMpeg4Dec->hMFCMpeg4Handle.returnCodec == MFC_RET_OK) &&
+        (pMpeg4Dec->bFirstFrame == OMX_FALSE)) {
         SSBSIP_MFC_DEC_OUTBUF_STATUS status;
         OMX_S32 indexTimestamp = 0;
 
-        pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp++;
-        pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp %= MAX_TIMESTAMP;
+        /* wait for mfc decode done */
+        if (pMpeg4Dec->NBDecThread.bDecoderRun == OMX_TRUE) {
+            SEC_OSAL_SemaphoreWait(pMpeg4Dec->NBDecThread.hDecFrameEnd);
+            pMpeg4Dec->NBDecThread.bDecoderRun = OMX_FALSE;
+        }
 
         status = SsbSipMfcDecGetOutBuf(hMFCHandle, &outputInfo);
         bufWidth =  (outputInfo.img_width + 15) & (~15);
@@ -1116,100 +1185,14 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
             pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
         }
+        SEC_OSAL_Log(SEC_LOG_TRACE, "timestamp %lld us (%.2f secs)", pOutputData->timeStamp, pOutputData->timeStamp / 1E6);
 
         if ((status == MFC_GETOUTBUF_DISPLAY_DECODING) ||
             (status == MFC_GETOUTBUF_DISPLAY_ONLY)) {
-            /** Fill Output Buffer **/
-            int frameSize = bufWidth * bufHeight;
-            int imageSize = outputInfo.img_width * outputInfo.img_height;
-            SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
-            SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
-            void *pOutputBuf[3];
-
-            int actualWidth  = outputInfo.img_width;
-            int actualHeight = outputInfo.img_height;
-            int actualImageSize = imageSize;
-
-            pOutputBuf[0] = (void *)pOutputData->dataBuffer;
-            pOutputBuf[1] = (void *)pOutputData->dataBuffer + actualImageSize;
-            pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((actualImageSize * 5) / 4);
-
-#ifdef USE_ANDROID_EXTENSION
-            if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
-                OMX_U32 retANB = 0;
-                void *pVirAddrs[2];
-                actualWidth  = (outputInfo.img_width + 15) & (~15);
-                actualImageSize = actualWidth * actualHeight;
-
-                retANB = getVADDRfromANB(pOutputData->dataBuffer,
-                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
-                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
-                                pVirAddrs);
-                if (retANB != 0) {
-                    SEC_OSAL_Log(SEC_LOG_ERROR, "Error getVADDRfromANB, Error code:%d", retANB);
-                    ret = OMX_ErrorOverflow;
-                    goto EXIT;
-                }
-                pOutputBuf[0] = pVirAddrs[0];
-                pOutputBuf[1] = pVirAddrs[1];
-            }
-#endif
-            if ((pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_FALSE) &&
-                (pSECOutputPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress))
-            {
-                /* if use Post copy address structure */
-                SEC_OSAL_Memcpy(pOutputBuf[0], &frameSize, sizeof(frameSize));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
-                pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
-            } else {
-                switch (pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eColorFormat) {
-                case OMX_COLOR_FormatYUV420Planar:
-                {
-                    SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420P out");
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[0],
-                        (unsigned char *)outputInfo.YVirAddr,
-                        actualWidth,
-                        actualHeight);
-                    csc_tiled_to_linear_deinterleave(
-                        (unsigned char *)pOutputBuf[1],
-                        (unsigned char *)pOutputBuf[2],
-                        (unsigned char *)outputInfo.CVirAddr,
-                        actualWidth,
-                        actualHeight >> 1);
-                    pOutputData->dataLen = actualImageSize * 3 / 2;
-                }
-                    break;
-                case OMX_COLOR_FormatYUV420SemiPlanar:
-                case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
-                default:
-                {
-                    SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420SP out");
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[0],
-                        (unsigned char *)outputInfo.YVirAddr,
-                        actualWidth,
-                        actualHeight);
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[1],
-                        (unsigned char *)outputInfo.CVirAddr,
-                        actualWidth,
-                        actualHeight >> 1);
-                    pOutputData->dataLen = actualImageSize * 3 / 2;
-                }
-                    break;
-                }
-            }
-#ifdef USE_ANDROID_EXTENSION
-            if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE)
-                putVADDRtoANB(pOutputData->dataBuffer);
-#endif
+            outputDataValid = OMX_TRUE;
         }
         if (pOutputData->nFlags & OMX_BUFFERFLAG_EOS)
-            pOutputData->dataLen = 0;
+            outputDataValid = OMX_FALSE;
 
         if ((status == MFC_GETOUTBUF_DISPLAY_ONLY) ||
             (pSECComponent->getAllDelayBuffer == OMX_TRUE))
@@ -1224,7 +1207,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             } else {
                 ret = OMX_ErrorNone;
             }
-            goto EXIT;
+            outputDataValid = OMX_FALSE;
         }
 
 #ifdef FULL_FRAME_SEARCH
@@ -1253,12 +1236,146 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
         }
-        pOutputData->dataLen = 0;
+        outputDataValid = OMX_FALSE;
 
         /* ret = OMX_ErrorUndefined; */
             ret = OMX_ErrorNone;
-            goto EXIT;
         }
+
+    if (ret == OMX_ErrorInputDataDecodeYet) {
+        pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].dataSize = oneFrameSize;
+        pMpeg4Dec->indexInputBuffer++;
+        pMpeg4Dec->indexInputBuffer %= MFC_INPUT_BUFFER_NUM_MAX;
+        pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamBuffer    = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].VirAddr;
+        pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].PhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].VirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].bufferSize;
+        oneFrameSize = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].dataSize;
+        //pInputData->dataLen = oneFrameSize;
+        //pInputData->remainDataLen = oneFrameSize;
+    }
+
+    if ((Check_Stream_PrefixCode(pInputData->dataBuffer, pInputData->dataLen, pMpeg4Dec->hMFCMpeg4Handle.codecType) == OMX_TRUE) &&
+        ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS)) {
+        SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp));
+        pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp++;
+        pMpeg4Dec->hMFCMpeg4Handle.indexTimestamp %= MAX_TIMESTAMP;
+
+        SsbSipMfcDecSetInBuf(pMpeg4Dec->hMFCMpeg4Handle.hMFCHandle,
+                             pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer,
+                             pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamBuffer,
+                             pSECComponent->processData[INPUT_PORT_INDEX].allocSize);
+
+        pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].dataSize = oneFrameSize;
+        pMpeg4Dec->NBDecThread.oneFrameSize = oneFrameSize;
+
+        /* mfc decode start */
+        SEC_OSAL_SemaphorePost(pMpeg4Dec->NBDecThread.hDecFrameStart);
+        pMpeg4Dec->NBDecThread.bDecoderRun = OMX_TRUE;
+        pMpeg4Dec->hMFCMpeg4Handle.returnCodec = MFC_RET_OK;
+
+        pMpeg4Dec->indexInputBuffer++;
+        pMpeg4Dec->indexInputBuffer %= MFC_INPUT_BUFFER_NUM_MAX;
+        pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamBuffer    = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].VirAddr;
+        pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].PhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].VirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].bufferSize;
+        pMpeg4Dec->bFirstFrame = OMX_FALSE;
+    }
+
+            /** Fill Output Buffer **/
+    if (outputDataValid == OMX_TRUE) {
+        SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
+        SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
+        void *pOutputBuf[3];
+
+        int frameSize = bufWidth * bufHeight;
+        int imageSize = outputInfo.img_width * outputInfo.img_height;
+
+        int actualWidth  = outputInfo.img_width;
+        int actualHeight = outputInfo.img_height;
+        int actualImageSize = imageSize;
+
+        pOutputBuf[0] = (void *)pOutputData->dataBuffer;
+        pOutputBuf[1] = (void *)pOutputData->dataBuffer + actualImageSize;
+        pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((actualImageSize * 5) / 4);
+
+#ifdef USE_ANDROID_EXTENSION
+        if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
+            OMX_U32 retANB = 0;
+            void *pVirAddrs[2];
+            actualWidth  = (outputInfo.img_width + 15) & (~15);
+            actualImageSize = actualWidth * actualHeight;
+
+             retANB = getVADDRfromANB(pOutputData->dataBuffer,
+                            (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
+                            (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
+                            pVirAddrs);
+            if (retANB != 0) {
+                SEC_OSAL_Log(SEC_LOG_ERROR, "Error getVADDRfromANB, Error code:%d", retANB);
+                ret = OMX_ErrorOverflow;
+                goto EXIT;
+            }
+            pOutputBuf[0] = pVirAddrs[0];
+            pOutputBuf[1] = pVirAddrs[1];
+        }
+#endif
+        if ((pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_FALSE) &&
+            (pSECOutputPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress))
+        {
+            /* if use Post copy address structure */
+            SEC_OSAL_Memcpy(pOutputBuf[0], &frameSize, sizeof(frameSize));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
+            pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
+        } else {
+            switch (pSECComponent->pSECPort[OUTPUT_PORT_INDEX].portDefinition.format.video.eColorFormat) {
+            case OMX_COLOR_FormatYUV420Planar:
+            {
+                SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420P out");
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[0],
+                    (unsigned char *)outputInfo.YVirAddr,
+                    actualWidth,
+                    actualHeight);
+                csc_tiled_to_linear_deinterleave(
+                    (unsigned char *)pOutputBuf[1],
+                    (unsigned char *)pOutputBuf[2],
+                    (unsigned char *)outputInfo.CVirAddr,
+                    actualWidth,
+                    actualHeight >> 1);
+                pOutputData->dataLen = actualImageSize * 3 / 2;
+            }
+                break;
+            case OMX_COLOR_FormatYUV420SemiPlanar:
+            case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
+            default:
+            {
+                SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420SP out");
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[0],
+                    (unsigned char *)outputInfo.YVirAddr,
+                    actualWidth,
+                    actualHeight);
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[1],
+                    (unsigned char *)outputInfo.CVirAddr,
+                    actualWidth,
+                    actualHeight >> 1);
+                pOutputData->dataLen = actualImageSize * 3 / 2;
+            }
+                break;
+            }
+        }
+#ifdef USE_ANDROID_EXTENSION
+        if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE)
+            putVADDRtoANB(pOutputData->dataBuffer);
+#endif
+    } else {
+        pOutputData->dataLen = 0;
+    }
 
 EXIT:
     FunctionOut();

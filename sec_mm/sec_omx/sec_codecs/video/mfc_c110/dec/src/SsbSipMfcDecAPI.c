@@ -84,11 +84,13 @@ out:
     return MFC_UNPACKED_PB;
 }
 
-void *SsbSipMfcDecOpen(void)
+void *SsbSipMfcDecOpen(void *value)
 {
     int hMFCOpen;
     unsigned int mapped_addr;
     _MFCLIB *pCTX;
+    mfc_common_args DecArg;
+    int ret_code;
 
     pCTX = (_MFCLIB *)malloc(sizeof(_MFCLIB));
     if (pCTX == NULL) {
@@ -101,6 +103,17 @@ void *SsbSipMfcDecOpen(void)
     if (hMFCOpen < 0) {
         LOGE("SsbSipMfcDecOpen: MFC Open failure\n");
         return NULL;
+    }
+
+    if (*(unsigned int *)value == NO_CACHE ||
+        *(unsigned int *)value == CACHE) {
+        DecArg.args.buf_type = *(unsigned int *)value;
+        ret_code = ioctl(hMFCOpen, IOCTL_MFC_BUF_CACHE, &DecArg);
+        if (DecArg.ret_code != MFC_RET_OK) {
+            LOGE("SsbSipMfcDecOpenExt: IOCTL_MFC_BUF_CACHE (%d) failed\n", DecArg.ret_code);
+        }
+    } else {
+        LOGE("SsbSipMfcDecOpenExt: value is invalid, value: %d\n", *(int *)value);
     }
 
     mapped_addr = (unsigned int)mmap(0, MMAP_BUFFER_SIZE_MMAP, PROT_READ | PROT_WRITE, MAP_SHARED, hMFCOpen, 0);

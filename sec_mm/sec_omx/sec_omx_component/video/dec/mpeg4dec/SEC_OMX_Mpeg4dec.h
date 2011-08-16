@@ -64,6 +64,7 @@ typedef struct _SEC_MFC_MPEG4_HANDLE
     OMX_BOOL       bConfiguredMFC;
     OMX_BOOL       bThumbnailMode;
     CODEC_TYPE     codecType;
+    OMX_S32        returnCodec;
 } SEC_MFC_MPEG4_HANDLE;
 
 typedef struct _SEC_MPEG4_HANDLE
@@ -75,6 +76,12 @@ typedef struct _SEC_MPEG4_HANDLE
 
     /* SEC MFC Codec specific */
     SEC_MFC_MPEG4_HANDLE      hMFCMpeg4Handle;
+
+    /* For Non-Block mode */
+    SEC_MFC_NBDEC_THREAD NBDecThread;
+    OMX_BOOL bFirstFrame;
+    MFC_DEC_INPUT_BUFFER MFCDecInputBuffer[MFC_INPUT_BUFFER_NUM_MAX];
+    OMX_U32  indexInputBuffer;
 } SEC_MPEG4_HANDLE;
 
 #ifdef __cplusplus

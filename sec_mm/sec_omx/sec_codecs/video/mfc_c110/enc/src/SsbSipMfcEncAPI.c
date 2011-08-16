@@ -30,11 +30,13 @@
 
 #define _MFCLIB_MAGIC_NUMBER     0x92241001
 
-void *SsbSipMfcEncOpen(void)
+void *SsbSipMfcEncOpen(void *value)
 {
     int hMFCOpen;
     _MFCLIB *pCTX;
     unsigned int mapped_addr;
+    mfc_common_args EncArg;
+    int ret_code;
 
     hMFCOpen = open(S5PC110_MFC_DEV_NAME, O_RDWR | O_NDELAY);
     if (hMFCOpen < 0) {
@@ -47,6 +49,17 @@ void *SsbSipMfcEncOpen(void)
         LOGE("SsbSipMfcEncOpen: malloc failed.\n");
         close(hMFCOpen);
         return NULL;
+    }
+
+    if (*(unsigned int *)value == NO_CACHE ||
+        *(unsigned int *)value == CACHE) {
+        EncArg.args.buf_type = *(unsigned int *)value;
+        ret_code = ioctl(hMFCOpen, IOCTL_MFC_BUF_CACHE, &EncArg);
+        if (EncArg.ret_code != MFC_RET_OK) {
+            LOGE("SsbSipMfcDecOpenExt: IOCTL_MFC_BUF_CACHE (%d) failed\n", EncArg.ret_code);
+        }
+    } else {
+        LOGE("SsbSipMfcDecOpenExt: value is invalid, value: %d\n", *(int *)value);
     }
 
     mapped_addr = (unsigned int)mmap(0, MMAP_BUFFER_SIZE_MMAP, PROT_READ | PROT_WRITE, MAP_SHARED, hMFCOpen, 0);
@@ -374,6 +387,13 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncExe(void *openHandle)
     EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf;
     EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf + pCTX->sizeStrmBuf;
     EncArg.args.enc_exe.in_frametag = pCTX->in_frametag;
+    if (pCTX->encode_cnt == 0) {
+        EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf;
+        EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf + pCTX->sizeStrmBuf;
+    } else {
+        EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+        EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf  + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2) + pCTX->sizeStrmBuf;
+    }
 
     ret_code = ioctl(pCTX->hMFC, IOCTL_MFC_ENC_EXE, &EncArg);
     if (EncArg.ret_code != MFC_RET_OK) {
@@ -534,8 +554,17 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetOutBuf(void *openHandle, SSBSIP_MFC_ENC_OUT
 
     output_info->headerSize = pCTX->encodedHeaderSize;
     output_info->dataSize = pCTX->encodedDataSize;
-    output_info->StrmPhyAddr = (void *)pCTX->phyStrmBuf;
-    output_info->StrmVirAddr = (void *)pCTX->virStrmBuf;
+
+    if (pCTX->encode_cnt == 0) {
+        output_info->StrmPhyAddr = (void *)pCTX->phyStrmBuf;
+        output_info->StrmVirAddr = (void *)pCTX->virStrmBuf;
+    } else {
+        output_info->StrmPhyAddr = (unsigned char *)pCTX->phyStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+        output_info->StrmVirAddr = (unsigned char *)pCTX->virStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+    }
+
+    pCTX->encode_cnt ++;
+    pCTX->encode_cnt %= 2;
 
     if (pCTX->encodedframeType == 0)
         output_info->frameType = MFC_FRAME_TYPE_NOT_CODED;

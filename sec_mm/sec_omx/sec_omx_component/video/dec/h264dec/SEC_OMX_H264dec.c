@@ -743,6 +743,39 @@ EXIT:
     return ret;
 }
 
+OMX_ERRORTYPE SEC_MFC_DecodeThread(OMX_HANDLETYPE hComponent)
+{
+    OMX_ERRORTYPE          ret = OMX_ErrorNone;
+    OMX_COMPONENTTYPE     *pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    SEC_OMX_BASECOMPONENT *pSECComponent = NULL;
+    SEC_H264DEC_HANDLE    *pH264Dec = NULL;
+
+    FunctionIn();
+
+    if (hComponent == NULL) {
+        ret = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
+
+    pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+    pH264Dec = (SEC_H264DEC_HANDLE *)pSECComponent->hCodecHandle;
+
+    while (pH264Dec->NBDecThread.bExitDecodeThread == OMX_FALSE) {
+        SEC_OSAL_SemaphoreWait(pH264Dec->NBDecThread.hDecFrameStart);
+
+        if (pH264Dec->NBDecThread.bExitDecodeThread == OMX_FALSE) {
+            pH264Dec->hMFCH264Handle.returnCodec = SsbSipMfcDecExe(pH264Dec->hMFCH264Handle.hMFCHandle, pH264Dec->NBDecThread.oneFrameSize);
+            SEC_OSAL_SemaphorePost(pH264Dec->NBDecThread.hDecFrameEnd);
+        }
+    }
+
+EXIT:
+    SEC_OSAL_ThreadExit(NULL);
+    FunctionOut();
+
+    return ret;
+}
+
 /* MFC Init */
 OMX_ERRORTYPE SEC_MFC_H264Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
 {
@@ -760,7 +793,8 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->bSaveFlagEOS = OMX_FALSE;
 
     /* MFC(Multi Function Codec) decoder and CMM(Codec Memory Management) driver open */
-    hMFCHandle = (OMX_PTR)SsbSipMfcDecOpen();
+    SSBIP_MFC_BUFFER_TYPE buf_type = CACHE;
+    hMFCHandle = (OMX_PTR)SsbSipMfcDecOpen(&buf_type);
     if (hMFCHandle == NULL) {
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
@@ -768,15 +802,39 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_Init(OMX_COMPONENTTYPE *pOMXComponent)
     pH264Dec->hMFCH264Handle.hMFCHandle = hMFCHandle;
 
     /* Allocate decoder's input buffer */
-    pStreamBuffer = SsbSipMfcDecGetInBuf(hMFCHandle, &pStreamPhyBuffer, DEFAULT_MFC_INPUT_BUFFER_SIZE);
+    pStreamBuffer = SsbSipMfcDecGetInBuf(hMFCHandle, &pStreamPhyBuffer, DEFAULT_MFC_INPUT_BUFFER_SIZE * MFC_INPUT_BUFFER_NUM_MAX);
     if (pStreamBuffer == NULL) {
         ret = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-    pH264Dec->hMFCH264Handle.pMFCStreamBuffer    = pStreamBuffer;
-    pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer = pStreamPhyBuffer;
-    pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pStreamBuffer;
-    pSECComponent->processData[INPUT_PORT_INDEX].allocSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+
+    pH264Dec->MFCDecInputBuffer[0].VirAddr = pStreamBuffer;
+    pH264Dec->MFCDecInputBuffer[0].PhyAddr = pStreamPhyBuffer;
+    pH264Dec->MFCDecInputBuffer[0].bufferSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+    pH264Dec->MFCDecInputBuffer[0].dataSize = 0;
+    pH264Dec->MFCDecInputBuffer[1].VirAddr = (unsigned char *)pStreamBuffer + pH264Dec->MFCDecInputBuffer[0].bufferSize;
+    pH264Dec->MFCDecInputBuffer[1].PhyAddr = (unsigned char *)pStreamPhyBuffer + pH264Dec->MFCDecInputBuffer[0].bufferSize;
+    pH264Dec->MFCDecInputBuffer[1].bufferSize = DEFAULT_MFC_INPUT_BUFFER_SIZE;
+    pH264Dec->MFCDecInputBuffer[1].dataSize = 0;
+    pH264Dec->indexInputBuffer = 0;
+
+    pH264Dec->bFirstFrame = OMX_TRUE;
+
+    pH264Dec->NBDecThread.bExitDecodeThread = OMX_FALSE;
+    pH264Dec->NBDecThread.bDecoderRun = OMX_FALSE;
+    pH264Dec->NBDecThread.oneFrameSize = 0;
+    SEC_OSAL_SemaphoreCreate(&(pH264Dec->NBDecThread.hDecFrameStart));
+    SEC_OSAL_SemaphoreCreate(&(pH264Dec->NBDecThread.hDecFrameEnd));
+    if (OMX_ErrorNone == SEC_OSAL_ThreadCreate(&pH264Dec->NBDecThread.hNBDecodeThread,
+                                                SEC_MFC_DecodeThread,
+                                                pOMXComponent)) {
+        pH264Dec->hMFCH264Handle.returnCodec = MFC_RET_OK;
+    }
+
+    pH264Dec->hMFCH264Handle.pMFCStreamBuffer    = pH264Dec->MFCDecInputBuffer[0].VirAddr;
+    pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer = pH264Dec->MFCDecInputBuffer[0].PhyAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pH264Dec->MFCDecInputBuffer[0].VirAddr;
+    pSECComponent->processData[INPUT_PORT_INDEX].allocSize  = pH264Dec->MFCDecInputBuffer[0].bufferSize;
 
     SEC_OSAL_Memset(pSECComponent->timeStamp, -19771003, sizeof(OMX_TICKS) * MAX_TIMESTAMP);
     SEC_OSAL_Memset(pSECComponent->nFlags, 0, sizeof(OMX_U32) * MAX_FLAGS);
@@ -805,6 +863,23 @@ OMX_ERRORTYPE SEC_MFC_H264Dec_Terminate(OMX_COMPONENTTYPE *pOMXComponent)
     pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = NULL;
     pSECComponent->processData[INPUT_PORT_INDEX].allocSize = 0;
 
+    if (pH264Dec->NBDecThread.hNBDecodeThread != NULL) {
+        pH264Dec->NBDecThread.bExitDecodeThread = OMX_TRUE;
+        SEC_OSAL_SemaphorePost(pH264Dec->NBDecThread.hDecFrameStart);
+        SEC_OSAL_ThreadTerminate(pH264Dec->NBDecThread.hNBDecodeThread);
+        pH264Dec->NBDecThread.hNBDecodeThread = NULL;
+    }
+
+    if(pH264Dec->NBDecThread.hDecFrameEnd != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pH264Dec->NBDecThread.hDecFrameEnd);
+        pH264Dec->NBDecThread.hDecFrameEnd = NULL;
+    }
+
+    if(pH264Dec->NBDecThread.hDecFrameStart != NULL) {
+        SEC_OSAL_SemaphoreTerminate(pH264Dec->NBDecThread.hDecFrameStart);
+        pH264Dec->NBDecThread.hDecFrameStart = NULL;
+    }
+
     if (hMFCHandle != NULL) {
         SsbSipMfcDecClose(hMFCHandle);
         hMFCHandle = pH264Dec->hMFCH264Handle.hMFCHandle = NULL;
@@ -824,9 +899,9 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     OMX_U32                    oneFrameSize = pInputData->dataLen;
     SSBSIP_MFC_DEC_OUTPUT_INFO outputInfo;
     OMX_S32                    setConfVal = 0;
-    OMX_S32                    returnCodec = 0;
-    int                        bufWidth;
-    int                        bufHeight;
+    int                        bufWidth = 0;
+    int                        bufHeight = 0;
+    OMX_BOOL                   outputDataValid = OMX_FALSE;
 
     FunctionIn();
 
@@ -840,7 +915,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             goto EXIT;
         }
 
-        setConfVal = 5;
+        setConfVal = 0;
         SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_EXTRA_BUFFER_NUM, &setConfVal);
 
         /* Default number in the driver is optimized */
@@ -852,8 +927,8 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_DISPLAY_DELAY, &setConfVal);
         }
 
-        returnCodec = SsbSipMfcDecInit(pH264Dec->hMFCH264Handle.hMFCHandle, eCodecType, oneFrameSize);
-        if (returnCodec == MFC_RET_OK) {
+        pH264Dec->hMFCH264Handle.returnCodec = SsbSipMfcDecInit(pH264Dec->hMFCH264Handle.hMFCHandle, eCodecType, oneFrameSize);
+        if (pH264Dec->hMFCH264Handle.returnCodec == MFC_RET_OK) {
             SSBSIP_MFC_IMG_RESOLUTION imgResol;
             SSBSIP_MFC_CROP_INFORMATION cropInfo;
             SEC_OMX_BASEPORT *secInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
@@ -939,25 +1014,19 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pSECComponent->bUseFlagEOF = OMX_TRUE;
 #endif
 
-    if (Check_H264_StartCode(pInputData->dataBuffer, pInputData->dataLen) == OMX_TRUE) {
-        pSECComponent->timeStamp[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
-        pSECComponent->nFlags[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
-        SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pH264Dec->hMFCH264Handle.indexTimestamp));
+    pSECComponent->timeStamp[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->timeStamp;
+    pSECComponent->nFlags[pH264Dec->hMFCH264Handle.indexTimestamp] = pInputData->nFlags;
 
-        returnCodec = SsbSipMfcDecExe(pH264Dec->hMFCH264Handle.hMFCHandle, oneFrameSize);
-    } else {
-        pOutputData->timeStamp = pInputData->timeStamp;
-        pOutputData->nFlags = pInputData->nFlags;
-        returnCodec = MFC_RET_OK;
-        goto EXIT;
-    }
-
-    if (returnCodec == MFC_RET_OK) {
+    if ((pH264Dec->hMFCH264Handle.returnCodec == MFC_RET_OK) &&
+        (pH264Dec->bFirstFrame == OMX_FALSE)) {
         SSBSIP_MFC_DEC_OUTBUF_STATUS status;
         OMX_S32 indexTimestamp = 0;
 
-        pH264Dec->hMFCH264Handle.indexTimestamp++;
-        pH264Dec->hMFCH264Handle.indexTimestamp %= MAX_TIMESTAMP;
+        /* wait for mfc decode done */
+        if (pH264Dec->NBDecThread.bDecoderRun == OMX_TRUE) {
+            SEC_OSAL_SemaphoreWait(pH264Dec->NBDecThread.hDecFrameEnd);
+            pH264Dec->NBDecThread.bDecoderRun = OMX_FALSE;
+        }
 
         status = SsbSipMfcDecGetOutBuf(pH264Dec->hMFCH264Handle.hMFCHandle, &outputInfo);
         bufWidth  = (outputInfo.img_width + 15) & (~15);
@@ -971,100 +1040,14 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
             pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
         }
+        SEC_OSAL_Log(SEC_LOG_TRACE, "timestamp %lld us (%.2f secs)", pOutputData->timeStamp, pOutputData->timeStamp / 1E6);
 
         if ((status == MFC_GETOUTBUF_DISPLAY_DECODING) ||
             (status == MFC_GETOUTBUF_DISPLAY_ONLY)) {
-            /** Fill Output Buffer **/
-            int frameSize = bufWidth * bufHeight;
-            int imageSize = outputInfo.img_width * outputInfo.img_height;
-            SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
-            SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
-            void *pOutputBuf[3];
-
-            int actualWidth  = outputInfo.img_width;
-            int actualHeight = outputInfo.img_height;
-            int actualImageSize = imageSize;
-
-            pOutputBuf[0] = (void *)pOutputData->dataBuffer;
-            pOutputBuf[1] = (void *)pOutputData->dataBuffer + actualImageSize;
-            pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((actualImageSize * 5) / 4);
-
-#ifdef USE_ANDROID_EXTENSION
-            if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
-                OMX_U32 retANB = 0;
-                void *pVirAddrs[2];
-                actualWidth  = (outputInfo.img_width + 15) & (~15);
-                actualImageSize = actualWidth * actualHeight;
-
-                retANB = getVADDRfromANB (pOutputData->dataBuffer,
-                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
-                                (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
-                                pVirAddrs);
-                if (retANB != 0) {
-                    SEC_OSAL_Log(SEC_LOG_ERROR, "Error getVADDRfromANB, Error code:%d", retANB);
-                    ret = OMX_ErrorOverflow;
-                    goto EXIT;
-                }
-                pOutputBuf[0] = pVirAddrs[0];
-                pOutputBuf[1] = pVirAddrs[1];
-            }
-#endif
-            if ((pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_FALSE) &&
-                (pSECOutputPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress))
-            {
-                /* if use Post copy address structure */
-                SEC_OSAL_Memcpy(pOutputBuf[0], &frameSize, sizeof(frameSize));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
-                SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
-                pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
-            } else {
-                switch (pSECOutputPort->portDefinition.format.video.eColorFormat) {
-                case OMX_COLOR_FormatYUV420Planar:
-                {
-                    SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420P out");
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[0],
-                        (unsigned char *)outputInfo.YVirAddr,
-                        actualWidth,
-                        actualHeight);
-                    csc_tiled_to_linear_deinterleave(
-                        (unsigned char *)pOutputBuf[1],
-                        (unsigned char *)pOutputBuf[2],
-                        (unsigned char *)outputInfo.CVirAddr,
-                        actualWidth,
-                        actualHeight >> 1);
-                    pOutputData->dataLen = actualImageSize * 3 / 2;
-                }
-                    break;
-                case OMX_COLOR_FormatYUV420SemiPlanar:
-                case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
-                default:
-                {
-                    SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420SP out");
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[0],
-                        (unsigned char *)outputInfo.YVirAddr,
-                        actualWidth,
-                        actualHeight);
-                    csc_tiled_to_linear(
-                        (unsigned char *)pOutputBuf[1],
-                        (unsigned char *)outputInfo.CVirAddr,
-                        actualWidth,
-                        actualHeight >> 1);
-                    pOutputData->dataLen = actualImageSize * 3 / 2;
-                }
-                    break;
-                }
-            }
-#ifdef USE_ANDROID_EXTENSION
-            if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE)
-                putVADDRtoANB(pOutputData->dataBuffer);
-#endif
+            outputDataValid = OMX_TRUE;
         }
         if (pOutputData->nFlags & OMX_BUFFERFLAG_EOS)
-            pOutputData->dataLen = 0;
+            outputDataValid = OMX_FALSE;
 
         if ((status == MFC_GETOUTBUF_DISPLAY_ONLY) ||
             (pSECComponent->getAllDelayBuffer == OMX_TRUE))
@@ -1079,7 +1062,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             } else {
                 ret = OMX_ErrorNone;
             }
-            goto EXIT;
+            outputDataValid = OMX_FALSE;
         }
 
 #ifdef FULL_FRAME_SEARCH
@@ -1108,11 +1091,145 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
         }
-            pOutputData->dataLen = 0;
+        outputDataValid = OMX_FALSE;
 
         /* ret = OMX_ErrorUndefined; */
         ret = OMX_ErrorNone;
-        goto EXIT;
+    }
+
+    if (ret == OMX_ErrorInputDataDecodeYet) {
+        pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].dataSize = oneFrameSize;
+        pH264Dec->indexInputBuffer++;
+        pH264Dec->indexInputBuffer %= MFC_INPUT_BUFFER_NUM_MAX;
+        pH264Dec->hMFCH264Handle.pMFCStreamBuffer    = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].VirAddr;
+        pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].PhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].VirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].bufferSize;
+        oneFrameSize = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].dataSize;
+        //pInputData->dataLen = oneFrameSize;
+        //pInputData->remainDataLen = oneFrameSize;
+    }
+
+    if ((Check_H264_StartCode(pInputData->dataBuffer, pInputData->dataLen) == OMX_TRUE) &&
+        ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS)) {
+        SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_FRAME_TAG, &(pH264Dec->hMFCH264Handle.indexTimestamp));
+        pH264Dec->hMFCH264Handle.indexTimestamp++;
+        pH264Dec->hMFCH264Handle.indexTimestamp %= MAX_TIMESTAMP;
+
+        SsbSipMfcDecSetInBuf(pH264Dec->hMFCH264Handle.hMFCHandle,
+                             pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer,
+                             pH264Dec->hMFCH264Handle.pMFCStreamBuffer,
+                             pSECComponent->processData[INPUT_PORT_INDEX].allocSize);
+
+        pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].dataSize = oneFrameSize;
+        pH264Dec->NBDecThread.oneFrameSize = oneFrameSize;
+
+        /* mfc decode start */
+        SEC_OSAL_SemaphorePost(pH264Dec->NBDecThread.hDecFrameStart);
+        pH264Dec->NBDecThread.bDecoderRun = OMX_TRUE;
+        pH264Dec->hMFCH264Handle.returnCodec = MFC_RET_OK;
+
+        pH264Dec->indexInputBuffer++;
+        pH264Dec->indexInputBuffer %= MFC_INPUT_BUFFER_NUM_MAX;
+        pH264Dec->hMFCH264Handle.pMFCStreamBuffer    = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].VirAddr;
+        pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].PhyAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].VirAddr;
+        pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].bufferSize;
+        pH264Dec->bFirstFrame = OMX_FALSE;
+    }
+
+    /** Fill Output Buffer **/
+    if (outputDataValid == OMX_TRUE) {
+        SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
+        SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
+        void *pOutputBuf[3];
+
+        int frameSize = bufWidth * bufHeight;
+        int imageSize = outputInfo.img_width * outputInfo.img_height;
+
+        int actualWidth  = outputInfo.img_width;
+        int actualHeight = outputInfo.img_height;
+        int actualImageSize = imageSize;
+
+        pOutputBuf[0] = (void *)pOutputData->dataBuffer;
+        pOutputBuf[1] = (void *)pOutputData->dataBuffer + actualImageSize;
+        pOutputBuf[2] = (void *)pOutputData->dataBuffer + ((actualImageSize * 5) / 4);
+
+#ifdef USE_ANDROID_EXTENSION
+        if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE) {
+            OMX_U32 retANB = 0;
+            void *pVirAddrs[2];
+            actualWidth  = (outputInfo.img_width + 15) & (~15);
+            actualImageSize = actualWidth * actualHeight;
+
+            retANB = getVADDRfromANB (pOutputData->dataBuffer,
+                            (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameWidth,
+                            (OMX_U32)pSECInputPort->portDefinition.format.video.nFrameHeight,
+                            pVirAddrs);
+            if (retANB != 0) {
+                SEC_OSAL_Log(SEC_LOG_ERROR, "Error getVADDRfromANB, Error code:%d", retANB);
+                ret = OMX_ErrorOverflow;
+                goto EXIT;
+            }
+            pOutputBuf[0] = pVirAddrs[0];
+            pOutputBuf[1] = pVirAddrs[1];
+        }
+#endif
+        if ((pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_FALSE) &&
+            (pSECOutputPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress))
+        {
+            /* if use Post copy address structure */
+            SEC_OSAL_Memcpy(pOutputBuf[0], &frameSize, sizeof(frameSize));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize), &(outputInfo.YPhyAddr), sizeof(outputInfo.YPhyAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 1), &(outputInfo.CPhyAddr), sizeof(outputInfo.CPhyAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 2), &(outputInfo.YVirAddr), sizeof(outputInfo.YVirAddr));
+            SEC_OSAL_Memcpy(pOutputBuf[0] + sizeof(frameSize) + (sizeof(void *) * 3), &(outputInfo.CVirAddr), sizeof(outputInfo.CVirAddr));
+            pOutputData->dataLen = (bufWidth * bufHeight * 3) / 2;
+        } else {
+            switch (pSECOutputPort->portDefinition.format.video.eColorFormat) {
+            case OMX_COLOR_FormatYUV420Planar:
+            {
+                SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420P out");
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[0],
+                    (unsigned char *)outputInfo.YVirAddr,
+                    actualWidth,
+                    actualHeight);
+                csc_tiled_to_linear_deinterleave(
+                    (unsigned char *)pOutputBuf[1],
+                    (unsigned char *)pOutputBuf[2],
+                    (unsigned char *)outputInfo.CVirAddr,
+                    actualWidth,
+                    actualHeight >> 1);
+                pOutputData->dataLen = actualImageSize * 3 / 2;
+            }
+                break;
+            case OMX_COLOR_FormatYUV420SemiPlanar:
+            case OMX_SEC_COLOR_FormatANBYUV420SemiPlanar:
+            default:
+            {
+                SEC_OSAL_Log(SEC_LOG_TRACE, "YUV420SP out");
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[0],
+                    (unsigned char *)outputInfo.YVirAddr,
+                    actualWidth,
+                    actualHeight);
+                csc_tiled_to_linear(
+                    (unsigned char *)pOutputBuf[1],
+                    (unsigned char *)outputInfo.CVirAddr,
+                    actualWidth,
+                    actualHeight >> 1);
+                pOutputData->dataLen = actualImageSize * 3 / 2;
+            }
+                break;
+            }
+        }
+#ifdef USE_ANDROID_EXTENSION
+        if (pSECOutputPort->bUseAndroidNativeBuffer == OMX_TRUE)
+            putVADDRtoANB(pOutputData->dataBuffer);
+#endif
+    } else {
+        pOutputData->dataLen = 0;
     }
 
 EXIT:
