@@ -117,7 +117,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	audio_policy.herring \
 	audio.primary.herring \
-	audio.a2dp.default
+	audio.a2dp.default \
+	libaudioutils
 
 # Libs
 PRODUCT_PACKAGES += \
