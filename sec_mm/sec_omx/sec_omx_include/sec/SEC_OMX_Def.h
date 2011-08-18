@@ -48,11 +48,6 @@
 
 #define USE_ANDROID_EXTENSION
 
-#ifdef USE_ANDROID_EXTENSION
-// The largest metadata buffer size advertised
-// when metadata buffer mode is used for video encoding
-#define  MAX_INPUT_METADATA_BUFFER_SIZE (64)
-#endif
 
 typedef enum _SEC_CODEC_TYPE
 {

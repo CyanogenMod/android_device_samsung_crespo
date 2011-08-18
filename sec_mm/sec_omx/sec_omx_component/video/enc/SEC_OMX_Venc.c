@@ -1138,6 +1138,31 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
         ret = OMX_ErrorNone;
     }
         break;
+    case OMX_IndexParamPortDefinition:
+    {
+        OMX_PARAM_PORTDEFINITIONTYPE *portDefinition = (OMX_PARAM_PORTDEFINITIONTYPE *)ComponentParameterStructure;
+        OMX_U32                       portIndex = portDefinition->nPortIndex;
+        SEC_OMX_BASEPORT             *pSECPort;
+
+        if (portIndex >= pSECComponent->portParam.nPorts) {
+            ret = OMX_ErrorBadPortIndex;
+            goto EXIT;
+        }
+        ret = SEC_OMX_Check_SizeVersion(portDefinition, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+        if (ret != OMX_ErrorNone) {
+            goto EXIT;
+        }
+
+        pSECPort = &pSECComponent->pSECPort[portIndex];
+        SEC_OSAL_Memcpy(portDefinition, &pSECPort->portDefinition, portDefinition->nSize);
+
+#ifdef USE_ANDROID_EXTENSION
+        if (portIndex == 0 && pSECPort->bStoreMetaDataInBuffer == OMX_TRUE) {
+            portDefinition->nBufferSize = MAX_INPUT_METADATA_BUFFER_SIZE;
+        }
+#endif
+    }
+        break;
     default:
     {
         ret = SEC_OMX_GetParameter(hComponent, nParamIndex, ComponentParameterStructure);

@@ -47,6 +47,11 @@
 #define INPUT_PORT_SUPPORTFORMAT_NUM_MAX    3
 #define OUTPUT_PORT_SUPPORTFORMAT_NUM_MAX   1
 
+#ifdef USE_ANDROID_EXTENSION
+// The largest metadata buffer size advertised
+// when metadata buffer mode is used for video encoding
+#define  MAX_INPUT_METADATA_BUFFER_SIZE (64)
+#endif
 
 typedef struct
 {
