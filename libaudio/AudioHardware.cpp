@@ -247,6 +247,7 @@ AudioStreamOut* AudioHardware::openOutputStream(
 
 void AudioHardware::closeOutputStream(AudioStreamOut* out) {
     sp <AudioStreamOutALSA> spOut;
+    sp<AudioStreamInALSA> spIn;
     {
         Mutex::Autolock lock(mLock);
         if (mOutput == 0 || mOutput.get() != out) {
@@ -255,7 +256,16 @@ void AudioHardware::closeOutputStream(AudioStreamOut* out) {
         }
         spOut = mOutput;
         mOutput.clear();
+        if (mEchoReference != NULL) {
+            spIn = getActiveInput_l();
+        }
     }
+    if (spIn != 0) {
+        // this will safely release the echo reference by calling releaseEchoReference()
+        // after placing the active input in standby
+        spIn->standby();
+    }
+
     spOut.clear();
 }
 
@@ -999,33 +1009,38 @@ status_t AudioHardware::setInputSource_l(audio_source source)
      return NO_ERROR;
 }
 
-EchoReference *AudioHardware::getEchoReference(audio_format_t format,
+struct echo_reference_itfe *AudioHardware::getEchoReference(audio_format_t format,
                                                               uint32_t channelCount,
                                                               uint32_t samplingRate)
 {
     LOGV("AudioHardware::getEchoReference %p", mEchoReference);
-    if (mEchoReference == NULL && mOutput != NULL) {
+    releaseEchoReference(mEchoReference);
+    if (mOutput != NULL) {
         uint32_t wrChannelCount = popcount(mOutput->channels());
         uint32_t wrSampleRate = mOutput->sampleRate();
-        mEchoReference = new EchoReference(AUDIO_FORMAT_PCM_16_BIT,
-                                          channelCount,
-                                          samplingRate,
-                                          AUDIO_FORMAT_PCM_16_BIT,
-                                          wrChannelCount,
-                                          wrSampleRate);
-        mOutput->addEchoReference(mEchoReference);
-        return mEchoReference;
-    }
-    return NULL;
 
+        int status = create_echo_reference(AUDIO_FORMAT_PCM_16_BIT,
+                              channelCount,
+                              samplingRate,
+                              AUDIO_FORMAT_PCM_16_BIT,
+                              wrChannelCount,
+                              wrSampleRate,
+                              &mEchoReference);
+        if (status == 0) {
+            mOutput->addEchoReference(mEchoReference);
+        }
+    }
+    return mEchoReference;
 }
 
-void AudioHardware::releaseEchoReference(EchoReference *reference)
+void AudioHardware::releaseEchoReference(struct echo_reference_itfe *reference)
 {
     LOGV("AudioHardware::releaseEchoReference %p", mEchoReference);
-    if (reference == mEchoReference && mOutput != NULL) {
-        mOutput->removeEchoReference(reference);
-        delete mEchoReference;
+    if (mEchoReference != NULL && reference == mEchoReference) {
+        if (mOutput != NULL) {
+            mOutput->removeEchoReference(reference);
+        }
+        release_echo_reference(mEchoReference);
         mEchoReference = NULL;
     }
 }
@@ -1086,15 +1101,15 @@ AudioHardware::AudioStreamOutALSA::~AudioStreamOutALSA()
 }
 
 int AudioHardware::AudioStreamOutALSA::getPlaybackDelay(size_t frames,
-                                                        EchoReference::Buffer *buffer)
+                                                        struct echo_reference_buffer *buffer)
 {
     size_t kernelFr;
 
-    int rc = pcm_get_htimestamp(mPcm, &kernelFr, &buffer->timeStamp);
+    int rc = pcm_get_htimestamp(mPcm, &kernelFr, &buffer->time_stamp);
     if (rc < 0) {
-        buffer->timeStamp.tv_sec  = 0;
-        buffer->timeStamp.tv_nsec = 0;
-        buffer->delayNs           = 0;
+        buffer->time_stamp.tv_sec  = 0;
+        buffer->time_stamp.tv_nsec = 0;
+        buffer->delay_ns           = 0;
         LOGV("getPlaybackDelay(): pcm_get_htimestamp error, setting playbackTimestamp to 0");
         return rc;
     }
@@ -1106,14 +1121,12 @@ int AudioHardware::AudioStreamOutALSA::getPlaybackDelay(size_t frames,
     // sample being written.
     long delayNs = (long)(((int64_t)(kernelFr + frames)* 1000000000) /AUDIO_HW_OUT_SAMPLERATE);
 
-    LOGV("AudioStreamOutALSA::getPlaybackDelay2 delayNs: [%ld], "\
-         "kernelFr:[%d], frames:[%d], buffSize:[%d], timeStamp:[%ld].[%ld]",
+    LOGV("AudioStreamOutALSA::getPlaybackDelay delayNs: [%ld], "\
+         "kernelFr:[%d], frames:[%d], buffSize:[%d], time_stamp:[%ld].[%ld]",
          delayNs, (int)kernelFr, (int)frames, pcm_get_buffer_size(mPcm),
-         (long)buffer->timeStamp.tv_sec, buffer->timeStamp.tv_nsec);
+         (long)buffer->time_stamp.tv_sec, buffer->time_stamp.tv_nsec);
 
-    buffer->delayNs = delayNs;
-    LOGV("NXPWritehTimestamps: FrameAvailable = [%d], hTimestamps = [%d]s.[%d]ns",
-    (int)kernelFr, (int)buffer->timeStamp.tv_sec, (int)(buffer->timeStamp.tv_nsec/1000));
+    buffer->delay_ns = delayNs;
 
     return 0;
 }
@@ -1178,12 +1191,12 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
         }
 
         if (mEchoReference != NULL) {
-            EchoReference::Buffer b;
+            struct echo_reference_buffer b;
             b.raw = (void *)buffer;
-            b.frameCount = bytes / frameSize();
+            b.frame_count = bytes / frameSize();
 
             getPlaybackDelay(bytes / frameSize(), &b);
-            mEchoReference->write(&b);
+            mEchoReference->write(mEchoReference, &b);
         }
 
         TRACE_DRIVER_IN(DRV_PCM_WRITE)
@@ -1233,7 +1246,7 @@ void AudioHardware::AudioStreamOutALSA::doStandby_l()
         LOGD("AudioHardware pcm playback is going to standby.");
         // stop echo reference capture
         if (mEchoReference != NULL) {
-            mEchoReference->write(NULL);
+            mEchoReference->write(mEchoReference, NULL);
         }
         mStandby = true;
     }
@@ -1404,7 +1417,7 @@ void AudioHardware::AudioStreamOutALSA::unlock() {
     mLock.unlock();
 }
 
-void AudioHardware::AudioStreamOutALSA::addEchoReference(EchoReference *reference)
+void AudioHardware::AudioStreamOutALSA::addEchoReference(struct echo_reference_itfe *reference)
 {
     LOGV("AudioStreamOutALSA::addEchoReference %p", mEchoReference);
     if (mEchoReference == NULL) {
@@ -1412,11 +1425,11 @@ void AudioHardware::AudioStreamOutALSA::addEchoReference(EchoReference *referenc
     }
 }
 
-void AudioHardware::AudioStreamOutALSA::removeEchoReference(EchoReference *reference)
+void AudioHardware::AudioStreamOutALSA::removeEchoReference(struct echo_reference_itfe *reference)
 {
     LOGV("AudioStreamOutALSA::removeEchoReference %p", mEchoReference);
     if (mEchoReference == reference) {
-        mEchoReference->write(NULL);
+        mEchoReference->write(mEchoReference, NULL);
         mEchoReference = NULL;
     }
 }
@@ -1470,14 +1483,18 @@ status_t AudioHardware::AudioStreamInALSA::set(
     mChannelCount = AudioSystem::popCount(mChannels);
     mSampleRate = rate;
     if (mSampleRate != AUDIO_HW_OUT_SAMPLERATE) {
-        mDownSampler = new ReSampler(AUDIO_HW_OUT_SAMPLERATE,
+        mBufferProvider.mProvider.get_next_buffer = getNextBufferStatic;
+        mBufferProvider.mProvider.release_buffer = releaseBufferStatic;
+        mBufferProvider.mInputStream = this;
+        int status = create_resampler(AUDIO_HW_OUT_SAMPLERATE,
                                                     mSampleRate,
                                                     mChannelCount,
-                                                    this);
-        status_t status = mDownSampler->initCheck();
-        if (status != NO_ERROR) {
-            delete mDownSampler;
+                                                    RESAMPLER_QUALITY_VOIP,
+                                                    &mBufferProvider.mProvider,
+                                                    &mDownSampler);
+        if (status != 0) {
             LOGW("AudioStreamInALSA::set() downsampler init failed: %d", status);
+            mDownSampler = NULL;
             return status;
         }
     }
@@ -1489,7 +1506,10 @@ status_t AudioHardware::AudioStreamInALSA::set(
 AudioHardware::AudioStreamInALSA::~AudioStreamInALSA()
 {
     standby();
-    delete mDownSampler;
+
+    if (mDownSampler != NULL) {
+        release_resampler(mDownSampler);
+    }
     delete[] mInputBuf;
     delete[] mProcBuf;
 }
@@ -1502,22 +1522,25 @@ ssize_t AudioHardware::AudioStreamInALSA::readFrames(void* buffer, ssize_t frame
     while (framesWr < frames) {
         size_t framesRd = frames - framesWr;
         if (mDownSampler != NULL) {
-            mDownSampler->resample(
+            mDownSampler->resample_from_provider(mDownSampler,
                     (int16_t *)((char *)buffer + framesWr * frameSize()),
                     &framesRd);
         } else {
-            ReSampler::BufferProvider::Buffer buf;
-            buf.frameCount = framesRd;
+            struct resampler_buffer buf = {
+                    { raw : NULL, },
+                    frame_count : framesRd,
+            };
             getNextBuffer(&buf);
             if (buf.raw != NULL) {
                 memcpy((char *)buffer + framesWr * frameSize(),
                         buf.raw,
-                        buf.frameCount * frameSize());
-                framesRd = buf.frameCount;
+                        buf.frame_count * frameSize());
+                framesRd = buf.frame_count;
             }
             releaseBuffer(&buf);
         }
-        // mReadStatus is updated by getNextBuffer() also called by mDownSampler->resample()
+        // mReadStatus is updated by getNextBuffer() also called by
+        // mDownSampler->resample_from_provider()
         if (mReadStatus != 0) {
             return mReadStatus;
         }
@@ -1593,10 +1616,10 @@ ssize_t AudioHardware::AudioStreamInALSA::processFrames(void* buffer, ssize_t fr
 
 int32_t AudioHardware::AudioStreamInALSA::updateEchoReference(size_t frames)
 {
-    EchoReference::Buffer b;
-    b.delayNs = 0;
+    struct echo_reference_buffer b;
+    b.delay_ns = 0;
 
-    LOGV("updateEchoReference1 START, frames = [%d], mRefFramesIn = [%d],  b.frameCount = [%d]",
+    LOGV("updateEchoReference1 START, frames = [%d], mRefFramesIn = [%d],  b.frame_count = [%d]",
          frames, mRefFramesIn, frames - mRefFramesIn);
     if (mRefFramesIn < frames) {
         if (mRefBufSize < frames) {
@@ -1605,22 +1628,22 @@ int32_t AudioHardware::AudioStreamInALSA::updateEchoReference(size_t frames)
                                          mRefBufSize * mChannelCount * sizeof(int16_t));
         }
 
-        b.frameCount = frames - mRefFramesIn;
+        b.frame_count = frames - mRefFramesIn;
         b.raw = (void *)(mRefBuf + mRefFramesIn * mChannelCount);
 
         getCaptureDelay(frames, &b);
 
-        if (mEchoReference->read(&b) == NO_ERROR)
+        if (mEchoReference->read(mEchoReference, &b) == NO_ERROR)
         {
-            mRefFramesIn += b.frameCount;
+            mRefFramesIn += b.frame_count;
             LOGV("updateEchoReference2: mRefFramesIn:[%d], mRefBufSize:[%d], "\
-                 "frames:[%d], b.frameCount:[%d]", mRefFramesIn, mRefBufSize,frames,b.frameCount);
+                 "frames:[%d], b.frame_count:[%d]", mRefFramesIn, mRefBufSize,frames,b.frame_count);
         }
 
     }else{
         LOGV("updateEchoReference3: NOT enough frames to read ref buffer");
     }
-    return b.delayNs;
+    return b.delay_ns;
 }
 
 void AudioHardware::AudioStreamInALSA::pushEchoReference(size_t frames)
@@ -1692,7 +1715,7 @@ status_t AudioHardware::AudioStreamInALSA::setPreprocessorParam(effect_handle_t 
 }
 
 void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
-                                                       EchoReference::Buffer *buffer)
+                                                       struct echo_reference_buffer *buffer)
 {
 
     // read frames available in kernel driver buffer
@@ -1700,9 +1723,9 @@ void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
     struct timespec tstamp;
 
     if (pcm_get_htimestamp(mPcm, &kernelFr, &tstamp) < 0) {
-        buffer->timeStamp.tv_sec  = 0;
-        buffer->timeStamp.tv_nsec = 0;
-        buffer->delayNs           = 0;
+        buffer->time_stamp.tv_sec  = 0;
+        buffer->time_stamp.tv_nsec = 0;
+        buffer->delay_ns           = 0;
         LOGW("read getCaptureDelay(): pcm_htimestamp error");
         return;
     }
@@ -1715,7 +1738,7 @@ void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
     // add delay introduced by resampler
     long rsmpDelay = 0;
     if (mDownSampler) {
-        rsmpDelay = mDownSampler->delayNs();
+        rsmpDelay = mDownSampler->delay_ns(mDownSampler);
     }
 
     long kernelDelay = (long)(((int64_t)kernelFr * 1000000000) / AUDIO_HW_IN_SAMPLERATE);
@@ -1723,16 +1746,13 @@ void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
     // correct capture time stamp
     long delayNs = kernelDelay + bufDelay + rsmpDelay;
 
-    buffer->timeStamp = tstamp;
-    buffer->delayNs   = delayNs;
-    LOGV("AudioStreamInALSA::getCaptureDelay2 TimeStamp = [%lld].[%lld], delayCaptureNs: [%ld],"\
+    buffer->time_stamp = tstamp;
+    buffer->delay_ns   = delayNs;
+    LOGV("AudioStreamInALSA::getCaptureDelay TimeStamp = [%ld].[%ld], delayCaptureNs: [%d],"\
          " kernelDelay:[%ld], bufDelay:[%ld], rsmpDelay:[%ld], kernelFr:[%d], "\
          "mInputFramesIn:[%d], mProcFramesIn:[%d], frames:[%d]",
-         (int64_t)buffer->timeStamp.tv_sec , (int64_t)buffer->timeStamp.tv_nsec, buffer->delayNs,
-         kernelDelay, bufDelay, rsmpDelay, kernelFr, mInputFramesIn,mProcFramesIn,frames);
-
-    LOGV("NXPReadhTimestamps: FrameAvailable = [%d], hTimestamps = [%d]s.[%d]ns",
-        (int)kernelFr, (int)buffer->timeStamp.tv_sec, (int)(buffer->timeStamp.tv_nsec/1000));
+         buffer->time_stamp.tv_sec , buffer->time_stamp.tv_nsec, buffer->delay_ns,
+         kernelDelay, bufDelay, rsmpDelay, kernelFr, mInputFramesIn, mProcFramesIn, frames);
 
 }
 
@@ -1854,7 +1874,7 @@ void AudioHardware::AudioStreamInALSA::doStandby_l()
         LOGD("AudioHardware pcm capture is going to standby.");
         if (mEchoReference != NULL) {
             // stop reading from echo reference
-            mEchoReference->read(NULL);
+            mEchoReference->read(mEchoReference, NULL);
             // Mutex acquisition order is always out -> in -> hw
             sp<AudioStreamOutALSA> spOut = mHardware->output();
             if (spOut != 0) {
@@ -1927,7 +1947,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     }
 
     if (mDownSampler != NULL) {
-        mDownSampler->reset();
+        mDownSampler->reset(mDownSampler);
     }
     mInputFramesIn = 0;
 
@@ -2112,11 +2132,30 @@ status_t AudioHardware::AudioStreamInALSA::removeAudioEffect(effect_handle_t eff
     return status;
 }
 
-status_t AudioHardware::AudioStreamInALSA::getNextBuffer(ReSampler::BufferProvider::Buffer* buffer)
+extern "C" {
+int AudioHardware::AudioStreamInALSA::getNextBufferStatic(
+                                                    struct resampler_buffer_provider *provider,
+                                                    struct resampler_buffer* buffer)
+{
+    ResamplerBufferProvider *bufferProvider = (ResamplerBufferProvider *)provider;
+    return bufferProvider->mInputStream->getNextBuffer(buffer);
+}
+
+void AudioHardware::AudioStreamInALSA::releaseBufferStatic(
+                                                    struct resampler_buffer_provider *provider,
+                                                    struct resampler_buffer* buffer)
+{
+    ResamplerBufferProvider *bufferProvider = (ResamplerBufferProvider *)provider;
+    return bufferProvider->mInputStream->releaseBuffer(buffer);
+}
+
+}; // extern "C"
+
+status_t AudioHardware::AudioStreamInALSA::getNextBuffer(struct resampler_buffer *buffer)
 {
     if (mPcm == NULL) {
         buffer->raw = NULL;
-        buffer->frameCount = 0;
+        buffer->frame_count = 0;
         mReadStatus = NO_INIT;
         return NO_INIT;
     }
@@ -2127,21 +2166,21 @@ status_t AudioHardware::AudioStreamInALSA::getNextBuffer(ReSampler::BufferProvid
         TRACE_DRIVER_OUT
         if (mReadStatus != 0) {
             buffer->raw = NULL;
-            buffer->frameCount = 0;
+            buffer->frame_count = 0;
             return mReadStatus;
         }
         mInputFramesIn = AUDIO_HW_IN_PERIOD_SZ;
     }
 
-    buffer->frameCount = (buffer->frameCount > mInputFramesIn) ? mInputFramesIn:buffer->frameCount;
+    buffer->frame_count = (buffer->frame_count > mInputFramesIn) ? mInputFramesIn:buffer->frame_count;
     buffer->i16 = mInputBuf + (AUDIO_HW_IN_PERIOD_SZ - mInputFramesIn) * mChannelCount;
 
     return mReadStatus;
 }
 
-void AudioHardware::AudioStreamInALSA::releaseBuffer(ReSampler::BufferProvider::Buffer* buffer)
+void AudioHardware::AudioStreamInALSA::releaseBuffer(struct resampler_buffer *buffer)
 {
-    mInputFramesIn -= buffer->frameCount;
+    mInputFramesIn -= buffer->frame_count;
 }
 
 size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int channelCount)
