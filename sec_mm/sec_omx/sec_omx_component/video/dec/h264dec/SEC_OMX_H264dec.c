@@ -57,8 +57,6 @@ SEC_OMX_VIDEO_PROFILELEVEL supportedAVCProfileLevels[] ={
     {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel22},
     {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel3},
     {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel31},
-    {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel32},
-    {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel4},
 
     {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1},
     {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1b},
@@ -70,8 +68,6 @@ SEC_OMX_VIDEO_PROFILELEVEL supportedAVCProfileLevels[] ={
     {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel22},
     {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel3},
     {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel31},
-    {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel32},
-    {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel4},
 
     {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel1},
     {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel1b},
@@ -82,9 +78,7 @@ SEC_OMX_VIDEO_PROFILELEVEL supportedAVCProfileLevels[] ={
     {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel21},
     {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel22},
     {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel3},
-    {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel31},
-    {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel32},
-    {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel4}};
+    {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel31}};
 
 
 static int Check_H264_Frame(OMX_U8 *pInputStream, int buffSize, OMX_U32 flag, OMX_BOOL bPreviousFrameEOF, OMX_BOOL *pbEndOfFrame)
