@@ -29,8 +29,8 @@
 
 #include "secril-client.h"
 
-#include "ReSampler.h"
-#include "EchoReference.h"
+#include <audio_utils/ReSampler.h>
+#include <audio_utils/EchoReference.h>
 
 extern "C" {
     struct pcm;

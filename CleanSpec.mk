@@ -64,3 +64,4 @@ $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/lib/camera.s5
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRARIES/camera.s5pc110_intermediates/LINKED/camera.s5pc110.so)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/symbols/system/lib/hw/camera.s5pc110.so)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/app/Tag.apk)
+$(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/STATIC_LIBRARIES/libaudioutils_intermediates)
