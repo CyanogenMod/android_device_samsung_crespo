@@ -29,8 +29,8 @@
 
 #include "secril-client.h"
 
-#include <audio_utils/ReSampler.h>
-#include <audio_utils/EchoReference.h>
+#include <audio_utils/resampler.h>
+#include <audio_utils/echo_reference.h>
 
 extern "C" {
     struct pcm;
@@ -141,10 +141,10 @@ public:
 
            sp <AudioStreamOutALSA>  output() { return mOutput; }
 
-           EchoReference *getEchoReference(audio_format_t format,
+           struct echo_reference_itfe *getEchoReference(audio_format_t format,
                                           uint32_t channelCount,
                                           uint32_t samplingRate);
-           void releaseEchoReference(EchoReference *reference);
+           void releaseEchoReference(struct echo_reference_itfe *reference);
 
 protected:
     virtual status_t dump(int fd, const Vector<String16>& args);
@@ -187,7 +187,7 @@ private:
     int             (*setCallClockSync)(HRilClient, SoundClockCondition);
     void            loadRILD(void);
     status_t        connectRILDIfRequired(void);
-    EchoReference*  mEchoReference;
+    struct echo_reference_itfe *mEchoReference;
 
     //  trace driver operations for dump
     int             mDriverOp;
@@ -248,13 +248,13 @@ private:
                 void lock();
                 void unlock();
 
-                void addEchoReference(EchoReference *reference);
-                void removeEchoReference(EchoReference *reference);
+                void addEchoReference(struct echo_reference_itfe *reference);
+                void removeEchoReference(struct echo_reference_itfe *reference);
 
     private:
 
                 int computeEchoReferenceDelay(size_t frames, struct timespec *echoRefRenderTime);
-                int getPlaybackDelay(size_t frames, EchoReference::Buffer *buffer);
+                int getPlaybackDelay(size_t frames, struct echo_reference_buffer *buffer);
 
         Mutex mLock;
         AudioHardware* mHardware;
@@ -271,10 +271,10 @@ private:
         int mDriverOp;
         int mStandbyCnt;
         bool mSleepReq;
-        EchoReference *mEchoReference;
+        struct echo_reference_itfe *mEchoReference;
     };
 
-    class AudioStreamInALSA : public AudioStreamIn, public ReSampler::BufferProvider, public RefBase
+    class AudioStreamInALSA : public AudioStreamIn, public RefBase
     {
 
      public:
@@ -309,9 +309,11 @@ private:
 
         static size_t getBufferSize(uint32_t sampleRate, int channelCount);
 
-        // BufferProvider
-        virtual status_t getNextBuffer(ReSampler::BufferProvider::Buffer* buffer);
-        virtual void releaseBuffer(ReSampler::BufferProvider::Buffer* buffer);
+        // resampler_buffer_provider
+        static int getNextBufferStatic(struct resampler_buffer_provider *provider,
+                             struct resampler_buffer* buffer);
+        static void releaseBufferStatic(struct resampler_buffer_provider *provider,
+                             struct resampler_buffer* buffer);
 
         int prepareLock();
         void lock();
@@ -319,14 +321,23 @@ private:
 
      private:
 
+        struct ResamplerBufferProvider {
+            struct resampler_buffer_provider mProvider;
+            AudioStreamInALSA *mInputStream;
+        };
+
         ssize_t readFrames(void* buffer, ssize_t frames);
         ssize_t processFrames(void* buffer, ssize_t frames);
         int32_t updateEchoReference(size_t frames);
         void pushEchoReference(size_t frames);
         void updateEchoDelay(size_t frames, struct timespec *echoRefRenderTime);
-        void getCaptureDelay(size_t frames, EchoReference::Buffer *buffer);
+        void getCaptureDelay(size_t frames, struct echo_reference_buffer *buffer);
         status_t setPreProcessorEchoDelay(effect_handle_t handle, int32_t delayUs);
         status_t setPreprocessorParam(effect_handle_t handle, effect_param_t *param);
+
+        // BufferProvider
+        status_t getNextBuffer(struct resampler_buffer* buffer);
+        void releaseBuffer(struct resampler_buffer* buffer);
 
         Mutex mLock;
         AudioHardware* mHardware;
@@ -340,7 +351,8 @@ private:
         uint32_t mChannelCount;
         uint32_t mSampleRate;
         size_t mBufferSize;
-        ReSampler *mDownSampler;
+        struct resampler_itfe *mDownSampler;
+        struct ResamplerBufferProvider mBufferProvider;
         status_t mReadStatus;
         size_t mInputFramesIn;
         int16_t *mInputBuf;
@@ -355,7 +367,7 @@ private:
         int16_t *mRefBuf;
         size_t mRefBufSize;
         size_t mRefFramesIn;
-        EchoReference *mEchoReference;
+        struct echo_reference_itfe *mEchoReference;
         bool mNeedEchoReference;
     };
 
