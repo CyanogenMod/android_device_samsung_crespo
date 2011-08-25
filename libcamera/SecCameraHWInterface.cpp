@@ -84,7 +84,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId, camera_device_t *dev)
           mDataCb(0),
           mDataCbTimestamp(0),
           mCallbackCookie(0),
-          mMsgEnabled(CAMERA_MSG_RAW_IMAGE),
+          mMsgEnabled(0),
           mRecordRunning(false),
           mPostViewWidth(0),
           mPostViewHeight(0),
@@ -1087,42 +1087,40 @@ int CameraHardwareSec::pictureThread()
     sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
     sp<MemoryHeapBase> ThumbnailHeap = new MemoryHeapBase(mThumbSize);
 
-    if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
-        LOG_TIME_DEFINE(1)
-        LOG_TIME_START(1)
+    LOG_TIME_DEFINE(1)
+    LOG_TIME_START(1)
 
-        int picture_size, picture_width, picture_height;
-        mSecCamera->getSnapshotSize(&picture_width, &picture_height, &picture_size);
-        int picture_format = mSecCamera->getSnapshotPixelFormat();
+    int picture_size, picture_width, picture_height;
+    mSecCamera->getSnapshotSize(&picture_width, &picture_height, &picture_size);
+    int picture_format = mSecCamera->getSnapshotPixelFormat();
 
-        unsigned int phyAddr;
+    unsigned int phyAddr;
 
-        // Modified the shutter sound timing for Jpeg capture
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
-            mSecCamera->setSnapshotCmd();
-        if (mMsgEnabled & CAMERA_MSG_SHUTTER) {
-            mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
-        }
-
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK){
-            jpeg_data = mSecCamera->getJpeg(&jpeg_size, &phyAddr);
-            if (jpeg_data == NULL) {
-                LOGE("ERR(%s):Fail on SecCamera->getSnapshot()", __func__);
-                ret = UNKNOWN_ERROR;
-                goto out;
-            }
-        } else {
-            if (mSecCamera->getSnapshotAndJpeg((unsigned char*)PostviewHeap->base(),
-                    (unsigned char*)JpegHeap->data, &output_size) < 0) {
-                ret = UNKNOWN_ERROR;
-                goto out;
-            }
-            LOGI("snapshotandjpeg done\n");
-        }
-
-        LOG_TIME_END(1)
-        LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
+    // Modified the shutter sound timing for Jpeg capture
+    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
+        mSecCamera->setSnapshotCmd();
+    if (mMsgEnabled & CAMERA_MSG_SHUTTER) {
+        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
     }
+
+    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK){
+        jpeg_data = mSecCamera->getJpeg(&jpeg_size, &phyAddr);
+        if (jpeg_data == NULL) {
+            LOGE("ERR(%s):Fail on SecCamera->getSnapshot()", __func__);
+            ret = UNKNOWN_ERROR;
+            goto out;
+        }
+    } else {
+        if (mSecCamera->getSnapshotAndJpeg((unsigned char*)PostviewHeap->base(),
+                (unsigned char*)JpegHeap->data, &output_size) < 0) {
+            ret = UNKNOWN_ERROR;
+            goto out;
+        }
+        LOGI("snapshotandjpeg done\n");
+    }
+
+    LOG_TIME_END(1)
+    LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
 
     if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8);
@@ -1154,6 +1152,8 @@ int CameraHardwareSec::pictureThread()
 
     if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
         mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
+    } else if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) {
+        mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
     }
 
     if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
