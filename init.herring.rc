@@ -35,7 +35,7 @@ on fs
 	chmod 770 /efs/bluetooth
 	chmod 770 /efs/imei
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev
+    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
 
     export EXTERNAL_STORAGE /mnt/sdcard
     mkdir /mnt/sdcard 0000 system system
