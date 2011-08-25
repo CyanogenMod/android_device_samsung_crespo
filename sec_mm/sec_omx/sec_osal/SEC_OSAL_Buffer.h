@@ -53,6 +53,7 @@ OMX_ERRORTYPE useAndroidNativeBuffer(OMX_HANDLETYPE hComponent, OMX_PTR Componen
 OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height, void *vaddress[]);
 OMX_U32 putVADDRtoANB(OMX_PTR pUnreadableBuffer);
 OMX_ERRORTYPE enableStoreMetaDataInBuffers(OMX_HANDLETYPE hComponent, OMX_PTR ComponentParameterStructure);
+OMX_BOOL isMetadataBufferTypeGrallocSource(OMX_BYTE pInputDataBuffer);
 OMX_ERRORTYPE preprocessMetaDataInBuffers(OMX_HANDLETYPE hComponent, OMX_BYTE pInputDataBuffer, BUFFER_ADDRESS_INFO *pInputInfo);
 
 #ifdef __cplusplus

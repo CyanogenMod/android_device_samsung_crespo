@@ -231,6 +231,26 @@ void Set_H264ENC_Param(SSBSIP_MFC_ENC_H264_PARAM *pH264Arg, SEC_OMX_BASECOMPONEN
     pH264Arg->StaticDisable   = 1;
     pH264Arg->ActivityDisable = 1;
 
+    switch ((SEC_OMX_COLOR_FORMATTYPE)pSECInputPort->portDefinition.format.video.eColorFormat) {
+    case OMX_COLOR_FormatYUV420SemiPlanar:
+        pH264Arg->FrameMap = NV12_LINEAR;
+        break;
+    case OMX_SEC_COLOR_FormatNV12TPhysicalAddress:
+    default:
+        pH264Arg->FrameMap = NV12_TILE;
+        break;
+    }
+
+#ifdef USE_ANDROID_EXTENSION
+    if (pSECInputPort->bStoreMetaDataInBuffer != OMX_FALSE) {
+        SEC_OMX_DATA *pInputData = &pSECComponent->processData[INPUT_PORT_INDEX];
+        if(isMetadataBufferTypeGrallocSource(pInputData->dataBuffer) == OMX_TRUE)
+            pH264Arg->FrameMap = NV12_LINEAR;
+        else
+            pH264Arg->FrameMap = NV12_TILE;
+    }
+#endif
+
     SEC_OSAL_Log(SEC_LOG_TRACE, "pSECPort->eControlRate: 0x%x", pSECOutputPort->eControlRate);
     switch (pSECOutputPort->eControlRate) {
     case OMX_Video_ControlRateDisable:
@@ -708,6 +728,7 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
 {
     OMX_ERRORTYPE              ret = OMX_ErrorNone;
     SEC_OMX_BASECOMPONENT     *pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
+    SEC_OMX_BASEPORT          *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
     SEC_H264ENC_HANDLE        *pH264Enc = NULL;
     OMX_PTR                    hMFCHandle = NULL;
     OMX_S32                    returnCodec = 0;
@@ -727,13 +748,9 @@ OMX_ERRORTYPE SEC_MFC_H264Enc_Init(OMX_COMPONENTTYPE *pOMXComponent)
     }
     pH264Enc->hMFCH264Handle.hMFCHandle = hMFCHandle;
 
-    Set_H264ENC_Param(&(pH264Enc->hMFCH264Handle.mfcVideoAvc), pSECComponent);
-
-    returnCodec = SsbSipMfcEncInit(hMFCHandle, &(pH264Enc->hMFCH264Handle.mfcVideoAvc));
-    if (returnCodec != MFC_RET_OK) {
-        ret = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
+    SsbSipMfcEncSetSize(hMFCHandle, H264_ENC,
+                        pSECOutputPort->portDefinition.format.video.nFrameWidth,
+                        pSECOutputPort->portDefinition.format.video.nFrameHeight);
 
     /* Allocate encoder's input buffer */
     returnCodec = SsbSipMfcEncGetInBuf(hMFCHandle, &(pH264Enc->hMFCH264Handle.inputInfo));
@@ -801,6 +818,13 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     FunctionIn();
 
     if (pH264Enc->hMFCH264Handle.bConfiguredMFC == OMX_FALSE) {
+        Set_H264ENC_Param(&(pH264Enc->hMFCH264Handle.mfcVideoAvc), pSECComponent);
+        returnCodec = SsbSipMfcEncInit(pH264Enc->hMFCH264Handle.hMFCHandle, &(pH264Enc->hMFCH264Handle.mfcVideoAvc));
+        if (returnCodec != MFC_RET_OK) {
+            ret = OMX_ErrorInsufficientResources;
+            goto EXIT;
+        }
+
         returnCodec = SsbSipMfcEncGetOutBuf(pH264Enc->hMFCH264Handle.hMFCHandle, &outputInfo);
         if (returnCodec != MFC_RET_OK)
         {

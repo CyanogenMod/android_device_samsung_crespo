@@ -77,6 +77,7 @@ typedef struct _SEC_OMX_BASEPORT
     OMX_BOOL                       bUseAndroidNativeBuffer;
     /* For Android Store Meta Data inBuffer */
     OMX_BOOL                       bStoreMetaDataInBuffer;
+    OMX_PTR                        pIMGGrallocModule;
 } SEC_OMX_BASEPORT;
 
 

@@ -167,6 +167,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_mpeg4.in_luma_pad_val = mpeg4_arg->LumaPadVal;
         EncArg.args.enc_init_mpeg4.in_cb_pad_val = mpeg4_arg->CbPadVal;
         EncArg.args.enc_init_mpeg4.in_cr_pad_val = mpeg4_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         EncArg.args.enc_init_mpeg4.in_time_increament_res = mpeg4_arg->TimeIncreamentRes;
         EncArg.args.enc_init_mpeg4.in_time_vop_time_increament = mpeg4_arg->VopTimeIncreament;
@@ -218,6 +219,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_mpeg4.in_luma_pad_val = h263_arg->LumaPadVal;
         EncArg.args.enc_init_mpeg4.in_cb_pad_val = h263_arg->CbPadVal;
         EncArg.args.enc_init_mpeg4.in_cr_pad_val = h263_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         EncArg.args.enc_init_mpeg4.in_RC_framerate = h263_arg->FrameRate;
         EncArg.args.enc_init_mpeg4.in_RC_bitrate = h263_arg->Bitrate;
@@ -288,6 +290,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_h264.in_luma_pad_val = h264_arg->LumaPadVal;
         EncArg.args.enc_init_h264.in_cb_pad_val = h264_arg->CbPadVal;
         EncArg.args.enc_init_h264.in_cr_pad_val = h264_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         /* rate control*/
         EncArg.args.enc_init_h264.in_RC_frm_enable = h264_arg->EnableFRMRateControl;
@@ -418,6 +421,27 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncClose(void *openHandle)
     munmap((void *)pCTX->mapped_addr, MMAP_BUFFER_SIZE_MMAP);
     close(pCTX->hMFC);
     free(pCTX);
+
+    return MFC_RET_OK;
+}
+
+SSBSIP_MFC_ERROR_CODE SsbSipMfcEncSetSize(void *openHandle, SSBSIP_MFC_CODEC_TYPE codecType, int nWidth, int nHeight)
+{
+    _MFCLIB *pCTX = (_MFCLIB *)openHandle;
+
+    if (pCTX == NULL)
+        return MFC_RET_INVALID_PARAM;
+
+    if (nWidth <= 0 || nHeight <= 0)
+        return MFC_RET_INVALID_PARAM;
+    pCTX->width = nWidth;
+    pCTX->height = nHeight;
+
+    if ((H264_ENC != codecType) &&
+        (MPEG4_ENC != codecType) &&
+        (H263_ENC != codecType))
+        return MFC_RET_INVALID_PARAM;
+    pCTX->codec_type = codecType;
 
     return MFC_RET_OK;
 }

@@ -33,6 +33,7 @@ LOCAL_SHARED_LIBRARIES := libcutils libutils \
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
 	$(SEC_OMX_INC)/sec \
 	$(SEC_OMX_TOP)/sec_osal \
-	$(SEC_OMX_COMPONENT)/common
+	$(SEC_OMX_COMPONENT)/common \
+	$(SEC_OMX_TOP)/../../include
 
 include $(BUILD_STATIC_LIBRARY)
