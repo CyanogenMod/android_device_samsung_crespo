@@ -106,8 +106,8 @@ PRODUCT_PACKAGES += \
 # Misc other modules
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
-	overlay.s5pc110 \
-	sensors.herring
+	hwcomposer.s5pc110 \
+	sensors.herring 
 
 # Camera
 PRODUCT_PACKAGES += \
