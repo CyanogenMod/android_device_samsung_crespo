@@ -1166,16 +1166,18 @@ int CameraHardwareSec::pictureThread()
 
         if (JpegExifSize < 0) {
             ret = UNKNOWN_ERROR;
+            ExifHeap->release(ExifHeap);
             goto out;
         }
 
-        unsigned char *ExifStart = (unsigned char *)JpegHeap->data + 2;
-        unsigned char *ImageStart = ExifStart + JpegExifSize;
-
-        memmove(ImageStart, ExifStart, JpegImageSize - 2);
-        memcpy(ExifStart, ExifHeap->data, JpegExifSize);
-
-        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, JpegHeap, 0, NULL, mCallbackCookie);
+        camera_memory_t *mem = mGetMemoryCb(-1, JpegImageSize + JpegExifSize, 1, 0);
+        uint8_t *ptr = (uint8_t *) mem->data;
+        memcpy(ptr, JpegHeap->data, 2); ptr += 2;
+        memcpy(ptr, ExifHeap->data, JpegExifSize); ptr += JpegExifSize;
+        memcpy(ptr, (uint8_t *) JpegHeap->data + 2, JpegImageSize - 2);
+        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, 0, NULL, mCallbackCookie);
+        mem->release(mem);
+        ExifHeap->release(ExifHeap);
     }
 
     LOG_TIME_END(0)
