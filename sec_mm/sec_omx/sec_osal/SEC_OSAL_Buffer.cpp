@@ -104,7 +104,9 @@ OMX_U32 checkPortIndexANB(OMX_PTR ComponentParameterStructure)
 
 OMX_U32 getMetadataBufferType(const uint8_t *ptr)
 {
-    return ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3];
+    OMX_U32 type = *(OMX_U32 *) ptr;
+    SEC_OSAL_Log(SEC_LOG_TRACE, "getMetadataBufferType: %ld", type);
+    return type;
 }
 
 OMX_U32 getVADDRfromANB(OMX_PTR pUnreadableBuffer, OMX_U32 Width, OMX_U32 Height, void *pVirAddrs[])
@@ -403,11 +405,12 @@ OMX_ERRORTYPE preprocessMetaDataInBuffers(OMX_HANDLETYPE hComponent, OMX_BYTE pI
         IMG_gralloc_module_public_t *module = (IMG_gralloc_module_public_t *)pSECPort->pIMGGrallocModule;
         OMX_PTR pUnreadableBuffer = NULL;
         OMX_PTR pReadableBuffer = NULL;
-        OMX_PTR pVirAddrs[2];
+        OMX_PTR pVirAddrs[3];
         int err = 0;
 
         pVirAddrs[0] = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.YVirAddr;
         pVirAddrs[1] = pSECComponent->processData[INPUT_PORT_INDEX].specificBufferHeader.CVirAddr;
+        pVirAddrs[2] = NULL;
 
         if (module == NULL) {
             err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **)&module);
@@ -422,9 +425,9 @@ OMX_ERRORTYPE preprocessMetaDataInBuffers(OMX_HANDLETYPE hComponent, OMX_BYTE pI
         /**************************************/
         /*     IMG CSC RGB to NV12            */
         /**************************************/
-        SEC_OSAL_Memcpy(&pUnreadableBuffer, pInputDataBuffer + 4, sizeof(void *));
-        android_native_buffer_t *buf = (android_native_buffer_t *)pUnreadableBuffer;
-        err = module->Blit(module, buf->handle, pVirAddrs, HAL_PIXEL_FORMAT_C110_NV12);
+        buffer_handle_t buf = *((buffer_handle_t *) (pInputDataBuffer + 4));
+        SEC_OSAL_Log(SEC_LOG_TRACE, "buffer handle %p)\n", buf);
+        err = module->Blit(module, buf, pVirAddrs, HAL_PIXEL_FORMAT_C110_NV12);
         if(err) {
             SEC_OSAL_Log(SEC_LOG_ERROR, "module->Blit() failed (err=%d)\n", err);
             ret = OMX_ErrorUndefined;

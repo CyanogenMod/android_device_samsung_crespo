@@ -1088,7 +1088,7 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
             case supportFormat_0:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
                 portFormat->eColorFormat       = OMX_COLOR_FormatYUV420SemiPlanar;
-                portFormat->xFramerate           = portDefinition->format.video.xFramerate;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
                 break;
             case supportFormat_1:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
@@ -1098,8 +1098,15 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
             case supportFormat_2:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
                 portFormat->eColorFormat       = OMX_SEC_COLOR_FormatNV12TPhysicalAddress;
-                portFormat->xFramerate           = portDefinition->format.video.xFramerate;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
                 break;
+#ifdef USE_ANDROID_EXTENSION
+            case supportFormat_3:
+                portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
+                portFormat->eColorFormat       = OMX_COLOR_FormatAndroidOpaque;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
+                break;
+#endif
             }
         } else if (portIndex == OUTPUT_PORT_INDEX) {
             supportFormatNum = OUTPUT_PORT_SUPPORTFORMAT_NUM_MAX - 1;
@@ -1113,7 +1120,7 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
 
             portFormat->eCompressionFormat = portDefinition->format.video.eCompressionFormat;
             portFormat->eColorFormat       = portDefinition->format.video.eColorFormat;
-            portFormat->xFramerate           = portDefinition->format.video.xFramerate;
+            portFormat->xFramerate         = portDefinition->format.video.xFramerate;
         }
         ret = OMX_ErrorNone;
     }
