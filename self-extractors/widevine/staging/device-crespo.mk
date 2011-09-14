@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LOCAL_STEM := crespo/BoardConfigCrespo.mk
+LOCAL_PATH := vendor/widevine/crespo
 
--include vendor/akm/$(LOCAL_STEM)
--include vendor/broadcom/$(LOCAL_STEM)
--include vendor/cypress/$(LOCAL_STEM)
--include vendor/imgtec/$(LOCAL_STEM)
--include vendor/nxp/$(LOCAL_STEM)
--include vendor/samsung/$(LOCAL_STEM)
--include vendor/widevine/$(LOCAL_STEM)
+# Widevine blobs necessary for Nexus S hardware
+PRODUCT_COPY_FILES := \
+    $(LOCAL_PATH)/proprietary/com.google.widevine.software.drm.xml:system/etc/permissions/com.google.widevine.software.drm.xml \
+    $(LOCAL_PATH)/proprietary/libdrmwvmplugin.so:system/lib/drm/libdrmwvmplugin.so \
+    $(LOCAL_PATH)/proprietary/libwvdrm_L3.so:system/lib/libwvdrm_L3.so \
+    $(LOCAL_PATH)/proprietary/libwvm.so:system/lib/libwvm.so \
+    $(LOCAL_PATH)/proprietary/libWVStreamControlAPI_L3.so:system/lib/libWVStreamControlAPI_L3.so \
+

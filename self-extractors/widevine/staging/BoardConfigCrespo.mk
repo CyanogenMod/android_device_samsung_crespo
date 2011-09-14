@@ -11,13 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-LOCAL_STEM := crespo/BoardConfigCrespo.mk
-
--include vendor/akm/$(LOCAL_STEM)
--include vendor/broadcom/$(LOCAL_STEM)
--include vendor/cypress/$(LOCAL_STEM)
--include vendor/imgtec/$(LOCAL_STEM)
--include vendor/nxp/$(LOCAL_STEM)
--include vendor/samsung/$(LOCAL_STEM)
--include vendor/widevine/$(LOCAL_STEM)
