@@ -34,7 +34,7 @@ ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
 
-for COMPANY in akm broadcom cypress imgtec nxp samsung widevine
+for COMPANY in akm broadcom cypress imgtec nxp samsung
 do
   echo Processing files from $COMPANY
   rm -rf tmp
@@ -85,15 +85,6 @@ do
     TO_EXTRACT="\
             system/lib/libsecril-client.so \
             system/vendor/lib/libsec-ril.so \
-            "
-    ;;
-  widevine)
-    TO_EXTRACT="\
-            system/etc/permissions/com.google.widevine.software.drm.xml \
-            system/lib/drm/libdrmwvmplugin.so \
-            system/lib/libwvdrm_L3.so \
-            system/lib/libwvm.so \
-            system/lib/libWVStreamControlAPI_L3.so \
             "
     ;;
   esac
