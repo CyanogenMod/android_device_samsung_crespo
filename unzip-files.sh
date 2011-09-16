@@ -20,12 +20,7 @@ DEVICE=crespo
 MANUFACTURER=samsung
 
 mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-unzip -j -o ../../../${DEVICE}_update.zip system/etc/permissions/com.google.widevine.software.drm.xml -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-unzip -j -o ../../../${DEVICE}_update.zip system/lib/drm/libdrmwvmplugin.so -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 unzip -j -o ../../../${DEVICE}_update.zip system/lib/libsecril-client.so -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-unzip -j -o ../../../${DEVICE}_update.zip system/lib/libwvdrm_L3.so -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-unzip -j -o ../../../${DEVICE}_update.zip system/lib/libwvm.so -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-unzip -j -o ../../../${DEVICE}_update.zip system/lib/libWVStreamControlAPI_L3.so -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 unzip -j -o ../../../${DEVICE}_update.zip system/vendor/bin/gpsd -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/gpsd
 unzip -j -o ../../../${DEVICE}_update.zip system/vendor/bin/pvrsrvinit -d ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
@@ -72,12 +67,7 @@ PRODUCT_COPY_FILES := \\
 
 # All the blobs necessary for crespo
 PRODUCT_COPY_FILES += \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/com.google.widevine.software.drm.xml:system/etc/permissions/com.google.widevine.software.drm.xml \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libdrmwvmplugin.so:system/lib/drm/libdrmwvmplugin.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsecril-client.so:system/lib/libsecril-client.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libwvdrm_L3.so:system/lib/libwvdrm_L3.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libwvm.so:system/lib/libwvm.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libWVStreamControlAPI_L3.so:system/lib/libWVStreamControlAPI_L3.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/gpsd:system/vendor/bin/gpsd \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/pvrsrvinit:system/vendor/bin/pvrsrvinit \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/bcm4329.hcd:system/vendor/firmware/bcm4329.hcd \\
