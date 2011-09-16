@@ -20,4 +20,3 @@ LOCAL_STEM := crespo/BoardConfigCrespo.mk
 -include vendor/imgtec/$(LOCAL_STEM)
 -include vendor/nxp/$(LOCAL_STEM)
 -include vendor/samsung/$(LOCAL_STEM)
--include vendor/widevine/$(LOCAL_STEM)
