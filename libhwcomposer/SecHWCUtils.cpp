@@ -388,6 +388,8 @@ int fimc_v4l2_clr_buf(int fd)
 
 int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf)
 {
+    int ret =0;
+
     if (fimc_v4l2_stream_on(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT) < 0) {
         LOGE("Fail : v4l2_stream_on()");
         return -1;
@@ -395,14 +397,17 @@ int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf)
 
     if (fimc_v4l2_queue(fd, fimc_buf) < 0) {
         LOGE("Fail : v4l2_queue()");
-        return -1;
+        ret = -1;
+        goto stream_off;
     }
 
     if (fimc_v4l2_dequeue(fd) < 0) {
         LOGE("Fail : v4l2_dequeue()");
-        return -1;
+        ret = -1;
+        goto stream_off;
     }
 
+stream_off:
     if (fimc_v4l2_stream_off(fd) < 0) {
         LOGE("Fail : v4l2_stream_off()");
         return -1;
@@ -413,7 +418,7 @@ int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf)
         return -1;
     }
 
-    return 0;
+    return ret;
 }
 
 static int get_src_phys_addr(struct hwc_context_t *ctx,

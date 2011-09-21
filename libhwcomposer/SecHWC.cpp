@@ -150,7 +150,7 @@ static int get_hwc_compos_decision(hwc_layer_t* cur)
          return compositionType;
 
     if((prev_handle->usage & GRALLOC_USAGE_PHYS_CONTIG) &&
-       (cur->blending = HWC_BLENDING_NONE))
+       (cur->blending == HWC_BLENDING_NONE))
         compositionType = HWC_OVERLAY;
     else
         compositionType = HWC_FRAMEBUFFER;
