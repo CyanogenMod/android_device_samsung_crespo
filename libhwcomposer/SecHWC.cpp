@@ -291,6 +291,11 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_rect src_rect;
     struct sec_rect dst_rect;
 
+    EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
+    if (!sucess) {
+        return HWC_EGL_ERROR;
+    }
+
     if (!list) {
         /* turn off the all windows */
         for (int i = 0; i < NUM_OF_WIN; i++) {
@@ -304,13 +309,6 @@ static int hwc_set(hwc_composer_device_t *dev,
 
     if(ctx->num_of_hwc_layer > NUM_OF_WIN)
         ctx->num_of_hwc_layer = NUM_OF_WIN;
-
-    if (0 < ctx->num_of_fb_layer) {
-        EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
-        if (!sucess) {
-            return HWC_EGL_ERROR;
-        }
-    }
 
     /* compose hardware layers here */
     for (uint32_t i = 0; i < ctx->num_of_hwc_layer; i++) {
