@@ -16,6 +16,15 @@ on boot
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
 
+# Blinker configuration on
+    write /sys/devices/virtual/misc/backlightnotification/in_kernel_blink 1
+    write /sys/devices/virtual/misc/backlightdimmer/delay 5000
+
+# Dimmer, and others enabled permissions
+    chmod 700 /sys/class/misc/backlightdimmer/enabled
+    chmod 700 /sys/class/misc/screendimmer/enabled
+    chmod 700 /sys/class/misc/touchwake/enabled
+
 # phone
     setprop ro.telephony.call_ring.multiple 0
 
