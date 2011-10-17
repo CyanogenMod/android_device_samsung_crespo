@@ -908,6 +908,11 @@ status_t CameraHardwareSec::cancelAutoFocus()
 {
     LOGV("%s :", __func__);
 
+    // cancelAutoFocus should be allowed after preview is started. But if
+    // the preview is deferred, cancelAutoFocus will fail. Ignore it if that is
+    // the case.
+    if (mPreviewRunning && mPreviewStartDeferred) return NO_ERROR;
+
     if (mSecCamera->cancelAutofocus() < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->cancelAutofocus()", __func__);
         return UNKNOWN_ERROR;
