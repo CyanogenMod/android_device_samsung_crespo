@@ -91,7 +91,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId, camera_device_t *dev)
           mPostViewSize(0),
           mHalDevice(dev)
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
     int ret = 0;
 
     mPreviewWindow = NULL;
@@ -113,7 +113,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId, camera_device_t *dev)
     }
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    LOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
+    ALOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
             mPostViewWidth,mPostViewHeight,mPostViewSize);
 
     initDefaultParameters(cameraId);
@@ -146,7 +146,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     CameraParameters ip;
 
     mCameraSensorName = mSecCamera->getCameraSensorName();
-    LOGV("CameraSensorName: %s", mCameraSensorName);
+    ALOGV("CameraSensorName: %s", mCameraSensorName);
 
     int preview_max_width   = 0;
     int preview_max_height  = 0;
@@ -358,7 +358,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
 CameraHardwareSec::~CameraHardwareSec()
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     mSecCamera->DeinitCamera();
 }
 
@@ -367,7 +367,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     int min_bufs;
 
     mPreviewWindow = w;
-    LOGV("%s: mPreviewWindow %p", __func__, mPreviewWindow);
+    ALOGV("%s: mPreviewWindow %p", __func__, mPreviewWindow);
 
     if (!w) {
         LOGE("preview window is NULL!");
@@ -391,7 +391,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
              min_bufs, kBufferCount - 1);
     }
 
-    LOGV("%s: setting buffer count to %d", __func__, kBufferCount);
+    ALOGV("%s: setting buffer count to %d", __func__, kBufferCount);
     if (w->set_buffer_count(w, kBufferCount)) {
         LOGE("%s: could not set buffer count", __func__);
         return INVALID_OPERATION;
@@ -403,7 +403,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     int hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
 
     const char *str_preview_format = mParameters.getPreviewFormat();
-    LOGV("%s: preview format %s", __func__, str_preview_format);
+    ALOGV("%s: preview format %s", __func__, str_preview_format);
     mFrameSizeDelta = 16;
 
     if (w->set_usage(w, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
@@ -420,7 +420,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     }
 
     if (mPreviewRunning && mPreviewStartDeferred) {
-        LOGV("start/resume preview");
+        ALOGV("start/resume preview");
         status_t ret = startPreviewInternal();
         if (ret == OK) {
             mPreviewStartDeferred = false;
@@ -447,19 +447,19 @@ void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
 
 void CameraHardwareSec::enableMsgType(int32_t msgType)
 {
-    LOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
+    ALOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
          __func__, msgType, mMsgEnabled);
     mMsgEnabled |= msgType;
 
-    LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+    ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
 }
 
 void CameraHardwareSec::disableMsgType(int32_t msgType)
 {
-    LOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
+    ALOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
          __func__, msgType, mMsgEnabled);
     mMsgEnabled &= ~msgType;
-    LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+    ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
 }
 
 bool CameraHardwareSec::msgTypeEnabled(int32_t msgType)
@@ -515,13 +515,13 @@ int CameraHardwareSec::previewThread()
         return UNKNOWN_ERROR;
     }
 
-//  LOGV("%s: index %d", __func__, index);
+//  ALOGV("%s: index %d", __func__, index);
 
     mSkipFrameLock.lock();
     if (mSkipFrame > 0) {
         mSkipFrame--;
         mSkipFrameLock.unlock();
-        LOGV("%s: index %d skipping frame", __func__, index);
+        ALOGV("%s: index %d skipping frame", __func__, index);
         return NO_ERROR;
     }
     mSkipFrameLock.unlock();
@@ -672,7 +672,7 @@ status_t CameraHardwareSec::startPreview()
 {
     int ret = 0;        //s1 [Apply factory standard]
 
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     if (waitCaptureCompletion() != NO_ERROR) {
         return TIMED_OUT;
@@ -706,10 +706,10 @@ status_t CameraHardwareSec::startPreview()
 
 status_t CameraHardwareSec::startPreviewInternal()
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
 
     int ret  = mSecCamera->startPreview();
-    LOGV("%s : mSecCamera->startPreview() returned %d", __func__, ret);
+    ALOGV("%s : mSecCamera->startPreview() returned %d", __func__, ret);
 
     if (ret < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
@@ -735,7 +735,7 @@ status_t CameraHardwareSec::startPreviewInternal()
                                 0); // no cookie
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
+    ALOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
          mPostViewWidth,mPostViewHeight,mPostViewSize);
 
     return NO_ERROR;
@@ -743,7 +743,7 @@ status_t CameraHardwareSec::startPreviewInternal()
 
 void CameraHardwareSec::stopPreviewInternal()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     /* request that the preview thread stop. */
     if (mPreviewRunning) {
@@ -754,14 +754,14 @@ void CameraHardwareSec::stopPreviewInternal()
             mPreviewStoppedCondition.wait(mPreviewLock);
         }
         else
-            LOGV("%s : preview running but deferred, doing nothing", __func__);
+            ALOGV("%s : preview running but deferred, doing nothing", __func__);
     } else
         LOGI("%s : preview not running, doing nothing", __func__);
 }
 
 void CameraHardwareSec::stopPreview()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     /* request that the preview thread stop. */
     mPreviewLock.lock();
@@ -772,7 +772,7 @@ void CameraHardwareSec::stopPreview()
 bool CameraHardwareSec::previewEnabled()
 {
     Mutex::Autolock lock(mPreviewLock);
-    LOGV("%s : %d", __func__, mPreviewRunning);
+    ALOGV("%s : %d", __func__, mPreviewRunning);
     return mPreviewRunning;
 }
 
@@ -780,7 +780,7 @@ bool CameraHardwareSec::previewEnabled()
 
 status_t CameraHardwareSec::startRecording()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mRecordLock);
 
@@ -806,7 +806,7 @@ status_t CameraHardwareSec::startRecording()
 
 void CameraHardwareSec::stopRecording()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mRecordLock);
 
@@ -821,7 +821,7 @@ void CameraHardwareSec::stopRecording()
 
 bool CameraHardwareSec::recordingEnabled()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     return mRecordRunning;
 }
@@ -839,7 +839,7 @@ int CameraHardwareSec::autoFocusThread()
     int count =0;
     int af_status =0 ;
 
-    LOGV("%s : starting", __func__);
+    ALOGV("%s : starting", __func__);
 
     /* block until we're told to start.  we don't want to use
      * a restartable thread and requestExitAndWait() in cancelAutoFocus()
@@ -851,19 +851,19 @@ int CameraHardwareSec::autoFocusThread()
     /* check early exit request */
     if (mExitAutoFocusThread) {
         mFocusLock.unlock();
-        LOGV("%s : exiting on request0", __func__);
+        ALOGV("%s : exiting on request0", __func__);
         return NO_ERROR;
     }
     mFocusCondition.wait(mFocusLock);
     /* check early exit request */
     if (mExitAutoFocusThread) {
         mFocusLock.unlock();
-        LOGV("%s : exiting on request1", __func__);
+        ALOGV("%s : exiting on request1", __func__);
         return NO_ERROR;
     }
     mFocusLock.unlock();
 
-    LOGV("%s : calling setAutoFocus", __func__);
+    ALOGV("%s : calling setAutoFocus", __func__);
     if (mSecCamera->setAutofocus() < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->setAutofocus()", __func__);
         return UNKNOWN_ERROR;
@@ -872,11 +872,11 @@ int CameraHardwareSec::autoFocusThread()
     af_status = mSecCamera->getAutoFocusResult();
 
     if (af_status == 0x01) {
-        LOGV("%s : AF Success!!", __func__);
+        ALOGV("%s : AF Success!!", __func__);
         if (mMsgEnabled & CAMERA_MSG_FOCUS)
             mNotifyCb(CAMERA_MSG_FOCUS, true, 0, mCallbackCookie);
     } else if (af_status == 0x02) {
-        LOGV("%s : AF Cancelled !!", __func__);
+        ALOGV("%s : AF Cancelled !!", __func__);
         if (mMsgEnabled & CAMERA_MSG_FOCUS) {
             /* CAMERA_MSG_FOCUS only takes a bool.  true for
              * finished and false for failure.  cancel is still
@@ -885,19 +885,19 @@ int CameraHardwareSec::autoFocusThread()
             mNotifyCb(CAMERA_MSG_FOCUS, true, 0, mCallbackCookie);
         }
     } else {
-        LOGV("%s : AF Fail !!", __func__);
-        LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+        ALOGV("%s : AF Fail !!", __func__);
+        ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
         if (mMsgEnabled & CAMERA_MSG_FOCUS)
             mNotifyCb(CAMERA_MSG_FOCUS, false, 0, mCallbackCookie);
     }
 
-    LOGV("%s : exiting with no error", __func__);
+    ALOGV("%s : exiting with no error", __func__);
     return NO_ERROR;
 }
 
 status_t CameraHardwareSec::autoFocus()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
     /* signal autoFocusThread to run once */
     mFocusCondition.signal();
     return NO_ERROR;
@@ -906,7 +906,7 @@ status_t CameraHardwareSec::autoFocus()
 /* 2009.10.14 by icarus for added interface */
 status_t CameraHardwareSec::cancelAutoFocus()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     // cancelAutoFocus should be allowed after preview is started. But if
     // the preview is deferred, cancelAutoFocus will fail. Ignore it if that is
@@ -933,7 +933,7 @@ int CameraHardwareSec::save_jpeg( unsigned char *real_jpeg, int jpeg_size)
         return -1;
     }
 
-    LOGV("[BestIQ]  real_jpeg size ========>  %d\n", jpeg_size);
+    ALOGV("[BestIQ]  real_jpeg size ========>  %d\n", jpeg_size);
     buffer = (char *) malloc(jpeg_size);
     if (buffer == NULL) {
         LOGE("Save YUV] buffer alloc failed");
@@ -1051,7 +1051,7 @@ bool CameraHardwareSec::YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth
 
 int CameraHardwareSec::pictureThread()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     int jpeg_size = 0;
     int ret = NO_ERROR;
@@ -1086,7 +1086,7 @@ int CameraHardwareSec::pictureThread()
 
     addrs[0].width = mPostViewWidth;
     addrs[0].height = mPostViewHeight;
-    LOGV("[5B] mPostViewWidth = %d mPostViewHeight = %d\n",mPostViewWidth,mPostViewHeight);
+    ALOGV("[5B] mPostViewWidth = %d mPostViewHeight = %d\n",mPostViewWidth,mPostViewHeight);
 
     camera_memory_t *JpegHeap = mGetMemoryCb(-1, mJpegHeapSize, 1, 0);
     sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
@@ -1167,7 +1167,7 @@ int CameraHardwareSec::pictureThread()
         JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->data,
                                            (unsigned char *)ThumbnailHeap->base());
 
-        LOGV("JpegExifSize=%d", JpegExifSize);
+        ALOGV("JpegExifSize=%d", JpegExifSize);
 
         if (JpegExifSize < 0) {
             ret = UNKNOWN_ERROR;
@@ -1188,7 +1188,7 @@ int CameraHardwareSec::pictureThread()
     LOG_TIME_END(0)
     LOG_CAMERA("pictureThread interval: %lu us", LOG_TIME(0));
 
-    LOGV("%s : pictureThread end", __func__);
+    ALOGV("%s : pictureThread end", __func__);
 
 out:
     JpegHeap->release(JpegHeap);
@@ -1219,13 +1219,13 @@ status_t CameraHardwareSec::waitCaptureCompletion() {
 
 status_t CameraHardwareSec::takePicture()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     stopPreview();
 
     if (!mRawHeap) {
         int rawHeapSize = mPostViewSize;
-        LOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
+        ALOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
         mRawHeap = mGetMemoryCb(-1, rawHeapSize, 1, 0);
         if (!mRawHeap) {
             LOGE("ERR(%s): Raw heap creation fail", __func__);
@@ -1249,12 +1249,12 @@ status_t CameraHardwareSec::takePicture()
 
 status_t CameraHardwareSec::cancelPicture()
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
 
     if (mPictureThread.get()) {
-        LOGV("%s: waiting for picture thread to exit", __func__);
+        ALOGV("%s: waiting for picture thread to exit", __func__);
         mPictureThread->requestExitAndWait();
-        LOGV("%s: picture thread has exited", __func__);
+        ALOGV("%s: picture thread has exited", __func__);
     }
 
     return NO_ERROR;
@@ -1312,7 +1312,7 @@ bool CameraHardwareSec::SplitFrame(unsigned char *pFrame, int dwSize,
                     void *pJPEG, int *pdwJPEGSize,
                     void *pVideo, int *pdwVideoSize)
 {
-    LOGV("===========SplitFrame Start==============");
+    ALOGV("===========SplitFrame Start==============");
 
     if (NULL == pFrame || 0 >= dwSize) {
         LOGE("There is no contents (pFrame=%p, dwSize=%d", pFrame, dwSize);
@@ -1396,7 +1396,7 @@ bool CameraHardwareSec::SplitFrame(unsigned char *pFrame, int dwSize,
         if(pdwVideoSize)
             *pdwVideoSize = 0;
     }
-    LOGV("===========SplitFrame end==============");
+    ALOGV("===========SplitFrame end==============");
 
     return bRet;
 }
@@ -1422,7 +1422,7 @@ int CameraHardwareSec::decodeInterleaveData(unsigned char *pInterleaveData,
 
     int i = 0;
 
-    LOGV("decodeInterleaveData Start~~~");
+    ALOGV("decodeInterleaveData Start~~~");
     while (i < interleaveDataSize) {
         if ((*interleave_ptr == 0xFFFFFFFF) || (*interleave_ptr == 0x02FFFFFF) ||
                 (*interleave_ptr == 0xFF02FFFF)) {
@@ -1486,7 +1486,7 @@ int CameraHardwareSec::decodeInterleaveData(unsigned char *pInterleaveData,
             }
         }
     }
-    LOGV("decodeInterleaveData End~~~");
+    ALOGV("decodeInterleaveData End~~~");
     return ret;
 }
 
@@ -1553,7 +1553,7 @@ bool CameraHardwareSec::isSupportedParameter(const char * const parm,
 
 status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     status_t ret = NO_ERROR;
 
@@ -1569,7 +1569,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_preview_height = 0;
     params.getPreviewSize(&new_preview_width, &new_preview_height);
     const char *new_str_preview_format = params.getPreviewFormat();
-    LOGV("%s : new_preview_width x new_preview_height = %dx%d, format = %s",
+    ALOGV("%s : new_preview_width x new_preview_height = %dx%d, format = %s",
          __func__, new_preview_width, new_preview_height, new_str_preview_format);
 
     if (strcmp(new_str_preview_format, CameraParameters::PIXEL_FORMAT_YUV420SP) &&
@@ -1606,20 +1606,20 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                         ret = INVALID_OPERATION;
                     }
 
-                    LOGV("%s: mPreviewWindow (%p) set_buffers_geometry", __func__, mPreviewWindow);
-                    LOGV("%s: mPreviewWindow->set_buffers_geometry (%p)", __func__,
+                    ALOGV("%s: mPreviewWindow (%p) set_buffers_geometry", __func__, mPreviewWindow);
+                    ALOGV("%s: mPreviewWindow->set_buffers_geometry (%p)", __func__,
                          mPreviewWindow->set_buffers_geometry);
                     mPreviewWindow->set_buffers_geometry(mPreviewWindow,
                                                          new_preview_width, new_preview_height,
                                                          new_preview_format);
-                    LOGV("%s: DONE mPreviewWindow (%p) set_buffers_geometry", __func__, mPreviewWindow);
+                    ALOGV("%s: DONE mPreviewWindow (%p) set_buffers_geometry", __func__, mPreviewWindow);
                 }
 
                 mParameters.setPreviewSize(new_preview_width, new_preview_height);
                 mParameters.setPreviewFormat(new_str_preview_format);
             }
         }
-        else LOGV("%s: preview size and format has not changed", __func__);
+        else ALOGV("%s: preview size and format has not changed", __func__);
     } else {
         LOGE("%s: Invalid preview size(%dx%d)",
                 __func__, new_preview_width, new_preview_height);
@@ -1631,9 +1631,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_picture_height = 0;
 
     params.getPictureSize(&new_picture_width, &new_picture_height);
-    LOGV("%s : new_picture_width x new_picture_height = %dx%d", __func__, new_picture_width, new_picture_height);
+    ALOGV("%s : new_picture_width x new_picture_height = %dx%d", __func__, new_picture_width, new_picture_height);
     if (0 < new_picture_width && 0 < new_picture_height) {
-        LOGV("%s: setSnapshotSize", __func__);
+        ALOGV("%s: setSnapshotSize", __func__);
         if (mSecCamera->setSnapshotSize(new_picture_width, new_picture_height) < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->setSnapshotSize(width(%d), height(%d))",
                     __func__, new_picture_width, new_picture_height);
@@ -1645,7 +1645,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     // picture format
     const char *new_str_picture_format = params.getPictureFormat();
-    LOGV("%s : new_str_picture_format %s", __func__, new_str_picture_format);
+    ALOGV("%s : new_str_picture_format %s", __func__, new_str_picture_format);
     if (new_str_picture_format != NULL) {
         int new_picture_format = 0;
 
@@ -1682,7 +1682,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     //JPEG image quality
     int new_jpeg_quality = params.getInt(CameraParameters::KEY_JPEG_QUALITY);
-    LOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
+    ALOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
     /* we ignore bad values */
     if (new_jpeg_quality >=1 && new_jpeg_quality <= 100) {
         if (mSecCamera->setJpegQuality(new_jpeg_quality) < 0) {
@@ -1718,9 +1718,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     // rotation
     int new_rotation = params.getInt(CameraParameters::KEY_ROTATION);
-    LOGV("%s : new_rotation %d", __func__, new_rotation);
+    ALOGV("%s : new_rotation %d", __func__, new_rotation);
     if (0 <= new_rotation) {
-        LOGV("%s : set orientation:%d\n", __func__, new_rotation);
+        ALOGV("%s : set orientation:%d\n", __func__, new_rotation);
         if (mSecCamera->setExifOrientationInfo(new_rotation) < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
             ret = UNKNOWN_ERROR;
@@ -1733,7 +1733,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_exposure_compensation = params.getInt(CameraParameters::KEY_EXPOSURE_COMPENSATION);
     int max_exposure_compensation = params.getInt(CameraParameters::KEY_MAX_EXPOSURE_COMPENSATION);
     int min_exposure_compensation = params.getInt(CameraParameters::KEY_MIN_EXPOSURE_COMPENSATION);
-    LOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
+    ALOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
     if ((min_exposure_compensation <= new_exposure_compensation) &&
         (max_exposure_compensation >= new_exposure_compensation)) {
         if (mSecCamera->setBrightness(new_exposure_compensation) < 0) {
@@ -1746,7 +1746,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     // whitebalance
     const char *new_white_str = params.get(CameraParameters::KEY_WHITE_BALANCE);
-    LOGV("%s : new_white_str %s", __func__, new_white_str);
+    ALOGV("%s : new_white_str %s", __func__, new_white_str);
     if (new_white_str != NULL) {
         int new_white = -1;
 
@@ -2224,14 +2224,14 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             ret = UNKNOWN_ERROR;
         }
     }
-    LOGV("%s return ret = %d", __func__, ret);
+    ALOGV("%s return ret = %d", __func__, ret);
 
     return ret;
 }
 
 CameraParameters CameraHardwareSec::getParameters() const
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
     return mParameters;
 }
 
@@ -2242,7 +2242,7 @@ status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t a
 
 void CameraHardwareSec::release()
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
 
     /* shut down any threads we have that might be running.  do it here
      * instead of the destructor.  we're guaranteed to be on another thread
@@ -2346,7 +2346,7 @@ static inline CameraHardwareSec *obj(struct camera_device *dev)
 static int HAL_camera_device_set_preview_window(struct camera_device *dev,
                                                 struct preview_stream_ops *buf)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->setPreviewWindow(buf);
 }
 
@@ -2358,7 +2358,7 @@ static void HAL_camera_device_set_callbacks(struct camera_device *dev,
         camera_request_memory get_memory,
         void* user)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->setCallbacks(notify_cb, data_cb, data_cb_timestamp,
                            get_memory,
                            user);
@@ -2374,7 +2374,7 @@ static void HAL_camera_device_set_callbacks(struct camera_device *dev,
  */
 static void HAL_camera_device_enable_msg_type(struct camera_device *dev, int32_t msg_type)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->enableMsgType(msg_type);
 }
 
@@ -2390,7 +2390,7 @@ static void HAL_camera_device_enable_msg_type(struct camera_device *dev, int32_t
  */
 static void HAL_camera_device_disable_msg_type(struct camera_device *dev, int32_t msg_type)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->disableMsgType(msg_type);
 }
 
@@ -2401,7 +2401,7 @@ static void HAL_camera_device_disable_msg_type(struct camera_device *dev, int32_
  */
 static int HAL_camera_device_msg_type_enabled(struct camera_device *dev, int32_t msg_type)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->msgTypeEnabled(msg_type);
 }
 
@@ -2410,7 +2410,7 @@ static int HAL_camera_device_msg_type_enabled(struct camera_device *dev, int32_t
  */
 static int HAL_camera_device_start_preview(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->startPreview();
 }
 
@@ -2419,7 +2419,7 @@ static int HAL_camera_device_start_preview(struct camera_device *dev)
  */
 static void HAL_camera_device_stop_preview(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->stopPreview();
 }
 
@@ -2428,7 +2428,7 @@ static void HAL_camera_device_stop_preview(struct camera_device *dev)
  */
 static int HAL_camera_device_preview_enabled(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->previewEnabled();
 }
 
@@ -2464,7 +2464,7 @@ static int HAL_camera_device_preview_enabled(struct camera_device *dev)
  */
 static int HAL_camera_device_store_meta_data_in_buffers(struct camera_device *dev, int enable)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->storeMetaDataInBuffers(enable);
 }
 
@@ -2480,7 +2480,7 @@ static int HAL_camera_device_store_meta_data_in_buffers(struct camera_device *de
  */
 static int HAL_camera_device_start_recording(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->startRecording();
 }
 
@@ -2489,7 +2489,7 @@ static int HAL_camera_device_start_recording(struct camera_device *dev)
  */
 static void HAL_camera_device_stop_recording(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->stopRecording();
 }
 
@@ -2498,7 +2498,7 @@ static void HAL_camera_device_stop_recording(struct camera_device *dev)
  */
 static int HAL_camera_device_recording_enabled(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->recordingEnabled();
 }
 
@@ -2514,7 +2514,7 @@ static int HAL_camera_device_recording_enabled(struct camera_device *dev)
 static void HAL_camera_device_release_recording_frame(struct camera_device *dev,
                                 const void *opaque)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->releaseRecordingFrame(opaque);
 }
 
@@ -2525,7 +2525,7 @@ static void HAL_camera_device_release_recording_frame(struct camera_device *dev,
  */
 static int HAL_camera_device_auto_focus(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->autoFocus();
 }
 
@@ -2537,7 +2537,7 @@ static int HAL_camera_device_auto_focus(struct camera_device *dev)
  */
 static int HAL_camera_device_cancel_auto_focus(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->cancelAutoFocus();
 }
 
@@ -2546,7 +2546,7 @@ static int HAL_camera_device_cancel_auto_focus(struct camera_device *dev)
  */
 static int HAL_camera_device_take_picture(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->takePicture();
 }
 
@@ -2556,7 +2556,7 @@ static int HAL_camera_device_take_picture(struct camera_device *dev)
  */
 static int HAL_camera_device_cancel_picture(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->cancelPicture();
 }
 
@@ -2567,7 +2567,7 @@ static int HAL_camera_device_cancel_picture(struct camera_device *dev)
 static int HAL_camera_device_set_parameters(struct camera_device *dev,
                                             const char *parms)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     String8 str(parms);
     CameraParameters p(str);
     return obj(dev)->setParameters(p);
@@ -2576,7 +2576,7 @@ static int HAL_camera_device_set_parameters(struct camera_device *dev,
 /** Return the camera parameters. */
 char *HAL_camera_device_get_parameters(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     String8 str;
     CameraParameters parms = obj(dev)->getParameters();
     str = parms.flatten();
@@ -2585,7 +2585,7 @@ char *HAL_camera_device_get_parameters(struct camera_device *dev)
 
 void HAL_camera_device_put_parameters(struct camera_device *dev, char *parms)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     free(parms);
 }
 
@@ -2595,7 +2595,7 @@ void HAL_camera_device_put_parameters(struct camera_device *dev, char *parms)
 static int HAL_camera_device_send_command(struct camera_device *dev,
                     int32_t cmd, int32_t arg1, int32_t arg2)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->sendCommand(cmd, arg1, arg2);
 }
 
@@ -2605,7 +2605,7 @@ static int HAL_camera_device_send_command(struct camera_device *dev,
  */
 static void HAL_camera_device_release(struct camera_device *dev)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     obj(dev)->release();
 }
 
@@ -2614,19 +2614,19 @@ static void HAL_camera_device_release(struct camera_device *dev)
  */
 static int HAL_camera_device_dump(struct camera_device *dev, int fd)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return obj(dev)->dump(fd);
 }
 
 static int HAL_getNumberOfCameras()
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     return sizeof(sCameraInfo) / sizeof(sCameraInfo[0]);
 }
 
 static int HAL_getCameraInfo(int cameraId, struct camera_info *cameraInfo)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
     memcpy(cameraInfo, &sCameraInfo[cameraId], sizeof(CameraInfo));
     return 0;
 }
@@ -2665,7 +2665,7 @@ static int HAL_camera_device_open(const struct hw_module_t* module,
                                   const char *id,
                                   struct hw_device_t** device)
 {
-    LOGV("%s", __func__);
+    ALOGV("%s", __func__);
 
     int cameraId = atoi(id);
     if (cameraId < 0 || cameraId >= HAL_getNumberOfCameras()) {
@@ -2675,7 +2675,7 @@ static int HAL_camera_device_open(const struct hw_module_t* module,
 
     if (g_cam_device) {
         if (obj(g_cam_device)->getCameraId() == cameraId) {
-            LOGV("returning existing camera ID %s", id);
+            ALOGV("returning existing camera ID %s", id);
             goto done;
         } else {
             LOGE("Cannot open camera %d. camera %d is already running!",

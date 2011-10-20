@@ -117,7 +117,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
     dst_rect->w = win->rect_info.w;
     dst_rect->h = win->rect_info.h;
 
-    LOGV("%s::sr_x %d sr_y %d sr_w %d sr_h %d dr_x %d dr_y %d dr_w %d dr_h %d ",
+    ALOGV("%s::sr_x %d sr_y %d sr_w %d sr_h %d dr_x %d dr_y %d dr_w %d dr_h %d ",
             __func__, src_rect->x, src_rect->y, src_rect->w, src_rect->h,
             dst_rect->x, dst_rect->y, dst_rect->w, dst_rect->h);
 
@@ -127,7 +127,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
 static int get_hwc_compos_decision(hwc_layer_t* cur)
 {
     if(cur->flags & HWC_SKIP_LAYER || !cur->handle) {
-        LOGV("%s::is_skip_layer %d cur->handle %x",
+        ALOGV("%s::is_skip_layer %d cur->handle %x",
                 __func__, cur->flags & HWC_SKIP_LAYER, (uint32_t)cur->handle);
         return HWC_FRAMEBUFFER;
     }
@@ -155,7 +155,7 @@ static int get_hwc_compos_decision(hwc_layer_t* cur)
     else
         compositionType = HWC_FRAMEBUFFER;
 
-    LOGV("%s::compositionType %d bpp %d format %x usage %x",
+    ALOGV("%s::compositionType %d bpp %d format %x usage %x",
             __func__,compositionType, prev_handle->uiBpp, prev_handle->iFormat,
             prev_handle->usage & GRALLOC_USAGE_PHYS_CONTIG);
 
@@ -195,7 +195,7 @@ static int assign_overlay_window(struct hwc_context_t *ctx,
     win->layer_index = layer_idx;
     win->status = HWC_WIN_RESERVED;
 
-    LOGV("%s:: win_x %d win_y %d win_w %d win_h %d lay_idx %d win_idx %d",
+    ALOGV("%s:: win_x %d win_y %d win_w %d win_h %d lay_idx %d win_idx %d",
             __func__, win->rect_info.x, win->rect_info.y, win->rect_info.w,
             win->rect_info.h, win->layer_index, win_idx );
 
@@ -230,7 +230,7 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     }
     ctx->num_of_hwc_layer = 0;
     ctx->num_of_fb_layer = 0;
-    LOGV("%s:: hwc_prepare list->numHwLayers %d", __func__, list->numHwLayers);
+    ALOGV("%s:: hwc_prepare list->numHwLayers %d", __func__, list->numHwLayers);
 
     for (int i = 0; i < list->numHwLayers ; i++) {
         hwc_layer_t* cur = &list->hwLayers[i];
@@ -261,7 +261,7 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     }
 
     if(list->numHwLayers != (ctx->num_of_fb_layer + ctx->num_of_hwc_layer))
-        LOGV("%s:: numHwLayers %d num_of_fb_layer %d num_of_hwc_layer %d ",
+        ALOGV("%s:: numHwLayers %d num_of_fb_layer %d num_of_hwc_layer %d ",
                 __func__, list->numHwLayers, ctx->num_of_fb_layer,
                 ctx->num_of_hwc_layer);
 

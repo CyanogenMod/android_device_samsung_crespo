@@ -94,7 +94,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
     pCTX = (_MFCLIB *)openHandle;
     memset(&EncArg, 0, sizeof(mfc_common_args));
 
-    LOGV("SsbSipMfcEncInit: Encode Init start\n");
+    ALOGV("SsbSipMfcEncInit: Encode Init start\n");
 
     mpeg4_arg = (SSBSIP_MFC_ENC_MPEG4_PARAM *)param;
     codec_type = mpeg4_arg->codecType;
@@ -110,7 +110,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
 
     switch (pCTX->codec_type) {
     case MPEG4_ENC:
-        LOGV("SsbSipMfcEncInit: MPEG4 Encode\n");
+        ALOGV("SsbSipMfcEncInit: MPEG4 Encode\n");
         mpeg4_arg = (SSBSIP_MFC_ENC_MPEG4_PARAM *)param;
 
         pCTX->width = mpeg4_arg->SourceWidth;
@@ -118,7 +118,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         break;
 
     case H263_ENC:
-        LOGV("SsbSipMfcEncInit: H263 Encode\n");
+        ALOGV("SsbSipMfcEncInit: H263 Encode\n");
         h263_arg = (SSBSIP_MFC_ENC_H263_PARAM *)param;
 
         pCTX->width = h263_arg->SourceWidth;
@@ -126,7 +126,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         break;
 
     case H264_ENC:
-        LOGV("SsbSipMfcEncInit: H264 Encode\n");
+        ALOGV("SsbSipMfcEncInit: H264 Encode\n");
         h264_arg = (SSBSIP_MFC_ENC_H264_PARAM *)param;
 
         pCTX->width = h264_arg->SourceWidth;
@@ -526,7 +526,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncSetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPU
         return MFC_RET_INVALID_PARAM;
     }
 
-    LOGV("SsbSipMfcEncSetInBuf: input_info->YPhyAddr & input_info->CPhyAddr should be 64KB aligned\n");
+    ALOGV("SsbSipMfcEncSetInBuf: input_info->YPhyAddr & input_info->CPhyAddr should be 64KB aligned\n");
 
     pCTX = (_MFCLIB *)openHandle;
 

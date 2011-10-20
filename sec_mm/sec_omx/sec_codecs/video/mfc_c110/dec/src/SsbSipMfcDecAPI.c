@@ -56,8 +56,8 @@ static mfc_packed_mode isPBPacked(_MFCLIB *pCtx, int length)
     while (1) {
         while (startCode != USR_DATA_START_CODE) {
             if (startCode == VOP_START_CODE) {
-                LOGV("isPBPacked: VOP START Found !!.....return\n");
-                LOGV("isPBPacked: Non Packed PB\n");
+                ALOGV("isPBPacked: VOP START Found !!.....return\n");
+                ALOGV("isPBPacked: Non Packed PB\n");
                 return MFC_UNPACKED_PB;
             }
             getAByte(strmBuffer, &startCode);
@@ -65,7 +65,7 @@ static mfc_packed_mode isPBPacked(_MFCLIB *pCtx, int length)
             if (strmBuffer >= strmBufferEnd)
                 goto out;
         }
-        LOGV("isPBPacked: User Data Found !!\n");
+        ALOGV("isPBPacked: User Data Found !!\n");
 
         do {
             if (*strmBuffer == 'p') {
@@ -80,7 +80,7 @@ static mfc_packed_mode isPBPacked(_MFCLIB *pCtx, int length)
     }
 
 out:
-    LOGV("isPBPacked: Non Packed PB\n");
+    ALOGV("isPBPacked: Non Packed PB\n");
     return MFC_UNPACKED_PB;
 }
 
