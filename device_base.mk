@@ -90,6 +90,10 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.herring
 
+# RIL Management tool
+PRODUCT_PACKAGES += \
+	SamsungServiceMode
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
