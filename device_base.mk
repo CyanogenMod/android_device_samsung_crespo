@@ -61,6 +61,7 @@ PRODUCT_COPY_FILES += \
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
+	SamsungServiceMode \
 	cypress-touchkey.kcm
 
 # Filesystem management tools
