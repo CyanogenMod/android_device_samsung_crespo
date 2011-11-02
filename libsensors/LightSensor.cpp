@@ -80,7 +80,6 @@ int LightSensor::enable(int32_t handle, int en)
 {
     int flags = en ? 1 : 0;
     mEventsSinceEnable = 0;
-    mPreviousLight = -1;
     if (flags != mEnabled) {
         int fd;
         strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
@@ -131,18 +130,21 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
         int type = event->type;
         if (type == EV_ABS) {
             if (event->code == EVENT_TYPE_LIGHT) {
-                mPendingEvent.light = indexToValue(event->value);
+                // Convert adc value to lux assuming:
+                // I = 10 * log(Ev) uA
+                // R = 47kOhm
+                // Max adc value 4095 = 3.3V
+                // 1/4 of light reaches sensor
+                mPendingEvent.light = powf(10, event->value * (330.0f / 4095.0f / 47.0f)) * 4;
                 if (mEventsSinceEnable < FIRST_GOOD_EVENT)
                     mEventsSinceEnable++;
             }
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
-            if (mEnabled && (mPendingEvent.light != mPreviousLight) &&
-                    mEventsSinceEnable >= FIRST_GOOD_EVENT) {
+            if (mEnabled && mEventsSinceEnable >= FIRST_GOOD_EVENT) {
                 *data++ = mPendingEvent;
                 count--;
                 numEventReceived++;
-                mPreviousLight = mPendingEvent.light;
             }
         } else {
             LOGE("LightSensor: unknown event (type=%d, code=%d)",
@@ -152,29 +154,4 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
     }
 
     return numEventReceived;
-}
-
-float LightSensor::indexToValue(size_t index) const
-{
-    /* Driver gives a rolling average adc value.  We convert it lux levels. */
-    static const struct adcToLux {
-        size_t adc_value;
-        float  lux_value;
-    } adcToLux[] = {
-        {  150,   10.0 },  /* from    0 -  150 adc, we map to    10.0 lux */
-        {  800,  160.0 },  /* from  151 -  800 adc, we map to   160.0 lux */
-        {  900,  225.0 },  /* from  801 -  900 adc, we map to   225.0 lux */
-        { 1000,  320.0 },  /* from  901 - 1000 adc, we map to   320.0 lux */
-        { 1200,  640.0 },  /* from 1001 - 1200 adc, we map to   640.0 lux */
-        { 1400, 1280.0 },  /* from 1201 - 1400 adc, we map to  1280.0 lux */
-        { 1600, 2600.0 },  /* from 1401 - 1600 adc, we map to  2600.0 lux */
-        { 4095, 10240.0 }, /* from 1601 - 4095 adc, we map to 10240.0 lux */
-    };
-    size_t i;
-    for (i = 0; i < ARRAY_SIZE(adcToLux); i++) {
-        if (index < adcToLux[i].adc_value) {
-            return adcToLux[i].lux_value;
-        }
-    }
-    return adcToLux[ARRAY_SIZE(adcToLux)-1].lux_value;
 }

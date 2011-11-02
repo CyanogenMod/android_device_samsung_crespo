@@ -40,8 +40,6 @@ class LightSensor : public SensorBase {
     int input_sysfs_path_len;
 
     int setInitialState();
-    float mPreviousLight;
-    float indexToValue(size_t index) const;
 
 public:
             LightSensor();
