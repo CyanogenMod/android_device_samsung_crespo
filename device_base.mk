@@ -90,9 +90,10 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.herring
 
-# RIL Management tool
+# Samsung Specific tools
 PRODUCT_PACKAGES += \
-	SamsungServiceMode
+	SamsungServiceMode \
+	CrespoParts
 
 # Libs
 PRODUCT_PACKAGES += \
