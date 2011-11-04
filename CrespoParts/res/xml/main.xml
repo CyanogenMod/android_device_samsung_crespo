@@ -38,4 +38,16 @@
                         android:defaultValue="5" />
         </PreferenceCategory>
 
+      <PreferenceCategory
+        android:title="@string/category_radio_title">
+        <!-- UMTS/HSDPA/HSUPA settings -->
+        <ListPreference
+            android:key="hspa"
+            android:title="@string/hspa_title_head"
+            android:summary="@string/hspa_summary_head"
+            android:entries="@array/hspa_entries"
+            android:entryValues="@array/hspa_entries_values"
+            android:defaultValue="23" />
+       </PreferenceCategory>
+
 </PreferenceScreen>

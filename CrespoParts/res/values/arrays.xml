@@ -39,4 +39,16 @@
         <item>0</item>
     </string-array>
 
+    <string-array name="hspa_entries">
+        <item>UMTS Only</item>
+        <item>HSDPA Only</item>
+        <item>HSDPA + HSUPA</item>
+    </string-array>
+
+    <string-array name="hspa_entries_values" translatable="false">
+        <item>21</item>
+        <item>22</item>
+        <item>23</item>
+    </string-array>
+
 </resources>
