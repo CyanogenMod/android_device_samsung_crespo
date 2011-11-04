@@ -730,7 +730,7 @@ status_t CameraHardwareSec::startPreviewInternal()
     }
 
     mPreviewHeap = mGetMemoryCb((int)mSecCamera->getCameraFd(),
-                                frame_size + mFrameSizeDelta,
+                                frame_size,
                                 kBufferCount,
                                 0); // no cookie
 
