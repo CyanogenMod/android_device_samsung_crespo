@@ -14,7 +14,7 @@ import android.widget.TextView;
  * Special preference type that allows configuration of both the ring volume and
  * notification volume.
  */
-public class ColorTuningPreference extends DialogPreference {
+public class GammaTuningPreference extends DialogPreference {
 
     enum Colors {
         RED,
@@ -23,35 +23,35 @@ public class ColorTuningPreference extends DialogPreference {
     };
 
     private static final int[] SEEKBAR_ID = new int[] {
-        R.id.color_red_seekbar,
-        R.id.color_green_seekbar,
-        R.id.color_blue_seekbar
+        R.id.gamma_red_seekbar,
+        R.id.gamma_green_seekbar,
+        R.id.gamma_blue_seekbar
     };
 
     private static final int[] VALUE_DISPLAY_ID = new int[] {
-        R.id.color_red_value,
-        R.id.color_green_value,
-        R.id.color_blue_value
+        R.id.gamma_red_value,
+        R.id.gamma_green_value,
+        R.id.gamma_blue_value
     };
 
     private static final String[] FILE_PATH = new String[] {
-        "/sys/class/misc/voodoo_color/red_multiplier",
-        "/sys/class/misc/voodoo_color/green_multiplier",
-        "/sys/class/misc/voodoo_color/blue_multiplier"
+        "/sys/class/misc/voodoo_color/red_v1_offset",
+        "/sys/class/misc/voodoo_color/green_v1_offset",
+        "/sys/class/misc/voodoo_color/blue_v1_offset"
     };
 
-    private ColorSeekBar mSeekBars[] = new ColorSeekBar[3];
+    private GammaSeekBar mSeekBars[] = new GammaSeekBar[3];
 
-    private static final int MAX_VALUE = Integer.MAX_VALUE;
+    private static final int MAX_VALUE = 80;
 
     // Track instances to know when to restore original color
     // (when the orientation changes, a new dialog is created before the old one is destroyed)
     private static int sInstances = 0;
 
-    public ColorTuningPreference(Context context, AttributeSet attrs) {
+    public GammaTuningPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        setDialogLayoutResource(R.layout.preference_dialog_color_tuning);
+        setDialogLayoutResource(R.layout.preference_dialog_gamma_tuning);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class ColorTuningPreference extends DialogPreference {
         for (int i = 0; i < SEEKBAR_ID.length; i++) {
             SeekBar seekBar = (SeekBar) view.findViewById(SEEKBAR_ID[i]);
             TextView valueDisplay = (TextView) view.findViewById(VALUE_DISPLAY_ID[i]);
-            mSeekBars[i] = new ColorSeekBar(seekBar, valueDisplay, FILE_PATH[i]);
+            mSeekBars[i] = new GammaSeekBar(seekBar, valueDisplay, FILE_PATH[i]);
         }
     }
 
@@ -74,11 +74,11 @@ public class ColorTuningPreference extends DialogPreference {
         sInstances--;
 
         if (positiveResult) {
-            for (ColorSeekBar csb : mSeekBars) {
+            for (GammaSeekBar csb : mSeekBars) {
                 csb.save();
             }
         } else if (sInstances == 0) {
-            for (ColorSeekBar csb : mSeekBars) {
+            for (GammaSeekBar csb : mSeekBars) {
                 csb.reset();
             }
         }
@@ -115,14 +115,14 @@ public class ColorTuningPreference extends DialogPreference {
         return supported;
     }
 
-    class ColorSeekBar implements SeekBar.OnSeekBarChangeListener {
+    class GammaSeekBar implements SeekBar.OnSeekBarChangeListener {
 
         private String mFilePath;
         private int mOriginal;
         private SeekBar mSeekBar;
         private TextView mValueDisplay;
 
-        public ColorSeekBar(SeekBar seekBar, TextView valueDisplay, String filePath) {
+        public GammaSeekBar(SeekBar seekBar, TextView valueDisplay, String filePath) {
             mSeekBar = seekBar;
             mValueDisplay = valueDisplay;
             mFilePath = filePath;
@@ -132,6 +132,7 @@ public class ColorTuningPreference extends DialogPreference {
             mOriginal = sharedPreferences.getInt(mFilePath, MAX_VALUE);
 
             seekBar.setMax(MAX_VALUE);
+
             reset();
             seekBar.setOnSeekBarChangeListener(this);
         }
@@ -143,14 +144,14 @@ public class ColorTuningPreference extends DialogPreference {
 
         public void save() {
             Editor editor = getEditor();
-            editor.putInt(mFilePath, mSeekBar.getProgress());
+            editor.putInt(mFilePath, mSeekBar.getProgress() - 60);
             editor.commit();
         }
 
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress,
                 boolean fromUser) {
-            Utils.writeColor(mFilePath, progress);
+            Utils.writeColor(mFilePath, progress - 60);
             updateValue(progress);
         }
 
@@ -165,7 +166,7 @@ public class ColorTuningPreference extends DialogPreference {
         }
 
         private void updateValue(int progress) {
-            mValueDisplay.setText(String.format("%.10f", (double) progress / MAX_VALUE));
+            mValueDisplay.setText(String.format("%d",(int) progress-60 ));
         }
 
     }

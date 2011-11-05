@@ -8,10 +8,14 @@
                 android:key="color_tuning"
                 android:title="@string/color_tuning_title_head"
                 android:summary="@string/color_tuning_summary_head" />
+            <com.cyanogenmod.CrespoParts.GammaTuningPreference
+                android:key="gamma_tuning"
+                android:title="@string/gamma_tuning_title_head"
+                android:summary="@string/gamma_tuning_summary_head" />
         </PreferenceCategory>
 
-    <!--  WM8994 Control [TESTING] -->
-    <PreferenceScreen android:key="wm8994_settings"
+        <!--  WM8994 Control [TESTING] -->
+        <PreferenceScreen android:key="wm8994_settings"
         android:title="@string/wm8994_settings_title_head"
         android:summary="@string/wm8994_settings_summary_head">
                 <intent android:action="android.intent.action.MAIN"
@@ -38,7 +42,7 @@
                         android:defaultValue="5" />
         </PreferenceCategory>
 
-      <PreferenceCategory
+        <PreferenceCategory
         android:key="category_radio"
         android:title="@string/category_radio_title">
         <!-- UMTS/HSDPA/HSUPA settings -->
