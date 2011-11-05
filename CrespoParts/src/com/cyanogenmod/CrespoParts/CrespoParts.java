@@ -3,18 +3,23 @@ package com.cyanogenmod.CrespoParts;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceCategory;
+import android.preference.PreferenceScreen;
 
 public class CrespoParts extends PreferenceActivity  {
 
     public static final String KEY_COLOR_TUNING = "color_tuning";
     public static final String KEY_BACKLIGHT_TIMEOUT = "backlight_timeout";
     public static final String KEY_BLINK_TIMEOUT = "blink_timeout";
+    public static final String KEY_CATEGORY_RADIO = "category_radio";
     public static final String KEY_HSPA = "hspa";
 
     private ColorTuningPreference mColorTuning;
     private ListPreference mBacklightTimeout;
     private ListPreference mBlinkTimeout;
     private ListPreference mHspa;
+    private PreferenceCategory mHsapCategory;
+    private PreferenceScreen mPreferenceScreen;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,8 +38,19 @@ public class CrespoParts extends PreferenceActivity  {
         mBlinkTimeout.setOnPreferenceChangeListener(new TouchKeyBlinkTimeout());
 
         mHspa = (ListPreference) findPreference(KEY_HSPA);
-        mHspa.setEnabled(Hspa.isSupported());
-        mHspa.setOnPreferenceChangeListener(new Hspa(this));
+
+        if (Hspa.isSupported()) {
+            mHspa.setEnabled(true);
+            mHspa.setOnPreferenceChangeListener(new Hspa(this));
+        } else {
+            mHsapCategory = (PreferenceCategory) findPreference(KEY_CATEGORY_RADIO);
+            mPreferenceScreen = getPreferenceScreen();
+
+            mHspa.setEnabled(false);
+            mHsapCategory.removePreference(mHspa);
+            mPreferenceScreen.removePreference(mHsapCategory);
+        }
+
     }
 
 }

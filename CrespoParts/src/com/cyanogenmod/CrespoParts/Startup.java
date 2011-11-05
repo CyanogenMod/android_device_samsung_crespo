@@ -11,6 +11,8 @@ public class Startup extends BroadcastReceiver {
         ColorTuningPreference.restore(context);
         TouchKeyBacklightTimeout.restore(context);
         WM8994ControlActivity.restore(context);
-        Hspa.restore(context);
+        if (Hspa.isSupported()) {
+            Hspa.restore(context);
+        }
     }
 }

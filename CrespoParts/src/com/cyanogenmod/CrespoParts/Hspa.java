@@ -3,6 +3,7 @@ package com.cyanogenmod.CrespoParts;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.SystemProperties;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceManager;
@@ -10,6 +11,9 @@ import android.preference.PreferenceManager;
 public class Hspa implements OnPreferenceChangeListener {
 
     private static final String APK_FILE = "/system/app/SamsungServiceMode.apk";
+    private static final String HSPA_PROP = "ro.crespoparts.rild.hspa";
+    private static final String HSPA_PROP_ENABLED = "1";
+
     private Context mCtx;
 
     public Hspa(Context context) {
@@ -17,7 +21,12 @@ public class Hspa implements OnPreferenceChangeListener {
     }
 
     public static boolean isSupported() {
-        return Utils.fileExists(APK_FILE);
+        String mHspa = SystemProperties.get(HSPA_PROP,"0");
+        if (mHspa.equals(HSPA_PROP_ENABLED)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
