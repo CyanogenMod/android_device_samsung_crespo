@@ -16,6 +16,8 @@ import android.widget.TextView;
  */
 public class GammaTuningPreference extends DialogPreference {
 
+    private static final String TAG = "GAMMA...";
+
     enum Colors {
         RED,
         GREEN,
@@ -138,21 +140,30 @@ public class GammaTuningPreference extends DialogPreference {
         }
 
         public void reset() {
-            mSeekBar.setProgress(mOriginal);
+        int iValue;
+
+            iValue = mOriginal+60;
+            mSeekBar.setProgress(iValue);
             updateValue(mOriginal);
         }
 
         public void save() {
+        int iValue;
+
+            iValue = mSeekBar.getProgress()-60;
             Editor editor = getEditor();
-            editor.putInt(mFilePath, mSeekBar.getProgress() - 60);
+            editor.putInt(mFilePath, iValue);
             editor.commit();
         }
 
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress,
                 boolean fromUser) {
-            Utils.writeColor(mFilePath, progress - 60);
-            updateValue(progress);
+        int iValue;
+
+            iValue = progress-60;
+            Utils.writeValue(mFilePath, String.valueOf((long) iValue));
+            updateValue(iValue);
         }
 
         @Override
@@ -166,7 +177,7 @@ public class GammaTuningPreference extends DialogPreference {
         }
 
         private void updateValue(int progress) {
-            mValueDisplay.setText(String.format("%d",(int) progress-60 ));
+            mValueDisplay.setText(String.format("%d",(int) progress ));
         }
 
     }
