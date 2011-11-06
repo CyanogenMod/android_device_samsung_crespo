@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus S Indstillinger</string>
+
+    <string name="category_screen_title">WM8994 Indstillinger ( voodoo )</string>
+    <string name="color_tuning_title_head">Farve Justering</string>
+    <string name="color_tuning_summary_head">Juster skærm farve</string>
+    <string name="color_red_title">Rød</string>
+    <string name="color_green_title">Grøn</string>
+    <string name="color_blue_title">Blå</string>
+
+    <!-- WM8994 Control Settings -->
+    <string name="general_sound_title">Lyd</string>
+    <!--  Categories -->
+    <string name="category_wm8994_internal_speaker">Intern Højtaler Indstillinger</string>
+    <string name="category_wm8994_signal_processing">Signal Bearbejdning</string>
+    <string name="category_wm8994_headphone_amp">Høretelefons Forstærker</string>
+    <string name="category_wm8994_codec_optimization">Codec Optimering</string>
+    <string name="category_wm8994_dac_config">Digital/Analog Konverterings Indstillinger</string>
+    <string name="category_wm8994_analog_path">Analog Linie Konfiguration</string>
+    <string name="category_wm8994_mic_settings">Microfon Indstillinger</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">Lyd Instillinger</string>
+    <string name="wm8994_settings_title_subhead">Lyd Indstillinger</string>
+    <string name="wm8994_settings_summary_head">Avanceret kontrol af WM8994 lyd bearbejdnings hardware</string>
+    <string name="pref_wm8994_control_enable_title">Aktiver WM8994 Kontrol</string>
+    <string name="pref_wm8994_control_enable_summary">Aktiver avanceret kontrol af WM8994 bearbejdnings hardware</string>
+    <string name="pref_wm8994_speaker_tuning_title">Juster højtaler til musik</string>
+    <string name="pref_wm8994_speaker_tuning_summary">Rekonfigurer hardware EQ for mere bas og balanceret lyd</string>
+    <string name="pref_wm8994_mono_downmix_title">Mono downmix</string>
+    <string name="pref_wm8994_mono_downmix_summary">Downmix stereo lyd til mono (for stereo outputs, så som høretelefoner)</string>
+    <string name="pref_wm8994_stereo_expansion_title">Stereo ekspansion</string>
+    <string name="pref_wm8994_stereo_expansion_summary">"Udvid" stereo lyd via digital signal bearbejdning</string>
+    <string name="pref_wm8994_dac_direct_title">D/AC direkte</string>
+    <string name="pref_wm8994_dac_direct_summary">Tilgå digital/analog konverter direkte, udenom channel mixer. Giver renere lyd (sænker signal-to-noise forholdet)</string>
+    <string name="pref_wm8994_dac_osr128_title">Hi-fi afspilning</string>
+    <string name="pref_wm8994_dac_osr128_summary">Digital-til-analog konverter 128x oversampling -- renere lyd når der afspilles musik</string>
+    <string name="pref_wm8994_adc_osr128_title">Hi-fi optagelse</string>
+    <string name="pref_wm8994_adc_osr128_summary">Analog-to-digital konverter 128x oversampling -- øger kvaliteten af optagelser</string>
+    <string name="pref_wm8994_fll_tuning_title">Tuned lyd frekvens</string>
+    <string name="pref_wm8994_fll_tuning_summary">Brug tuned WM8994 lyd frekvens kilde -- øger kvaliteten af lyd</string>
+
+    <string name="category_touchkey_title">Touch Knapper</string>
+    <string name="backlight_timeout_title_head">Baggrundslys Timeout</string>
+    <string name="backlight_timeout_summary_head">Indstil forsinkelsen for hvornår touch knappernes lys skal slukkes</string>
+    <string name="blink_timeout_title_head">Blink Timeout</string>
+    <string name="blink_timeout_summary_head">Indstil forsinkelsen for hvornår touch knappernes blink lys automatisk skal slukkes efter en notifikation</string>
+
+</resources>
