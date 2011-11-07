@@ -44,15 +44,17 @@ static uint8_t pn544_eedata_settings[][4] = {
     ,{0x00,0x99,0x23,0x00} // Default Value is 0x01
 
     // Low-power polling
-    ,{0x00,0x9E,0x74,0xC0} // Default Value is 0x00, bits 0->2: sensitivity (0==max, 6==min),
+    ,{0x00,0x9E,0x74,0xB0} // Default Value is 0x00, bits 0->2: sensitivity (0==max, 6==min),
                            // bit 3: RFU,
-                           // bits 4->6 hybrid low-power: # of low-power polls per regular poll
+                           // bits 4,5 hybrid low-power: # of low-power polls per regular poll
+                           // bit 6: RFU
                            // bit 7: (0 -> disabled, 1 -> enabled)
+    ,{0x00,0x9E,0x7D,0xB0} // bits 0->3: RFU,
+                           // bits 4,5: # retries after low power detection
+                           // 0=1 retry, 1=2 retry, 2=3 retry, 3=4 retry
+                           // bit 6: RFU,
+                           // bit 7: Enable or disable retry mechanism (0: disable, 1: enable)
     ,{0x00,0x9F,0x28,0x01} // bits 0->7: # of measurements per low-power poll
-
-    // Polling Loop - Card Emulation Timeout
-    ,{0x00,0x9F,0x35,0x14} // Time for which PN544 stays in Card Emulation mode after leaving RF field
-    ,{0x00,0x9F,0x36,0x60} // Default value 0x0411 = 50 ms ---> New Value : 0x1460 = 250 ms
 
     //LLC Timer
     ,{0x00,0x9C,0x31,0x00} // Guard host time-out in ms (MSB)
