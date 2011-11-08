@@ -1,20 +1,20 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string-array name="backlight_timeout_entries">
-        <item>1 second</item>
         <item>2 seconds</item>
         <item>Default (5 seconds)</item>
         <item>10 seconds</item>
         <item>15 seconds</item>
+        <item>20 seconds</item>
         <item>30 seconds</item>
         <item>Never</item>
     </string-array>
 
     <string-array name="backlight_timeout_entries_values" translatable="false">
-        <item>1</item>
         <item>2</item>
         <item>5</item>
         <item>10</item>
         <item>15</item>
+        <item>20</item>
         <item>30</item>
         <item>0</item>
     </string-array>
