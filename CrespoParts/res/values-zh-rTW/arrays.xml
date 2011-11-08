@@ -1,10 +1,10 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string-array name="backlight_timeout_entries">
         <item>1秒</item>
-        <item>2秒</item>
         <item>預設（5秒）</item>
         <item>10秒</item>
         <item>15秒</item>
+        <item>20秒</item>
         <item>30秒</item>
         <item>永不</item>
     </string-array>
