@@ -97,8 +97,8 @@ public class GammaTuningPreference extends DialogPreference {
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         for (String filePath : FILE_PATH) {
-            int value = sharedPrefs.getInt(filePath, MAX_VALUE);
-            Utils.writeColor(filePath, value);
+            int iValue = sharedPrefs.getInt(filePath, MAX_VALUE);
+            Utils.writeValue(filePath, String.valueOf((long) iValue));
         }
     }
 
