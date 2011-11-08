@@ -1,0 +1,54 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string-array name="backlight_timeout_entries">
+        <item>2 秒</item>
+        <item>デフォルト (5 秒)</item>
+        <item>10 秒</item>
+        <item>15 秒</item>
+        <item>20 秒</item>
+        <item>30 秒</item>
+        <item>させない</item>
+    </string-array>
+
+    <string-array name="backlight_timeout_entries_values" translatable="false">
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>20</item>
+        <item>30</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="blink_timeout_entries">
+        <item>1 分</item>
+        <item>2 分</item>
+        <item>デフォルト (5 分)</item>
+        <item>10 分</item>
+        <item>15 分</item>
+        <item>30 分</item>
+        <item>させない</item>
+    </string-array>
+
+    <string-array name="blink_timeout_entries_values" translatable="false">
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>30</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="hspa_entries">
+        <item>UMTS のみ</item>
+        <item>HSDPA のみ</item>
+        <item>HSDPA と HSUPA</item>
+    </string-array>
+
+    <string-array name="hspa_entries_values" translatable="false">
+        <item>21</item>
+        <item>22</item>
+        <item>23</item>
+    </string-array>
+
+</resources>
