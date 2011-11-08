@@ -25,8 +25,8 @@ BOARD_USES_LIBSECRIL_STUB := true
 BOARD_NO_PAGE_FLIPPING := true
 BOARD_NO_32BPP := true
 
-#Kernel Panic Fix
-ARCH_ARM_HAVE_ARMV7A_BUG := true
+# Enable NFC
+BOARD_HAVE_NFC := true
 
 # Use the non-open-source parts, if they're present
 -include vendor/samsung/crespo/BoardConfigVendor.mk
