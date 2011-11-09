@@ -1096,7 +1096,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_POST_ENABLE, &configValue);
 
         if (pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_TRUE) {
-            configValue = 0;    // the number that you want to delay
+            configValue = 1;    // the number that you want to delay
             SsbSipMfcDecSetConfig(hMFCHandle, MFC_DEC_SETCONF_DISPLAY_DELAY, &configValue);
         }
 
@@ -1236,11 +1236,16 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
             pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
         }
+        if ((pMpeg4Dec->bFirstFrame == OMX_TRUE) &&
+            ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) {
+            pOutputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+        }
+
         outputDataValid = OMX_FALSE;
 
         /* ret = OMX_ErrorUndefined; */
             ret = OMX_ErrorNone;
-        }
+    }
 
     if (ret == OMX_ErrorInputDataDecodeYet) {
         pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].dataSize = oneFrameSize;
@@ -1280,10 +1285,15 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         pMpeg4Dec->hMFCMpeg4Handle.pMFCStreamPhyBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].PhyAddr;
         pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].VirAddr;
         pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pMpeg4Dec->MFCDecInputBuffer[pMpeg4Dec->indexInputBuffer].bufferSize;
+        if (((pMpeg4Dec->hMFCMpeg4Handle.bThumbnailMode == OMX_TRUE) || (pSECComponent->bSaveFlagEOS == OMX_TRUE)) &&
+            (pMpeg4Dec->bFirstFrame == OMX_TRUE) &&
+            (outputDataValid == OMX_FALSE)) {
+            ret = OMX_ErrorInputDataDecodeYet;
+        }
         pMpeg4Dec->bFirstFrame = OMX_FALSE;
     }
 
-            /** Fill Output Buffer **/
+    /** Fill Output Buffer **/
     if (outputDataValid == OMX_TRUE) {
         SEC_OMX_BASEPORT *pSECInputPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
         SEC_OMX_BASEPORT *pSECOutputPort = &pSECComponent->pSECPort[OUTPUT_PORT_INDEX];
