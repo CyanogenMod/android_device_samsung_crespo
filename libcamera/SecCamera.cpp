@@ -670,7 +670,7 @@ int SecCamera::initCamera(int index)
             }
         }
 
-        LOGE("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
+        LOGD("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
 
         ret = fimc_v4l2_querycap(m_cam_fd);
         CHECK(ret);
