@@ -252,7 +252,9 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
             // we still have some room, so try to see if we can get
             // some events immediately or just wait if we don't have
             // anything to return
-            n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+            do {
+                n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+            } while (n < 0 && errno == EINTR);
             if (n<0) {
                 LOGE("poll() failed (%s)", strerror(errno));
                 return -errno;
