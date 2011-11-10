@@ -5,6 +5,8 @@
     <string name="category_screen_title">WM8994 設定 ( voodoo )</string>
     <string name="color_tuning_title_head">色の調整</string>
     <string name="color_tuning_summary_head">画面色の調整</string>
+    <string name="gamma_tuning_title_head">ガンマの調整</string>
+    <string name="gamma_tuning_summary_head">ガンマ補正の調整</string>
     <string name="color_red_title">赤</string>
     <string name="color_green_title">緑</string>
     <string name="color_blue_title">青</string>
@@ -45,5 +47,9 @@
     <string name="backlight_timeout_summary_head">タッチキーのバックライトが自動的にオフになるまでの遅延を調整する</string>
     <string name="blink_timeout_title_head">点滅のタイムアウト</string>
     <string name="blink_timeout_summary_head">タッチキーの点滅のバックライトが通知した後、自動的に消えるまでの遅延時間を調整する</string>
+
+    <string name="category_radio_title">ラジオ</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">HSDPA/HSUPAを有効にする</string>
 
 </resources>
