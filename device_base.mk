@@ -77,6 +77,15 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
         device/samsung/crespo/samsung_mfc_fw.bin:system/vendor/firmware/samsung_mfc_fw.bin
 
+# NFCEE access control
+ifeq ($(TARGET_BUILD_VARIANT),user)
+	NFCEE_ACCESS_PATH := device/samsung/tuna/nfcee_access.xml
+else
+	NFCEE_ACCESS_PATH := device/samsung/tuna/nfcee_access_debug.xml
+endif
+PRODUCT_COPY_FILES += \
+	$(NFCEE_ACCESS_PATH):system/etc/nfcee_access.xml
+
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
 	s3c-keypad.kcm \
