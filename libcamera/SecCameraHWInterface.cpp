@@ -77,7 +77,6 @@ CameraHardwareSec::CameraHardwareSec(int cameraId, camera_device_t *dev)
         :
           mCaptureInProgress(false),
           mParameters(),
-          mFrameSizeDelta(0),
           mCameraSensorName(NULL),
           mSkipFrame(0),
           mNotifyCb(0),
@@ -181,7 +180,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     previewColorString = CameraParameters::PIXEL_FORMAT_YUV420SP;
     previewColorString.append(",");
     previewColorString.append(CameraParameters::PIXEL_FORMAT_YUV420P);
-    p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP); mFrameSizeDelta = 16;
+    p.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP);
     p.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS, previewColorString.string());
     p.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_YUV420P);
     p.setPreviewSize(preview_max_width, preview_max_height);
@@ -404,7 +403,6 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
 
     const char *str_preview_format = mParameters.getPreviewFormat();
     LOGV("%s: preview format %s", __func__, str_preview_format);
-    mFrameSizeDelta = 16;
 
     if (w->set_usage(w, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
         LOGE("%s: could not set usage on gralloc buffer", __func__);
@@ -541,14 +539,7 @@ int CameraHardwareSec::previewThread()
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
 
-    offset = (frame_size + mFrameSizeDelta) * index;
-
-#if 0 // FIXME: this does not seem to be necessary.  Is it?
-    memcpy((char *)mPreviewHeap->data + offset + frame_size,
-           &phyYAddr, 4);
-    memcpy((char *)mPreviewHeap->data + offset + frame_size + 4,
-           &phyCAddr, 4);
-#endif
+    offset = frame_size * index;
 
     if (mPreviewWindow && mGrallocHal) {
         buffer_handle_t *buf_handle;
@@ -564,7 +555,6 @@ int CameraHardwareSec::previewThread()
                                GRALLOC_USAGE_SW_WRITE_OFTEN,
                                0, 0, width, height, &vaddr)) {
             char *frame = ((char *)mPreviewHeap->data) + offset;
-            int total = frame_size + mFrameSizeDelta;
 
             // the code below assumes YUV, not RGB
             {
@@ -723,7 +713,7 @@ status_t CameraHardwareSec::startPreviewInternal()
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
 
     LOGD("mPreviewHeap(fd(%d), size(%d), width(%d), height(%d))",
-         mSecCamera->getCameraFd(), frame_size + mFrameSizeDelta, width, height);
+         mSecCamera->getCameraFd(), frame_size, width, height);
     if (mPreviewHeap) {
         mPreviewHeap->release(mPreviewHeap);
         mPreviewHeap = 0;
@@ -1582,7 +1572,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             new_str_preview_format != NULL &&
             isSupportedPreviewSize(new_preview_width, new_preview_height)) {
         int new_preview_format = V4L2_PIX_FMT_YUV420;
-        mFrameSizeDelta = 16;
 
         int current_preview_width, current_preview_height, current_frame_size;
         mSecCamera->getPreviewSize(&current_preview_width,
