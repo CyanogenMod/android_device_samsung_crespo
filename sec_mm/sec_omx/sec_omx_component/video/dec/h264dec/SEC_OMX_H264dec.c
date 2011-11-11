@@ -920,7 +920,7 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
 
         /* Default number in the driver is optimized */
         if (pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_TRUE) {
-            setConfVal = 0;
+            setConfVal = 1;
             SsbSipMfcDecSetConfig(pH264Dec->hMFCH264Handle.hMFCHandle, MFC_DEC_SETCONF_DISPLAY_DELAY, &setConfVal);
         } else {
             setConfVal = 8;
@@ -1091,6 +1091,11 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             pOutputData->nFlags |= OMX_BUFFERFLAG_EOS;
             pSECComponent->getAllDelayBuffer = OMX_FALSE;
         }
+        if ((pH264Dec->bFirstFrame == OMX_TRUE) &&
+            ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) {
+            pOutputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+        }
+
         outputDataValid = OMX_FALSE;
 
         /* ret = OMX_ErrorUndefined; */
@@ -1135,6 +1140,11 @@ OMX_ERRORTYPE SEC_MFC_H264_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
         pH264Dec->hMFCH264Handle.pMFCStreamPhyBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].PhyAddr;
         pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].VirAddr;
         pSECComponent->processData[INPUT_PORT_INDEX].allocSize = pH264Dec->MFCDecInputBuffer[pH264Dec->indexInputBuffer].bufferSize;
+        if (((pH264Dec->hMFCH264Handle.bThumbnailMode == OMX_TRUE) || (pSECComponent->bSaveFlagEOS == OMX_TRUE)) &&
+            (pH264Dec->bFirstFrame == OMX_TRUE) &&
+            (outputDataValid == OMX_FALSE)) {
+            ret = OMX_ErrorInputDataDecodeYet;
+        }
         pH264Dec->bFirstFrame = OMX_FALSE;
     }
 
