@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// #define LOG_NDEBUG 0
 #define LOG_TAG "lights"
 #include <cutils/log.h>
 #include <stdint.h>
@@ -31,13 +32,13 @@ static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 char const *const LCD_FILE = "/sys/class/backlight/s5p_bl/brightness";
 char const *const LED_FILE = "/sys/class/misc/notification/led";
+int iAnt = 0;
+
 
 static int write_int(char const *path, int value)
 {
 	int fd;
-	static int already_warned;
-
-	already_warned = 0;
+	static int already_warned = 0;
 
 	LOGV("write_int: path %s, value %d", path, value);
 	fd = open(path, O_RDWR);
@@ -57,6 +58,38 @@ static int write_int(char const *path, int value)
 	}
 }
 
+static int read_int(char const *path)
+{
+	int fd;
+	static int already_warned = 0;
+
+	LOGV("read_int: path %s", path);
+	fd = open(path, O_RDWR);
+
+	if (fd >= 0) {
+		char cValor;
+		int amt = read(fd, &cValor, 1);
+		close(fd);
+		if (amt == -1 )
+		    return -errno;
+		else {
+		    if (cValor == '2')
+		        return 2;
+		    else if ( cValor == '1')
+		        return 1;
+		    else
+		        return 0;
+		}
+		return amt == -1 ? -errno : 0;
+	} else {
+		if (already_warned == 0) {
+			LOGE("read_int failed to open %s\n", path);
+			already_warned = 1;
+		}
+		return -errno;
+	}
+}
+
 static int rgb_to_brightness(struct light_state_t const *state)
 {
 	int color = state->color & 0x00ffffff;
@@ -68,19 +101,27 @@ static int rgb_to_brightness(struct light_state_t const *state)
 static int set_light_notifications(struct light_device_t* dev,
 			struct light_state_t const* state)
 {
-	int brightness =  rgb_to_brightness(state);
+    int brightness =  rgb_to_brightness(state);
     int v = 0;
     int ret = 0;
-	pthread_mutex_lock(&g_lock);
+    static int iAnt = 0;
+    int iAct;
+
+    pthread_mutex_lock(&g_lock);
     if (brightness+state->color == 0 || brightness > 100) {
         if (state->color & 0x00ffffff)
             v = 1;
     } else
         v = 0;
-    LOGI("color %u fm %u status %u is lit %u brightness", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness);
+    iAct = read_int(LED_FILE);
+    LOGI("color %u fm %u status %u is lit %u brightness iAnt: %d iAct: %d", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness, iAnt, iAct);
+    if ( iAct == 2 && v == 0 )
+        v = 2;
+    iAnt = read_int(LED_FILE);
     ret = write_int(LED_FILE, v);
-	pthread_mutex_unlock(&g_lock);
-	return ret;
+    pthread_mutex_unlock(&g_lock);
+
+    return ret;
 }
 
 static int set_light_backlight(struct light_device_t *dev,
