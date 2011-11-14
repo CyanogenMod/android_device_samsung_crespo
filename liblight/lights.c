@@ -32,8 +32,6 @@ static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 char const *const LCD_FILE = "/sys/class/backlight/s5p_bl/brightness";
 char const *const LED_FILE = "/sys/class/misc/notification/led";
-int iAnt = 0;
-
 
 static int write_int(char const *path, int value)
 {
@@ -72,14 +70,8 @@ static int read_int(char const *path)
 		close(fd);
 		if (amt == -1 )
 		    return -errno;
-		else {
-		    if (cValor == '2')
-		        return 2;
-		    else if ( cValor == '1')
-		        return 1;
-		    else
-		        return 0;
-		}
+		else
+		    return atoi(cValor);
 		return amt == -1 ? -errno : 0;
 	} else {
 		if (already_warned == 0) {
@@ -104,7 +96,6 @@ static int set_light_notifications(struct light_device_t* dev,
     int brightness =  rgb_to_brightness(state);
     int v = 0;
     int ret = 0;
-    static int iAnt = 0;
     int iAct;
 
     pthread_mutex_lock(&g_lock);
@@ -114,10 +105,9 @@ static int set_light_notifications(struct light_device_t* dev,
     } else
         v = 0;
     iAct = read_int(LED_FILE);
-    LOGI("color %u fm %u status %u is lit %u brightness iAnt: %d iAct: %d", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness, iAnt, iAct);
-    if ( iAct == 2 && v == 0 )
+    LOGI("color %u fm %u status %u is lit %u brightness iAct: %d", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness, iAct);
+    if ( iAct == 2 && v == 1 )
         v = 2;
-    iAnt = read_int(LED_FILE);
     ret = write_int(LED_FILE, v);
     pthread_mutex_unlock(&g_lock);
 
