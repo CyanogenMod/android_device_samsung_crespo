@@ -71,7 +71,7 @@ static int read_int(char const *path)
 		if (amt == -1 )
 		    return -errno;
 		else
-		    return atoi(cValor);
+		    return atoi(&cValor);
 		return amt == -1 ? -errno : 0;
 	} else {
 		if (already_warned == 0) {
