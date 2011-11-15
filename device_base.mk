@@ -77,11 +77,21 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
         device/samsung/crespo/samsung_mfc_fw.bin:system/vendor/firmware/samsung_mfc_fw.bin
 
+# file that declares the MIFARE NFC constant
+PRODUCT_COPY_FILES += \
+	device/sample/nxp/com.nxp.mifare.xml:system/etc/permissions/com.nxp.mifare.xml
+
+# NFC EXTRAS add-on API
+PRODUCT_PACKAGES += \
+	com.android.nfc_extras
+PRODUCT_COPY_FILES += \
+	frameworks/base/nfc-extras/com.android.nfc_extras.xml:system/etc/permissions/com.android.nfc_extras.xml
+
 # NFCEE access control
 ifeq ($(TARGET_BUILD_VARIANT),user)
-	NFCEE_ACCESS_PATH := device/samsung/tuna/nfcee_access.xml
+	NFCEE_ACCESS_PATH := device/samsung/crespo/nfcee_access.xml
 else
-	NFCEE_ACCESS_PATH := device/samsung/tuna/nfcee_access_debug.xml
+	NFCEE_ACCESS_PATH := device/samsung/crespo/nfcee_access_debug.xml
 endif
 PRODUCT_COPY_FILES += \
 	$(NFCEE_ACCESS_PATH):system/etc/nfcee_access.xml
@@ -153,7 +163,6 @@ endif
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
-	device/sample/nxp/com.nxp.mifare.xml:system/etc/permissions/com.nxp.mifare.xml \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
 	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
 	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
