@@ -27,17 +27,9 @@
 
 /*****************************************************************************/
 
-/* The Crespo ADC sends 4 somewhat bogus events after enabling the sensor.
-   This becomes a problem if the phone is turned off in bright light
-   and turned back on in the dark.
-   To avoid this we ignore the first 4 events received after enabling the sensor.
- */
-#define FIRST_GOOD_EVENT    5
-
 LightSensor::LightSensor()
     : SensorBase(NULL, "lightsensor-level"),
       mEnabled(0),
-      mEventsSinceEnable(0),
       mInputReader(4),
       mHasPendingEvent(false)
 {
@@ -79,7 +71,6 @@ int LightSensor::setDelay(int32_t handle, int64_t ns)
 int LightSensor::enable(int32_t handle, int en)
 {
     int flags = en ? 1 : 0;
-    mEventsSinceEnable = 0;
     if (flags != mEnabled) {
         int fd;
         strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
@@ -136,12 +127,10 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
                 // Max adc value 4095 = 3.3V
                 // 1/4 of light reaches sensor
                 mPendingEvent.light = powf(10, event->value * (330.0f / 4095.0f / 47.0f)) * 4;
-                if (mEventsSinceEnable < FIRST_GOOD_EVENT)
-                    mEventsSinceEnable++;
             }
         } else if (type == EV_SYN) {
             mPendingEvent.timestamp = timevalToNano(event->time);
-            if (mEnabled && mEventsSinceEnable >= FIRST_GOOD_EVENT) {
+            if (mEnabled) {
                 *data++ = mPendingEvent;
                 count--;
                 numEventReceived++;
