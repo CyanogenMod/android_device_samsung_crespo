@@ -293,6 +293,8 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_rect dst_rect;
 
 
+    bool need_swap_buffers = ctx->num_of_fb_layer > 0;
+
     /*
      * H/W composer documentation states:
      * There is an implicit layer containing opaque black
@@ -312,13 +314,16 @@ static int hwc_set(hwc_composer_device_t *dev,
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glEnable(GL_SCISSOR_TEST);
+        need_swap_buffers = true;
     }
 
     ctx->num_of_fb_layer_prev = ctx->num_of_fb_layer;
 
-    EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
-    if (!sucess) {
-        return HWC_EGL_ERROR;
+    if (need_swap_buffers || !list) {
+        EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
+        if (!sucess) {
+            return HWC_EGL_ERROR;
+        }
     }
 
     if (!list) {
