@@ -402,7 +402,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     int hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
 
     const char *str_preview_format = mParameters.getPreviewFormat();
-    LOGV("%s: preview format %s", __func__, str_preview_format);
+    ALOGV("%s: preview format %s", __func__, str_preview_format);
 
     if (w->set_usage(w, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
         LOGE("%s: could not set usage on gralloc buffer", __func__);
