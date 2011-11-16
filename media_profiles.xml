@@ -282,20 +282,20 @@
         The VideoEditor Export codec profile and level values
         correspond to the values in OMX_Video.h.
         E.g. for h264, profile value 1 means OMX_VIDEO_AVCProfileBaseline
-        and  level 256 means OMX_VIDEO_AVCLevel3.
+        and  level 2048 means OMX_VIDEO_AVCLevel4.
         Please note that the values are in decimal.
         These values are for video encoder.
     -->
     <!--
-      Codec = h.264, Baseline profile, level 3
+      Codec = h.264, Baseline profile, level 4
     -->
-    <ExportVideoProfile name="h264" profile= "1" level="256"/>
+    <ExportVideoProfile name="h264" profile= "1" level="2048"/>
     <!--
       Codec = h.263, Baseline profile, level 0
     -->
     <ExportVideoProfile name="h263" profile= "1" level="1"/>
     <!--
-      Codec = mpeg4, Simple profile, level 3
+      Codec = mpeg4, Simple profile, level 5
     -->
-    <ExportVideoProfile name="m4v" profile= "1" level="16"/>
+    <ExportVideoProfile name="m4v" profile= "1" level="128"/>
 </MediaSettings>
