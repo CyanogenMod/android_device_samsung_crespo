@@ -317,11 +317,6 @@ static int hwc_set(hwc_composer_device_t *dev,
             cur = &list->hwLayers[win->layer_index];
 
             if (cur->compositionType == HWC_OVERLAY) {
-                /* Skip duplicate frame rendering */
-                if (win->layer_prev_buf == (uint32_t)cur->handle)
-                    continue;
-
-                win->layer_prev_buf = (uint32_t)cur->handle;
 
                 ret = gpsGrallocModule->GetPhyAddrs(gpsGrallocModule,
                         cur->handle, phyAddr);
@@ -354,9 +349,15 @@ static int hwc_set(hwc_composer_device_t *dev,
                     win->set_win_flag = 0;
                 }
 
-                window_pan_display(win);
-
-                win->buf_index = (win->buf_index + 1) % NUM_OF_WIN_BUF;
+                /* is the frame didn't change, it needs to be composited
+                 * because something else below it could have changed, however
+                 * it doesn't need to be swapped.
+                 */
+                if (win->layer_prev_buf != (uint32_t)cur->handle) {
+                    win->layer_prev_buf = (uint32_t)cur->handle;
+                    window_pan_display(win);
+                    win->buf_index = (win->buf_index + 1) % NUM_OF_WIN_BUF;
+                }
 
                 if(win->power_state == 0)
                     window_show(win);
