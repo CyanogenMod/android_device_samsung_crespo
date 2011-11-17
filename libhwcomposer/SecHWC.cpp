@@ -26,6 +26,7 @@
 #include <cutils/log.h>
 #include <cutils/atomic.h>
 #include <EGL/egl.h>
+#include <GLES/gl.h>
 #include "SecHWCUtils.h"
 
 static IMG_gralloc_module_public_t *gpsGrallocModule;
@@ -290,6 +291,30 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_img dst_img;
     struct sec_rect src_rect;
     struct sec_rect dst_rect;
+
+
+    /*
+     * H/W composer documentation states:
+     * There is an implicit layer containing opaque black
+     * pixels behind all the layers in the list.
+     * It is the responsibility of the hwcomposer module to make
+     * sure black pixels are output (or blended from).
+     *
+     * Since we're using a blitter, we need to erase the frame-buffer when
+     * switching to all-overlay mode.
+     *
+     */
+    if (ctx->num_of_hwc_layer &&
+        ctx->num_of_fb_layer==0 && ctx->num_of_fb_layer_prev) {
+        /* we're clearing the screen using GLES here, this is very
+         * hack-ish, ideal we would use the fimc (if it can do it) */
+        glDisable(GL_SCISSOR_TEST);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glEnable(GL_SCISSOR_TEST);
+    }
+
+    ctx->num_of_fb_layer_prev = ctx->num_of_fb_layer;
 
     EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
     if (!sucess) {
