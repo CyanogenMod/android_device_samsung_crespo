@@ -117,6 +117,7 @@ struct hwc_context_t {
     s5p_fimc_t                fimc;
     unsigned int              num_of_fb_layer;
     unsigned int              num_of_hwc_layer;
+    unsigned int              num_of_fb_layer_prev;
 };
 
 int window_open(struct hwc_win_info_t *win, int id);
