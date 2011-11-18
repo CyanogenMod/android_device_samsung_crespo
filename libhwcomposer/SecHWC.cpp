@@ -487,7 +487,8 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
         }
     }
 
-    if (window_get_global_lcd_info(dev->win[0].fd, &dev->lcd_info) < 0) {
+    /* get default window config */
+    if (window_get_global_lcd_info(&dev->lcd_info) < 0) {
         LOGE("%s::window_get_global_lcd_info is failed : %s",
 				__func__, strerror(errno));
         status = -EINVAL;

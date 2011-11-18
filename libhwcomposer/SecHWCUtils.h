@@ -127,7 +127,7 @@ int window_get_info(struct hwc_win_info_t *win);
 int window_pan_display(struct hwc_win_info_t *win);
 int window_show(struct hwc_win_info_t *win);
 int window_hide(struct hwc_win_info_t *win);
-int window_get_global_lcd_info(int fd, struct fb_var_screeninfo *lcd_info);
+int window_get_global_lcd_info(struct fb_var_screeninfo *lcd_info);
 
 int createFimc(s5p_fimc_t *fimc);
 int destroyFimc(s5p_fimc_t *fimc);
