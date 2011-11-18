@@ -29,11 +29,14 @@ on boot
     chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
+# cpufreq, set ondemand governor
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
+
 on fs
     mkdir /efs 0775 radio radio
     mount yaffs2 mtd@efs /efs nosuid nodev
-	chmod 770 /efs/bluetooth
-	chmod 770 /efs/imei
+    chmod 770 /efs/bluetooth
+    chmod 770 /efs/imei
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
 
