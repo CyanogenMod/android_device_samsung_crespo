@@ -329,6 +329,10 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
         case OMX_StateLoaded:
             for (i = 0; i < pSECComponent->portParam.nPorts; i++) {
                 pSECPort = (pSECComponent->pSECPort + i);
+                if (pSECPort == NULL) {
+                    ret = OMX_ErrorBadParameter;
+                    goto EXIT;
+                }
                 if (CHECK_PORT_TUNNELED(pSECPort) && CHECK_PORT_BUFFER_SUPPLIER(pSECPort)) {
                     if (CHECK_PORT_ENABLED(pSECPort)) {
                         ret = pSECComponent->sec_AllocateTunnelBuffer(pSECPort, i);
