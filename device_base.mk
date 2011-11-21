@@ -100,6 +100,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
+# Kernel debug file
+PRODUCT_COPY_FILES += \
+	device/samsung/crespo/klogtail:system/xbin/klogtail
+
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
@@ -146,7 +150,8 @@ LOCAL_WIFI_MODULE := $(TARGET_PREBUILT_WIFI_MODULE)
 endif
 
 PRODUCT_COPY_FILES += \
-	$(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko
+	$(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko \
+	device/samsung/crespo/scsi_wait_scan.ko:system/modules/scsi_wait_scan.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel

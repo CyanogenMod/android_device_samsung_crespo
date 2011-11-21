@@ -16,6 +16,11 @@ on boot
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
 
+# Dimmer, and others enabled permissions
+    chmod 700 /sys/class/misc/backlightdimmer/enabled
+    chmod 700 /sys/class/misc/screendimmer/enabled
+    chmod 700 /sys/class/misc/touchwake/enabled
+
 # phone
     setprop ro.telephony.call_ring.multiple 0
 
@@ -35,7 +40,10 @@ on fs
 	chmod 770 /efs/bluetooth
 	chmod 770 /efs/imei
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev
+    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev noauto_da_alloc
+
+# Increase readahead buffers on MMC devices
+    write /sys/block/mmcblk0/bdi/read_ahead_kb 1024
 
 # permissions for bluetooth.
     chown bluetooth bluetooth /efs/bluetooth
@@ -82,7 +90,7 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wif
 
 # DHCPCD
 # wi-fi
-service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL eth0
     disabled
     oneshot
 
