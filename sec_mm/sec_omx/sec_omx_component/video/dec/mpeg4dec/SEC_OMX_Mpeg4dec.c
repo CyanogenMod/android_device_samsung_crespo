@@ -1180,7 +1180,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         if ((SsbSipMfcDecGetConfig(hMFCHandle, MFC_DEC_GETCONF_FRAME_TAG, &indexTimestamp) != MFC_RET_OK) ||
             (((indexTimestamp < 0) || (indexTimestamp >= MAX_TIMESTAMP)))) {
             pOutputData->timeStamp = pInputData->timeStamp;
-            pOutputData->nFlags = pInputData->nFlags;
+            pOutputData->nFlags =  (pInputData->nFlags & (~OMX_BUFFERFLAG_EOS));
         } else {
             pOutputData->timeStamp = pSECComponent->timeStamp[indexTimestamp];
             pOutputData->nFlags = pSECComponent->nFlags[indexTimestamp];
@@ -1238,6 +1238,7 @@ OMX_ERRORTYPE SEC_MFC_Mpeg4_Decode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DAT
         }
         if ((pMpeg4Dec->bFirstFrame == OMX_TRUE) &&
             ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) {
+            pInputData->nFlags = (pInputData->nFlags | OMX_BUFFERFLAG_EOS);
             pOutputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
         }
 
