@@ -1,0 +1,13 @@
+#
+# system.prop for smdkc110
+#
+
+rild.libpath=/vendor/lib/libsec-ril.so
+rild.libargs=-d /dev/ttyS0
+ro.sf.lcd_density=240
+
+# Define to manage ril to manage modem answere when going from 2G to 3G
+ro.ril.ntmodeglobal=true
+
+# Define whether device has hspa
+ro.crespoparts.rild.hspa=1
