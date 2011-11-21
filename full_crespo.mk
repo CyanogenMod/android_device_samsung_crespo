@@ -28,5 +28,7 @@ $(call inherit-product, device/samsung/crespo/device.mk)
 # Discard inherited values and use our own instead.
 PRODUCT_NAME := full_crespo
 PRODUCT_DEVICE := crespo
-PRODUCT_BRAND := Android
-PRODUCT_MODEL := Full Android on Crespo
+PRODUCT_BRAND := google
+PRODUCT_MODEL := Nexus S
+PRODUCT_MANUFACTURER := samsung
+PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=soju BUILD_ID=GWK74 BUILD_FINGERPRINT=google/soju/crespo:2.3.7/GWK74/185293:user/release-keys PRIVATE_BUILD_DESC="soju-user 2.3.7 GWK74 185293 release-keys" BUILD_NUMBER=185293
