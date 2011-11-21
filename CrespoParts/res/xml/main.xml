@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+        <PreferenceCategory
+        android:title="@string/category_screen_title">
+            <!-- Color tuning -->
+            <com.cyanogenmod.CrespoParts.ColorTuningPreference
+                android:key="color_tuning"
+                android:title="@string/color_tuning_title_head"
+                android:summary="@string/color_tuning_summary_head" />
+            <com.cyanogenmod.CrespoParts.GammaTuningPreference
+                android:key="gamma_tuning"
+                android:title="@string/gamma_tuning_title_head"
+                android:summary="@string/gamma_tuning_summary_head" />
+        </PreferenceCategory>
+
+        <!--  WM8994 Control [TESTING] -->
+        <PreferenceScreen android:key="wm8994_settings"
+        android:title="@string/wm8994_settings_title_head"
+        android:summary="@string/wm8994_settings_summary_head">
+                <intent android:action="android.intent.action.MAIN"
+                        android:targetPackage="com.cyanogenmod.CrespoParts"
+                        android:targetClass="com.cyanogenmod.CrespoParts.WM8994ControlActivity" />
+        </PreferenceScreen>
+
+        <PreferenceCategory
+        android:title="@string/category_touchkey_title">
+            <!-- Touch key backlight timeout -->
+            <ListPreference
+                android:key="backlight_timeout"
+                android:title="@string/backlight_timeout_title_head"
+                android:summary="@string/backlight_timeout_summary_head"
+                android:entries="@array/backlight_timeout_entries"
+                        android:entryValues="@array/backlight_timeout_entries_values"
+                        android:defaultValue="5" />
+            <ListPreference
+                android:key="blink_timeout"
+                android:title="@string/blink_timeout_title_head"
+                android:summary="@string/blink_timeout_summary_head"
+                android:entries="@array/blink_timeout_entries"
+                        android:entryValues="@array/blink_timeout_entries_values"
+                        android:defaultValue="5" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+        android:key="category_radio"
+        android:title="@string/category_radio_title">
+        <!-- UMTS/HSDPA/HSUPA settings -->
+        <ListPreference
+            android:key="hspa"
+            android:title="@string/hspa_title_head"
+            android:summary="@string/hspa_summary_head"
+            android:entries="@array/hspa_entries"
+            android:entryValues="@array/hspa_entries_values"
+            android:defaultValue="23" />
+       </PreferenceCategory>
+
+</PreferenceScreen>

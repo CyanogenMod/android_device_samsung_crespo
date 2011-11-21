@@ -39,7 +39,7 @@
 # These is the hardware-specific overlay, which points to the location
 # of hardware-specific resource overrides, typically the frameworks and
 # application settings that are stored in resourced.
-DEVICE_PACKAGE_OVERLAYS := device/samsung/crespo/overlay
+DEVICE_PACKAGE_OVERLAYS += device/samsung/crespo/overlay
 
 # These are the hardware-specific configuration files
 PRODUCT_COPY_FILES := \
@@ -90,6 +90,11 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.herring
 
+# Samsung Specific tools
+PRODUCT_PACKAGES += \
+	SamsungServiceMode \
+	CrespoParts
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
@@ -131,7 +136,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 PRODUCT_PROPERTY_OVERRIDES += \
        wifi.interface=eth0 \
        wifi.supplicant_scan_interval=15 \
-       dalvik.vm.heapsize=32m
+       dalvik.vm.heapsize=48m
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
@@ -140,7 +145,7 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 # the the build-time selection of resources). The product definitions including
 # this file must pay attention to the fact that the first entry in the final
 # PRODUCT_LOCALES expansion must not be a density.
-PRODUCT_LOCALES := hdpi
+PRODUCT_LOCALES += hdpi
 
 
 ifeq ($(TARGET_PREBUILT_WIFI_MODULE),)
