@@ -188,6 +188,7 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/leakedlibs/camera.herring.so:system/lib/hw/camera.herring.so
 
 PRODUCT_PACKAGES += \
+	Mms \
 	su \
 	libtinyalsa \
 	libs3cjpeg
