@@ -77,6 +77,17 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
         device/samsung/crespo/samsung_mfc_fw.bin:system/vendor/firmware/samsung_mfc_fw.bin
 
+# NFC
+PRODUCT_PACKAGES += \
+	libnfc \
+	libnfc_jni \
+	Nfc \
+	Tag
+
+# Commands to migrate prefs from com.android.nfc3 to com.android.nfc
+PRODUCT_COPY_FILES += \
+	packages/apps/Nfc/migrate_nfc.txt:system/etc/updatecmds/migrate_nfc.txt
+
 # file that declares the MIFARE NFC constant
 PRODUCT_COPY_FILES += \
 	device/sample/nxp/com.nxp.mifare.xml:system/etc/permissions/com.nxp.mifare.xml
@@ -97,7 +108,7 @@ PRODUCT_COPY_FILES += \
 	$(NFCEE_ACCESS_PATH):system/etc/nfcee_access.xml
 
 # Generated kcm keymaps
-PRODUCT_PACKAGES := \
+PRODUCT_PACKAGES += \
 	s3c-keypad.kcm \
 	cypress-touchkey.kcm
 
