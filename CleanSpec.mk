@@ -65,3 +65,4 @@ $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/SHARED_LIBRAR
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/symbols/system/lib/hw/camera.s5pc110.so)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/app/Tag.apk)
 $(call add-clean-step, rm -rf $(OUT_DIR)/target/product/crespo/obj/STATIC_LIBRARIES/libaudioutils_intermediates)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/etc/updatecmds/migrate_nfc.txt)
