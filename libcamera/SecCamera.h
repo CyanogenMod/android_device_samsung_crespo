@@ -522,9 +522,10 @@ private:
     int             m_object_tracking_start_stop;
     int             m_recording_width;
     int             m_recording_height;
-    long            m_gps_latitude;
-    long            m_gps_longitude;
-    long            m_gps_altitude;
+    bool            m_gps_enabled;
+    long            m_gps_latitude;  /* degrees * 1e7 */
+    long            m_gps_longitude; /* degrees * 1e7 */
+    long            m_gps_altitude;  /* metres * 100 */
     long            m_gps_timestamp;
     int             m_vtmode;
     int             m_sensor_mode; /*Camcorder fix fps */
