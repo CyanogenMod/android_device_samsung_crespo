@@ -293,6 +293,13 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_rect dst_rect;
 
 
+    if (dpy == NULL && sur == NULL && list == NULL) {
+        // release our resources, the screen is turning off
+        // in our case, there is nothing to do.
+        ctx->num_of_fb_layer_prev = 0;
+        return 0;
+    }
+
     bool need_swap_buffers = ctx->num_of_fb_layer > 0;
 
     /*
