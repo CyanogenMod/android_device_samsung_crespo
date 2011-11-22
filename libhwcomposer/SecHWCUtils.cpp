@@ -41,6 +41,7 @@ int window_open(struct hwc_win_info_t *win, int id)
     switch (id) {
     case 0:
     case 1:
+    case 2:
         break;
     default:
         LOGE("%s::id(%d) is weird", __func__, id);
@@ -165,11 +166,20 @@ int window_hide(struct hwc_win_info_t *win)
     return 0;
 }
 
-int window_get_global_lcd_info(int fd, struct fb_var_screeninfo *lcd_info)
+int window_get_global_lcd_info(struct fb_var_screeninfo *lcd_info)
 {
-    if (ioctl(fd, FBIOGET_VSCREENINFO, lcd_info) < 0) {
-        LOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
+    struct hwc_win_info_t win;
+    int ret = 0;
+
+    if (window_open(&win, 2)  < 0) {
+        LOGE("%s:: Failed to open window 2 device ", __func__);
         return -1;
+    }
+
+    if (ioctl(win.fd, FBIOGET_VSCREENINFO, lcd_info) < 0) {
+        LOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
+        ret = -1;
+        goto fun_err;
     }
 
     if (lcd_info->xres == 0) {
@@ -185,7 +195,11 @@ int window_get_global_lcd_info(int fd, struct fb_var_screeninfo *lcd_info)
     if (lcd_info->bits_per_pixel == 0)
         lcd_info->bits_per_pixel = DEFAULT_LCD_BPP;
 
-    return 0;
+fun_err:
+    if (window_close(&win) < 0)
+        LOGE("%s::window2 close fail", __func__);   
+
+    return ret;
 }
 
 int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
