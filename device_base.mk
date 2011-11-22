@@ -138,7 +138,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
-       wifi.interface=eth0 \
+       wifi.interface=wlan0 \
        wifi.supplicant_scan_interval=15 \
        dalvik.vm.heapsize=48m
 
@@ -173,6 +173,7 @@ PRODUCT_COPY_FILES += \
 
 # leaked blobs, and dependencies. other niceties like su and rom manager...
 PRODUCT_COPY_FILES += \
+	device/samsung/crespo/apns-conf.xml:system/etc/apns-conf.xml \
 	device/samsung/crespo/leakedlibs/secomxregistry:system/etc/secomxregistry \
 	device/samsung/crespo/leakedlibs/libOMX.SEC.AVC.Decoder.so:system/lib/libOMX.SEC.AVC.Decoder.so \
 	device/samsung/crespo/leakedlibs/libOMX.SEC.M4V.Decoder.so:system/lib/libOMX.SEC.M4V.Decoder.so \
@@ -188,9 +189,17 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/leakedlibs/camera.herring.so:system/lib/hw/camera.herring.so
 
 PRODUCT_PACKAGES += \
+	Basic \
+	HoloSpiral \
+	MagicSmoke \
+	NoiseField \
+	Galaxy4 \
+	LivePicker \
+	MusicVisualization \
+	PhaseBeam \
 	Mms \
 	su \
 	libtinyalsa \
 	libs3cjpeg
 
-$(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
+#$(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)

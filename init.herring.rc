@@ -22,16 +22,12 @@ on boot
 # change permission for uart_switch
     chown radio radio /sys/class/sec/uart_switch/UART_SEL/value
     chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
-    chown radio radio /sys/class/sec/uart_switch/UART_SEL1/value
-    chmod 660 /sys/class/sec/uart_switch/UART_SEL1/value
-
-# change permission for usb_switch
-    chown radio radio /sys/bus/i2c/drivers/fsa9480/7-0025/switch
-    chmod 660 /sys/bus/i2c/drivers/fsa9480/7-0025/switch
 
 # create data/gps for GPS demon
     mkdir /data/gps 770 gps system
     chown gps system /data/gps
+    chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
+    chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
 on fs
     mkdir /efs 0775 radio radio
@@ -73,13 +69,10 @@ on post-fs-data
 
     setprop vold.post_fs_data_done 1
 
-# Define TCP buffer sizes for wimax network
-#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.wimax    4096,524288,1048576,4096,16384,110208
-
 service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
     class main
-    user system
+    socket gps seqpacket 0660 gps system
+    user gps
     group system inet
 
 # create filesystems if necessary
@@ -96,15 +89,15 @@ service pvrsrvinit /system/vendor/bin/pvrsrvinit
     group root
     oneshot
 
-service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/wpa_supplicant.conf
+service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
     class main
-    socket wpa_eth0 dgram 0660 wifi wifi
+    socket wpa_wlan0 dgram 0660 wifi wifi
     disabled
     oneshot
 
 # DHCPCD
 # wi-fi
-service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
     class main
     disabled
     oneshot
@@ -123,7 +116,7 @@ service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
 
 # IP Renew
 # wi-fi
-service iprenew_eth0 /system/bin/dhcpcd -n
+service iprenew_wlan0 /system/bin/dhcpcd -n
     class main
     disabled
     oneshot

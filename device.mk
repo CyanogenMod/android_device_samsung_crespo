@@ -47,3 +47,6 @@ $(call inherit-product, device/samsung/crespo/device_base.mk)
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor.mk)
 
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor-blobs.mk)
+
+PRODUCT_PACKAGES += \
+	Stk

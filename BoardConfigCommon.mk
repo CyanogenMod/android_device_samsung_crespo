@@ -62,22 +62,22 @@ TARGET_GLOBAL_CPPFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
 BOARD_WPA_SUPPLICANT_DRIVER := WEXT
 WPA_SUPPLICANT_VERSION := VER_0_8_X
 BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_wext
-BOARD_HOSTAPD_DRIVER        := WEXT
-BOARD_HOSTAPD_PRIVATE_LIB   := lib_driver_cmd_wext
+#BOARD_HOSTAPD_DRIVER        := WEXT
+#BOARD_HOSTAPD_PRIVATE_LIB   := lib_driver_cmd_wext
 BOARD_WLAN_DEVICE := bcm4329
 WIFI_DRIVER_FW_PATH_PARAM   := "/sys/module/bcm4329/parameters/firmware_path"
 WIFI_DRIVER_MODULE_PATH     := "/system/modules/bcm4329.ko"
 WIFI_DRIVER_FW_PATH_STA     := "/vendor/firmware/fw_bcm4329.bin"
 WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcm4329_apsta.bin"
 WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
-WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
+WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt iface_name=wlan"
 
 BOARD_HAS_NO_SELECT_BUTTON := true
 
 BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 
-BOARD_WLAN_DEVICE_REV := bcm4329
-WIFI_BAND             := 802_11_ABG
+#BOARD_WLAN_DEVICE_REV := bcm4329
+#WIFI_BAND             := 802_11_ABG
 
-# enable this if you like segfaults in libGLES. will need new blobs.
+#doesn't actually work until we have hwcomposer
 USE_OPENGL_RENDERER := true
