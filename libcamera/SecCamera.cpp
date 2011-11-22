@@ -28,6 +28,7 @@
 
 #include <utils/Log.h>
 
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/poll.h>
@@ -550,6 +551,7 @@ SecCamera::SecCamera() :
             m_beauty_shot(-1),
             m_vintage_mode(-1),
             m_face_detect(-1),
+            m_gps_enabled(false),
             m_gps_latitude(-1),
             m_gps_longitude(-1),
             m_gps_altitude(-1),
@@ -2394,13 +2396,12 @@ int SecCamera::getFaceDetect(void)
 
 int SecCamera::setGPSLatitude(const char *gps_latitude)
 {
-    double conveted_latitude = 0;
     ALOGV("%s(gps_latitude(%s))", __func__, gps_latitude);
     if (gps_latitude == NULL)
-        m_gps_latitude = 0;
+        m_gps_enabled = false;
     else {
-        conveted_latitude = atof(gps_latitude);
-        m_gps_latitude = (long)(conveted_latitude * 10000 / 1);
+        m_gps_enabled = true;
+        m_gps_latitude = lround(strtod(gps_latitude, NULL) * 10000000);
     }
 
     ALOGV("%s(m_gps_latitude(%ld))", __func__, m_gps_latitude);
@@ -2409,13 +2410,12 @@ int SecCamera::setGPSLatitude(const char *gps_latitude)
 
 int SecCamera::setGPSLongitude(const char *gps_longitude)
 {
-    double conveted_longitude = 0;
     ALOGV("%s(gps_longitude(%s))", __func__, gps_longitude);
     if (gps_longitude == NULL)
-        m_gps_longitude = 0;
+        m_gps_enabled = false;
     else {
-        conveted_longitude = atof(gps_longitude);
-        m_gps_longitude = (long)(conveted_longitude * 10000 / 1);
+        m_gps_enabled = true;
+        m_gps_longitude = lround(strtod(gps_longitude, NULL) * 10000000);
     }
 
     ALOGV("%s(m_gps_longitude(%ld))", __func__, m_gps_longitude);
@@ -2424,13 +2424,11 @@ int SecCamera::setGPSLongitude(const char *gps_longitude)
 
 int SecCamera::setGPSAltitude(const char *gps_altitude)
 {
-    double conveted_altitude = 0;
     ALOGV("%s(gps_altitude(%s))", __func__, gps_altitude);
     if (gps_altitude == NULL)
         m_gps_altitude = 0;
     else {
-        conveted_altitude = atof(gps_altitude);
-        m_gps_altitude = (long)(conveted_altitude * 100 / 1);
+        m_gps_altitude = lround(strtod(gps_altitude, NULL) * 100);
     }
 
     ALOGV("%s(m_gps_altitude(%ld))", __func__, m_gps_altitude);
@@ -2956,44 +2954,38 @@ void SecCamera::setExifChangedAttribute()
     }
 
     //2 0th IFD GPS Info Tags
-    if (m_gps_latitude != 0 && m_gps_longitude != 0) {
-        if (m_gps_latitude > 0)
+    if (m_gps_enabled) {
+        if (m_gps_latitude >= 0)
             strcpy((char *)mExifInfo.gps_latitude_ref, "N");
         else
             strcpy((char *)mExifInfo.gps_latitude_ref, "S");
 
-        if (m_gps_longitude > 0)
+        if (m_gps_longitude >= 0)
             strcpy((char *)mExifInfo.gps_longitude_ref, "E");
         else
             strcpy((char *)mExifInfo.gps_longitude_ref, "W");
 
-        if (m_gps_altitude > 0)
+        if (m_gps_altitude >= 0)
             mExifInfo.gps_altitude_ref = 0;
         else
             mExifInfo.gps_altitude_ref = 1;
 
-        double latitude = fabs(m_gps_latitude / 10000.0);
-        double longitude = fabs(m_gps_longitude / 10000.0);
-        double altitude = fabs(m_gps_altitude / 100.0);
-
-        mExifInfo.gps_latitude[0].num = (uint32_t)latitude;
-        mExifInfo.gps_latitude[0].den = 1;
-        mExifInfo.gps_latitude[1].num = (uint32_t)((latitude - mExifInfo.gps_latitude[0].num) * 60);
+        mExifInfo.gps_latitude[0].num = (uint32_t)labs(m_gps_latitude);
+        mExifInfo.gps_latitude[0].den = 10000000;
+        mExifInfo.gps_latitude[1].num = 0;
         mExifInfo.gps_latitude[1].den = 1;
-        mExifInfo.gps_latitude[2].num = (uint32_t)((((latitude - mExifInfo.gps_latitude[0].num) * 60)
-                                        - mExifInfo.gps_latitude[1].num) * 60);
+        mExifInfo.gps_latitude[2].num = 0;
         mExifInfo.gps_latitude[2].den = 1;
 
-        mExifInfo.gps_longitude[0].num = (uint32_t)longitude;
-        mExifInfo.gps_longitude[0].den = 1;
-        mExifInfo.gps_longitude[1].num = (uint32_t)((longitude - mExifInfo.gps_longitude[0].num) * 60);
+        mExifInfo.gps_longitude[0].num = (uint32_t)labs(m_gps_longitude);
+        mExifInfo.gps_longitude[0].den = 10000000;
+        mExifInfo.gps_longitude[1].num = 0;
         mExifInfo.gps_longitude[1].den = 1;
-        mExifInfo.gps_longitude[2].num = (uint32_t)((((longitude - mExifInfo.gps_longitude[0].num) * 60)
-                                        - mExifInfo.gps_longitude[1].num) * 60);
+        mExifInfo.gps_longitude[2].num = 0;
         mExifInfo.gps_longitude[2].den = 1;
 
-        mExifInfo.gps_altitude.num = (uint32_t)altitude;
-        mExifInfo.gps_altitude.den = 1;
+        mExifInfo.gps_altitude.num = (uint32_t)labs(m_gps_altitude);
+        mExifInfo.gps_altitude.den = 100;
 
         struct tm tm_data;
         gmtime_r(&m_gps_timestamp, &tm_data);
