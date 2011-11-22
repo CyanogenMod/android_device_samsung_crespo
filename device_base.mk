@@ -175,17 +175,17 @@ PRODUCT_COPY_FILES += \
 # leaked blobs, and dependencies. other niceties like su and rom manager...
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/apns-conf.xml:system/etc/apns-conf.xml \
-	device/samsung/crespo/leakedlibs/secomxregistry:system/etc/secomxregistry \
-	device/samsung/crespo/leakedlibs/libOMX.SEC.AVC.Encoder.so:system/lib/libOMX.SEC.AVC.Encoder.so \
-	device/samsung/crespo/leakedlibs/libOMX.SEC.M4V.Encoder.so:system/lib/libOMX.SEC.M4V.Encoder.so \
-	device/samsung/crespo/leakedlibs/libSEC_OMX_Core.so:system/lib/libSEC_OMX_Core.so \
-	device/samsung/crespo/leakedlibs/libstagefrighthw.so:system/lib/libstagefrighthw.so \
+	device/samsung/crespo/prebuilt/secomxregistry:system/etc/secomxregistry \
+	device/samsung/crespo/prebuilt/libOMX.SEC.AVC.Encoder.so:system/lib/libOMX.SEC.AVC.Encoder.so \
+	device/samsung/crespo/prebuilt/libOMX.SEC.M4V.Encoder.so:system/lib/libOMX.SEC.M4V.Encoder.so \
+	device/samsung/crespo/prebuilt/libSEC_OMX_Core.so:system/lib/libSEC_OMX_Core.so \
+	device/samsung/crespo/prebuilt/libstagefrighthw.so:system/lib/libstagefrighthw.so \
 	device/samsung/crespo/bootanimation.zip:system/media/bootanimation.zip \
 	device/samsung/crespo/Superuser.apk:system/app/Superuser.apk \
 	device/samsung/crespo/RomManager.apk:system/app/RomManager.apk \
-	device/samsung/crespo/leakedlibs/audio.primary.herring.so:system/lib/hw/audio.primary.herring.so \
-	device/samsung/crespo/leakedlibs/audio_policy.herring.so:system/lib/hw/audio_policy.herring.so \
-	device/samsung/crespo/leakedlibs/camera.herring.so:system/lib/hw/camera.herring.so
+	device/samsung/crespo/prebuilt/audio.primary.herring.so:system/lib/hw/audio.primary.herring.so \
+	device/samsung/crespo/prebuilt/audio_policy.herring.so:system/lib/hw/audio_policy.herring.so \
+	device/samsung/crespo/prebuilt/camera.herring.so:system/lib/hw/camera.herring.so
 
 PRODUCT_PACKAGES += \
   secomxregistry \
