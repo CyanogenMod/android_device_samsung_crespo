@@ -196,7 +196,7 @@ PRODUCT_PACKAGES += \
 	MagicSmoke \
 	NoiseField \
 	Galaxy4 \
-	LivePicker \
+	LiveWallpapersPicker \
 	MusicVisualization \
 	PhaseBeam \
 	Mms \
