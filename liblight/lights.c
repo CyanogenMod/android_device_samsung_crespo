@@ -56,32 +56,6 @@ static int write_int(char const *path, int value)
 	}
 }
 
-static int read_int(char const *path)
-{
-	int fd;
-	static int already_warned = 0;
-
-	LOGV("read_int: path %s", path);
-	fd = open(path, O_RDWR);
-
-	if (fd >= 0) {
-		char cValor;
-		int amt = read(fd, &cValor, 1);
-		close(fd);
-		if (amt == -1 )
-		    return -errno;
-		else
-		    return atoi(&cValor);
-		return amt == -1 ? -errno : 0;
-	} else {
-		if (already_warned == 0) {
-			LOGE("read_int failed to open %s\n", path);
-			already_warned = 1;
-		}
-		return -errno;
-	}
-}
-
 static int rgb_to_brightness(struct light_state_t const *state)
 {
 	int color = state->color & 0x00ffffff;
@@ -96,7 +70,6 @@ static int set_light_notifications(struct light_device_t* dev,
     int brightness =  rgb_to_brightness(state);
     int v = 0;
     int ret = 0;
-    int iAct;
 
     pthread_mutex_lock(&g_lock);
     if (brightness+state->color == 0 || brightness > 100) {
@@ -104,10 +77,7 @@ static int set_light_notifications(struct light_device_t* dev,
             v = 1;
     } else
         v = 0;
-    iAct = read_int(LED_FILE);
-    LOGI("color %u fm %u status %u is lit %u brightness iAct: %d", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness, iAct);
-    if ( iAct == 2 && v == 1 )
-        v = 2;
+    LOGI("color %u fm %u status %u is lit %u brightness", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness);
     ret = write_int(LED_FILE, v);
     pthread_mutex_unlock(&g_lock);
 
