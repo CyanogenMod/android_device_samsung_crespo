@@ -50,3 +50,6 @@ $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor-blobs.mk)
 
 PRODUCT_PACKAGES += \
 	Stk
+
+PRODUCT_PROPERTY_OVERRIDES += \
+ ro.telephony.ril.v3=signalstrength

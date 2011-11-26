@@ -81,3 +81,5 @@ BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 
 #doesn't actually work until we have hwcomposer
 USE_OPENGL_RENDERER := true
+
+ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp
