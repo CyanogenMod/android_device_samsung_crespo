@@ -1,5 +1,6 @@
 $(call inherit-product, device/samsung/crespo/full_crespo.mk)
 
+PRODUCT_RELEASE_NAME := NS
 # Inherit some common CM stuff.
 $(call inherit-product, vendor/cm/config/common_full_phone.mk)
 
