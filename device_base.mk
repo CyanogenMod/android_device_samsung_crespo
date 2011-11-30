@@ -198,3 +198,11 @@ PRODUCT_PACKAGES += \
 	Mms \
 	libtinyalsa \
 	libs3cjpeg
+
+#NFC
+PRODUCT_PACKAGES += \
+       Nfc     \
+       Tag \
+       libnfc_jni      \
+       libnfc
+
