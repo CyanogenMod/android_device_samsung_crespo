@@ -203,6 +203,13 @@ void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy) {
     gl->recti(gl, dx, dy, dx + w, dy + h);
 }
 
+void gr_font_size(int *x, int *y)
+{
+    *x = gr_font->cwidth;
+    *y = gr_font->cheight;
+}
+
+
 unsigned int gr_get_width(gr_surface surface) {
     if (surface == NULL) {
         return 0;
@@ -311,4 +318,15 @@ int gr_fb_height(void)
 gr_pixel *gr_fb_data(void)
 {
     return (unsigned short *) gr_mem_surface.data;
+}
+
+
+void gr_fb_blank(bool blank)
+{
+    int ret;
+
+    ret = ioctl(gr_fb_fd, FBIOBLANK, blank ? FB_BLANK_POWERDOWN :
+    FB_BLANK_UNBLANK);
+    if (ret < 0)
+        perror("ioctl(): blank");
 }
