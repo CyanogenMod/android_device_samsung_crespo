@@ -49,7 +49,8 @@ $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor.mk)
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor-blobs.mk)
 
 PRODUCT_PACKAGES += \
-	Stk
+	Stk \
+	audio.a2dp.default
 
 PRODUCT_PROPERTY_OVERRIDES += \
  ro.telephony.ril.v3=signalstrength
