@@ -184,6 +184,7 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/prebuilt/camera.herring.so:system/lib/hw/camera.herring.so
 
 PRODUCT_PACKAGES += \
+  audio.a2dp.default \
   secomxregistry \
   libOMX.SEC.AVC.Decoder \
   libOMX.SEC.M4V.Decoder \
