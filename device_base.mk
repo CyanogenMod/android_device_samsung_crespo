@@ -142,8 +142,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
        wifi.interface=wlan0 \
-       wifi.supplicant_scan_interval=15 \
-       dalvik.vm.heapsize=48m
+       wifi.supplicant_scan_interval=15
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
@@ -194,4 +193,5 @@ PRODUCT_PACKAGES += \
 	libtinyalsa \
 	libs3cjpeg
 
+$(call inherit-product, frameworks/base/build/phone-hdpi-dalvik-heap.mk)
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
