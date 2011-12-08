@@ -974,7 +974,14 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
     }
 
     pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
-    if (pSECPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress) {
+    if (((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) ||
+        (pSECComponent->getAllDelayBuffer == OMX_TRUE)){
+        /* Dummy input data for get out encoded last frame */
+        pInputInfo->YPhyAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].YPhyAddr;
+        pInputInfo->CPhyAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].CPhyAddr;
+        pInputInfo->YVirAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].YVirAddr;
+        pInputInfo->CVirAddr = pH264Enc->MFCEncInputBuffer[pH264Enc->indexInputBuffer].CVirAddr;
+    } else if (pSECPort->portDefinition.format.video.eColorFormat == OMX_SEC_COLOR_FormatNV12TPhysicalAddress) {
         SEC_OSAL_Memcpy(&addrInfo.pAddrY, pInputData->dataBuffer, sizeof(addrInfo.pAddrY));
         SEC_OSAL_Memcpy(&addrInfo.pAddrC, pInputData->dataBuffer + sizeof(addrInfo.pAddrY), sizeof(addrInfo.pAddrC));
         pInputInfo->YPhyAddr = addrInfo.pAddrY;
@@ -1032,6 +1039,22 @@ OMX_ERRORTYPE SEC_MFC_H264_Encode(OMX_COMPONENTTYPE *pOMXComponent, SEC_OMX_DATA
             SEC_OSAL_Log(SEC_LOG_ERROR, "%s: SsbSipMfcEncGetOutBuf failed, ret:%d", __FUNCTION__, pH264Enc->hMFCH264Handle.returnCodec);
             ret = OMX_ErrorUndefined;
             goto EXIT;
+        }
+
+        if (pSECComponent->getAllDelayBuffer == OMX_TRUE) {
+            ret = OMX_ErrorInputDataEncodeYet;
+        }
+        if ((pInputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pInputData->nFlags = (pOutputData->nFlags & (~OMX_BUFFERFLAG_EOS));
+            pSECComponent->getAllDelayBuffer = OMX_TRUE;
+            ret = OMX_ErrorInputDataEncodeYet;
+        }
+        if ((pOutputData->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+            pSECComponent->getAllDelayBuffer = OMX_FALSE;
+            pOutputData->dataLen = 0;
+            pOutputData->usedDataLen = 0;
+            SEC_OSAL_Log(SEC_LOG_TRACE, "OMX_BUFFERFLAG_EOS!!!");
+            ret = OMX_ErrorNone;
         }
     }
     if (pH264Enc->hMFCH264Handle.returnCodec != MFC_RET_OK) {

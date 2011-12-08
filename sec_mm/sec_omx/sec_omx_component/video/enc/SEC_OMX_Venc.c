@@ -688,6 +688,14 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
         if (pSECComponent->bUseFlagEOF == OMX_TRUE) {
             flagEOF = OMX_TRUE;
             checkedSize = checkInputStreamLen;
+            if (checkedSize == 0) {
+                SEC_OMX_BASEPORT *pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
+                int width = pSECPort->portDefinition.format.video.nFrameWidth;
+                int height = pSECPort->portDefinition.format.video.nFrameHeight;
+                inputUseBuffer->remainDataLen = inputUseBuffer->dataLen = (width * height * 3) / 2;
+                checkedSize = checkInputStreamLen = inputUseBuffer->remainDataLen;
+                inputUseBuffer->nFlags |= OMX_BUFFERFLAG_EOS;
+            }
             if (inputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS) {
                 flagEOS = OMX_TRUE;
             }
