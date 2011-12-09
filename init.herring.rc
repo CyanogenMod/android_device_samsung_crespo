@@ -34,7 +34,7 @@ on boot
 
 on fs
     mkdir /efs 0775 radio radio
-    mount yaffs2 mtd@efs /efs nosuid nodev
+    mount yaffs2 mtd@efs /efs noatime nosuid nodev
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
     mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
@@ -56,6 +56,8 @@ on fs
 # We chown/chmod /efs because mount is run as root + defaults
     chown radio radio /efs
     chmod 0775 /efs
+    mkdir /data/radio 0775 radio radio
+    mkdir /data/radio/log 0775 radio radio
 
 # permissions for NFC
     setprop ro.nfc.port "I2C"
