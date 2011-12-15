@@ -82,3 +82,6 @@ BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 USE_OPENGL_RENDERER := true
 
 ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp
+
+BOARD_USE_SKIA_LCDTEXT := true
+
