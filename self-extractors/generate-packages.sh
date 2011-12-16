@@ -33,8 +33,9 @@
 # 237867 = IML74B
 # 238432 = IML74E
 # 238649 = IML74G
-ZIP=soju-ota-238649.zip
-BUILD=iml74g
+# 239410 = IML74K
+ZIP=soju-ota-239410.zip
+BUILD=iml74k
 ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
