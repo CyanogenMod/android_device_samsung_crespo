@@ -38,6 +38,11 @@
 PRODUCT_COPY_FILES := \
 	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
 
+# GPS config
+PRODUCT_COPY_FILES += \
+        device/samsung/crespo/gps.xml:system/vendor/etc/gps.xml \
+        device/samsung/crespo/gps.conf:system/etc/gps.conf
+
 $(call inherit-product, device/samsung/crespo/device_base.mk)
 
 # See comment at the top of this file. This is where the other
@@ -47,9 +52,3 @@ $(call inherit-product, device/samsung/crespo/device_base.mk)
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor.mk)
 
 $(call inherit-product-if-exists, vendor/samsung/crespo/device-vendor-blobs.mk)
-
-PRODUCT_PACKAGES += \
-	Stk
-
-PRODUCT_PROPERTY_OVERRIDES += \
- ro.telephony.ril.v3=signalstrength

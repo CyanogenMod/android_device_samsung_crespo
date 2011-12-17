@@ -37,12 +37,12 @@
 #define MAX_COMPONENT_ROLE_NUM    1
 
 /* MPEG4 */
-#define SEC_OMX_COMPOMENT_MPEG4_DEC         "OMX.SEC.MPEG4.Decoder"
-#define SEC_OMX_COMPOMENT_MPEG4_DEC_ROLE    "video_decoder.mpeg4"
+#define SEC_OMX_COMPONENT_MPEG4_DEC         "OMX.SEC.MPEG4.Decoder"
+#define SEC_OMX_COMPONENT_MPEG4_DEC_ROLE    "video_decoder.mpeg4"
 
 /* H.263 */
-#define SEC_OMX_COMPOMENT_H263_DEC          "OMX.SEC.H263.Decoder"
-#define SEC_OMX_COMPOMENT_H263_DEC_ROLE     "video_decoder.h263"
+#define SEC_OMX_COMPONENT_H263_DEC          "OMX.SEC.H263.Decoder"
+#define SEC_OMX_COMPONENT_H263_DEC_ROLE     "video_decoder.h263"
 
 
 #ifdef __cplusplus

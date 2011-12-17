@@ -40,14 +40,18 @@
 #define DEFAULT_FRAME_WIDTH          176
 #define DEFAULT_FRAME_HEIGHT         144
 
-#define DEFAULT_VIDEO_INPUT_BUFFER_SIZE    (DEFAULT_FRAME_WIDTH * DEFAULT_FRAME_HEIGHT) * 2
-#define DEFAULT_VIDEO_OUTPUT_BUFFER_SIZE   (DEFAULT_FRAME_WIDTH * DEFAULT_FRAME_HEIGHT * 3) / 2
+#define DEFAULT_VIDEO_INPUT_BUFFER_SIZE    ((DEFAULT_FRAME_WIDTH * DEFAULT_FRAME_HEIGHT) * 2)
+#define DEFAULT_VIDEO_OUTPUT_BUFFER_SIZE   ((DEFAULT_FRAME_WIDTH * DEFAULT_FRAME_HEIGHT * 3) / 2)
 
-#define DEFAULT_MFC_INPUT_BUFFER_SIZE    1024 * 1024 /*DEFAULT_VIDEO_INPUT_BUFFER_SIZE*/
+#define MFC_INPUT_BUFFER_NUM_MAX         2
+#define DEFAULT_MFC_INPUT_BUFFER_SIZE    ((1280 * 720 * 3) / 2)
 
 #define INPUT_PORT_SUPPORTFORMAT_NUM_MAX    1
 #define OUTPUT_PORT_SUPPORTFORMAT_NUM_MAX   3
 
+#ifdef USE_ANDROID_EXTENSION
+#define ANDROID_MAX_VIDEO_OUTPUTBUFFER_NUM   1
+#endif
 
 typedef struct
 {
@@ -55,6 +59,24 @@ typedef struct
     void *pAddrC;
 } MFC_DEC_ADDR_INFO;
 
+typedef struct _SEC_MFC_NBDEC_THREAD
+{
+    OMX_HANDLETYPE  hNBDecodeThread;
+    OMX_HANDLETYPE  hDecFrameStart;
+    OMX_HANDLETYPE  hDecFrameEnd;
+    OMX_BOOL        bExitDecodeThread;
+    OMX_BOOL        bDecoderRun;
+
+    OMX_U32         oneFrameSize;
+} SEC_MFC_NBDEC_THREAD;
+
+typedef struct _MFC_DEC_INPUT_BUFFER
+{
+    void *PhyAddr;      // physical address
+    void *VirAddr;      // virtual address
+    int   bufferSize;   // input buffer alloc size
+    int   dataSize;     // Data length
+} MFC_DEC_INPUT_BUFFER;
 
 #ifdef __cplusplus
 extern "C" {

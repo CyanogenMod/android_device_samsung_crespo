@@ -8,7 +8,7 @@ LOCAL_SRC_FILES := \
 	SEC_OMX_Baseport.c \
 	SEC_OMX_Resourcemanager.c
 
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE := libsecbasecomponent
 
 LOCAL_CFLAGS :=

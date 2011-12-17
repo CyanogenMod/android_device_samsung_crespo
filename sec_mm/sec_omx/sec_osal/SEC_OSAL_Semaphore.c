@@ -43,7 +43,7 @@ OMX_ERRORTYPE SEC_OSAL_SemaphoreCreate(OMX_HANDLETYPE *semaphoreHandle)
 {
     sem_t *sema;
 
-    sema = (sem_t *)SEC_OSAL_Malloc(sizeof(sema));
+    sema = (sem_t *)SEC_OSAL_Malloc(sizeof(sem_t));
     if (!sema)
         return OMX_ErrorInsufficientResources;
 

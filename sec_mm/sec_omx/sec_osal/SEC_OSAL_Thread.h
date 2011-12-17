@@ -37,8 +37,8 @@ extern "C" {
 
 OMX_ERRORTYPE SEC_OSAL_ThreadCreate(OMX_HANDLETYPE *threadHandle, OMX_PTR function_name, OMX_PTR argument);
 OMX_ERRORTYPE SEC_OSAL_ThreadTerminate(OMX_HANDLETYPE threadHandle);
-OMX_ERRORTYPE SEC_OSAL_ThreadCancle(OMX_HANDLETYPE threadHandle);
-void          SEC_OSAL_TheadExit(void *value_ptr);
+OMX_ERRORTYPE SEC_OSAL_ThreadCancel(OMX_HANDLETYPE threadHandle);
+void          SEC_OSAL_ThreadExit(void *value_ptr);
 void          SEC_OSAL_SleepMillisec(OMX_U32 ms);
 
 #ifdef __cplusplus
