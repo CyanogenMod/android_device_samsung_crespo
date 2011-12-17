@@ -147,8 +147,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	audio_policy.herring \
 	audio.primary.herring \
-	audio.a2dp.default \
-	libaudioutils
+	audio.a2dp.default
 
 # NFC
 PRODUCT_PACKAGES += \
