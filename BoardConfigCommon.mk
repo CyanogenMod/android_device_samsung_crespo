@@ -77,3 +77,9 @@ WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
 WIFI_DRIVER_MODULE_ARG      :=  "iface_name=wlan0 firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
 
 USE_OPENGL_RENDERER	:= true
+
+# this 2 has being removed by google
+# BOARD_HAS_NO_SELECT_BUTTON := true
+# BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
+
+BOARD_USE_SKIA_LCDTEXT := true
