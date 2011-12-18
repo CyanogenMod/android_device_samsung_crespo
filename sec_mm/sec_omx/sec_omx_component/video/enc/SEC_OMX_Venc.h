@@ -44,9 +44,20 @@
                                            /* (DEFAULT_FRAME_WIDTH * DEFAULT_FRAME_HEIGHT * 3) / 2 */
 #define DEFAULT_VIDEO_OUTPUT_BUFFER_SIZE   DEFAULT_VIDEO_INPUT_BUFFER_SIZE
 
+#define MFC_INPUT_BUFFER_NUM_MAX            2
+
+#ifdef USE_ANDROID_EXTENSION
+#define INPUT_PORT_SUPPORTFORMAT_NUM_MAX    4
+#else
 #define INPUT_PORT_SUPPORTFORMAT_NUM_MAX    3
+#endif
 #define OUTPUT_PORT_SUPPORTFORMAT_NUM_MAX   1
 
+#ifdef USE_ANDROID_EXTENSION
+// The largest metadata buffer size advertised
+// when metadata buffer mode is used for video encoding
+#define  MAX_INPUT_METADATA_BUFFER_SIZE (64)
+#endif
 
 typedef struct
 {
@@ -54,6 +65,26 @@ typedef struct
     void *pAddrC;
 } MFC_ENC_ADDR_INFO;
 
+typedef struct _SEC_MFC_NBENC_THREAD
+{
+    OMX_HANDLETYPE  hNBEncodeThread;
+    OMX_HANDLETYPE  hEncFrameStart;
+    OMX_HANDLETYPE  hEncFrameEnd;
+    OMX_BOOL        bExitEncodeThread;
+    OMX_BOOL        bEncoderRun;
+} SEC_MFC_NBENC_THREAD;
+
+typedef struct _MFC_ENC_INPUT_BUFFER
+{
+    void *YPhyAddr; // physical address of Y
+    void *CPhyAddr; // physical address of CbCr
+    void *YVirAddr; // virtual address of Y
+    void *CVirAddr; // virtual address of CbCr
+    int YBufferSize; // input buffer alloc size of Y
+    int CBufferSize; // input buffer alloc size of CbCr
+    int YDataSize;  // input size of Y data
+    int CDataSize;  // input size of CbCr data
+} MFC_ENC_INPUT_BUFFER;
 
 #ifdef __cplusplus
 extern "C" {

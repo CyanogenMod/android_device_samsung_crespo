@@ -179,7 +179,7 @@ static OMX_ERRORTYPE SEC_OMX_BufferProcessThread(OMX_PTR threadData)
     pSECComponent = (SEC_OMX_BASECOMPONENT *)pOMXComponent->pComponentPrivate;
     pSECComponent->sec_BufferProcess(pOMXComponent);
 
-    SEC_OSAL_TheadExit(NULL);
+    SEC_OSAL_ThreadExit(NULL);
 
 EXIT:
     FunctionOut();
@@ -329,6 +329,10 @@ OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U3
         case OMX_StateLoaded:
             for (i = 0; i < pSECComponent->portParam.nPorts; i++) {
                 pSECPort = (pSECComponent->pSECPort + i);
+                if (pSECPort == NULL) {
+                    ret = OMX_ErrorBadParameter;
+                    goto EXIT;
+                }
                 if (CHECK_PORT_TUNNELED(pSECPort) && CHECK_PORT_BUFFER_SUPPLIER(pSECPort)) {
                     if (CHECK_PORT_ENABLED(pSECPort)) {
                         ret = pSECComponent->sec_AllocateTunnelBuffer(pSECPort, i);
@@ -540,7 +544,7 @@ static OMX_ERRORTYPE SEC_OMX_MessageHandlerThread(OMX_PTR threadData)
         }
     }
 
-    SEC_OSAL_TheadExit(NULL);
+    SEC_OSAL_ThreadExit(NULL);
 
 EXIT:
     FunctionOut();
@@ -1094,7 +1098,7 @@ OMX_ERRORTYPE SEC_OMX_SetParameter(
     {
         OMX_PARAM_BUFFERSUPPLIERTYPE *bufferSupplier = (OMX_PARAM_BUFFERSUPPLIERTYPE *)ComponentParameterStructure;
         OMX_U32               portIndex = bufferSupplier->nPortIndex;
-        SEC_OMX_BASEPORT         *pSECPort;
+        SEC_OMX_BASEPORT      *pSECPort = &pSECComponent->pSECPort[portIndex];
 
         if ((pSECComponent->currentState != OMX_StateLoaded) && (pSECComponent->currentState != OMX_StateWaitForResources)) {
             if (pSECPort->portDefinition.bEnabled == OMX_TRUE) {
@@ -1112,7 +1116,6 @@ OMX_ERRORTYPE SEC_OMX_SetParameter(
             goto EXIT;
         }
 
-        pSECPort = &pSECComponent->pSECPort[portIndex];
         if (bufferSupplier->eBufferSupplier == OMX_BufferSupplyUnspecified) {
             ret = OMX_ErrorNone;
             goto EXIT;
@@ -1215,7 +1218,7 @@ OMX_ERRORTYPE SEC_OMX_GetConfig(
         ret = OMX_ErrorInvalidState;
         goto EXIT;
     }
-    ret = OMX_ErrorNone;
+    ret = OMX_ErrorUnsupportedIndex;
 
 EXIT:
     FunctionOut();
@@ -1258,7 +1261,7 @@ OMX_ERRORTYPE SEC_OMX_SetConfig(
         ret = OMX_ErrorInvalidState;
         goto EXIT;
     }
-    ret = OMX_ErrorNone;
+    ret = OMX_ErrorUnsupportedIndex;
 
 EXIT:
     FunctionOut();
@@ -1419,7 +1422,6 @@ OMX_ERRORTYPE SEC_OMX_BaseComponent_Constructor(
 
     pOMXComponent->GetComponentVersion = &SEC_OMX_GetComponentVersion;
     pOMXComponent->SendCommand         = &SEC_OMX_SendCommand;
-    pOMXComponent->GetConfig           = &SEC_OMX_GetConfig;
     pOMXComponent->GetExtensionIndex   = &SEC_OMX_GetExtensionIndex;
     pOMXComponent->GetState            = &SEC_OMX_GetState;
     pOMXComponent->SetCallbacks        = &SEC_OMX_SetCallbacks;
@@ -1482,5 +1484,3 @@ EXIT:
 
     return ret;
 }
-
-

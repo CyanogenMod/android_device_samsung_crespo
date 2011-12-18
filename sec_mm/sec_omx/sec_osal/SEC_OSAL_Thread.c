@@ -125,7 +125,7 @@ EXIT:
 
 }
 
-OMX_ERRORTYPE SEC_OSAL_ThreadCancle(OMX_HANDLETYPE threadHandle)
+OMX_ERRORTYPE SEC_OSAL_ThreadCancel(OMX_HANDLETYPE threadHandle)
 {
     SEC_THREAD_HANDLE_TYPE *thread = (SEC_THREAD_HANDLE_TYPE *)threadHandle;
 
@@ -140,7 +140,7 @@ OMX_ERRORTYPE SEC_OSAL_ThreadCancle(OMX_HANDLETYPE threadHandle)
     return OMX_ErrorNone;
 }
 
-void SEC_OSAL_TheadExit(void *value_ptr)
+void SEC_OSAL_ThreadExit(void *value_ptr)
 {
     pthread_exit(value_ptr);
     return;

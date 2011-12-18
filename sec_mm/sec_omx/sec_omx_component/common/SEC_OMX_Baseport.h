@@ -62,6 +62,8 @@ typedef struct _SEC_OMX_BASEPORT
     OMX_BOOL                       bIsPortDisabled;
     OMX_MARKTYPE                   markType;
 
+    OMX_CONFIG_RECTTYPE            cropRectangle;
+
     /* Tunnel Info */
     OMX_HANDLETYPE                 tunneledComponent;
     OMX_U32                        tunneledPort;
@@ -70,6 +72,12 @@ typedef struct _SEC_OMX_BASEPORT
     OMX_U32                        tunnelFlags;
 
     OMX_VIDEO_CONTROLRATETYPE      eControlRate;
+
+    /* For Android Native Buffer */
+    OMX_BOOL                       bUseAndroidNativeBuffer;
+    /* For Android Store Meta Data inBuffer */
+    OMX_BOOL                       bStoreMetaDataInBuffer;
+    OMX_PTR                        pIMGGrallocModule;
 } SEC_OMX_BASEPORT;
 
 
