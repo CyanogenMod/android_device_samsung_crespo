@@ -37,8 +37,8 @@
 #define MAX_COMPONENT_ROLE_NUM  1
 
 /* H.264 */
-#define SEC_OMX_COMPOMENT_H264_DEC "OMX.SEC.AVC.Decoder"
-#define SEC_OMX_COMPOMENT_H264_DEC_ROLE "video_decoder.avc"
+#define SEC_OMX_COMPONENT_H264_DEC "OMX.SEC.AVC.Decoder"
+#define SEC_OMX_COMPONENT_H264_DEC_ROLE "video_decoder.avc"
 
 
 #ifdef __cplusplus

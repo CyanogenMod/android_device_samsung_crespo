@@ -16,10 +16,10 @@
  */
 
 /*
- * @file	SEC_OMX_Macros.h
- * @brief	Macros
- * @author	SeungBeom Kim (sbcrux.kim@samsung.com)
- * @version	1.0
+ * @file    SEC_OMX_Macros.h
+ * @brief    Macros
+ * @author    SeungBeom Kim (sbcrux.kim@samsung.com)
+ * @version    1.0
  * @history
  *   2010.7.15 : Create
  */
@@ -38,15 +38,15 @@
 #define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
 #define ALIGN_TO_8KB(x)   ((((x) + (1 << 13) - 1) >> 13) << 13)
 
-#define INIT_SET_SIZE_VERSION(_struct_, _structType_)                       \
-	do {                                                                \
-		SEC_OSAL_Memset((_struct_), 0, sizeof(_structType_));       \
-		(_struct_)->nSize = sizeof(_structType_);                   \
-		(_struct_)->nVersion.s.nVersionMajor = VERSIONMAJOR_NUMBER; \
-		(_struct_)->nVersion.s.nVersionMinor = VERSIONMINOR_NUMBER; \
-		(_struct_)->nVersion.s.nRevision = REVISION_NUMBER;         \
-		(_struct_)->nVersion.s.nStep = STEP_NUMBER;                 \
-	} while (0)
+#define INIT_SET_SIZE_VERSION(_struct_, _structType_)               \
+    do {                                                            \
+        SEC_OSAL_Memset((_struct_), 0, sizeof(_structType_));       \
+        (_struct_)->nSize = sizeof(_structType_);                   \
+        (_struct_)->nVersion.s.nVersionMajor = VERSIONMAJOR_NUMBER; \
+        (_struct_)->nVersion.s.nVersionMinor = VERSIONMINOR_NUMBER; \
+        (_struct_)->nVersion.s.nRevision = REVISION_NUMBER;         \
+        (_struct_)->nVersion.s.nStep = STEP_NUMBER;                 \
+    } while (0)
 
 /*
  * Port Specific
