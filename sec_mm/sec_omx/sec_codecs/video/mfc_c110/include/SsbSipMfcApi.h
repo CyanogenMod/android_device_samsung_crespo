@@ -23,13 +23,7 @@
 #define MAX_DECODER_INPUT_BUFFER_SIZE  (1024 * 3072)
 #define MAX_ENCODER_OUTPUT_BUFFER_SIZE (1024 * 3072)
 
-#define SUPPORT_1080P        1
-
-#if SUPPORT_1080P
-#define MMAP_BUFFER_SIZE_MMAP          (63*1024*1024)
-#else
-#define MMAP_BUFFER_SIZE_MMAP          (49*1024*1024)
-#endif
+#define MMAP_BUFFER_SIZE_MMAP          (70*1024*1024)
 
 #define S5PC110_MFC_DEV_NAME           "/dev/s3c-mfc"
 
@@ -60,6 +54,16 @@ typedef enum {
     I_FRAME = 1,
     NOT_CODED = 2
 } SSBSIP_MFC_FORCE_SET_FRAME_TYPE;
+
+typedef enum {
+    NV12_LINEAR = 0,
+    NV12_TILE
+} SSBSIP_MFC_INSTRM_MODE_TYPE;
+
+typedef enum {
+    NO_CACHE = 0,
+    CACHE = 1
+} SSBIP_MFC_BUFFER_TYPE;
 
 typedef enum {
     MFC_DEC_SETCONF_POST_ENABLE = 1,
@@ -188,6 +192,7 @@ typedef struct {
     int LumaPadVal;                     // [IN] Luma pel value used to fill padding area
     int CbPadVal;                       // [IN] CB pel value used to fill padding area
     int CrPadVal;                       // [IN] CR pel value used to fill padding area
+    int FrameMap;                       // [IN] Encoding input mode(tile mode or linear mode)
 
     // H.264 specific parameters
     int ProfileIDC;                     // [IN] profile
@@ -230,6 +235,7 @@ typedef struct {
     int LumaPadVal;                     // [IN] Luma pel value used to fill padding area
     int CbPadVal;                       // [IN] CB pel value used to fill padding area
     int CrPadVal;                       // [IN] CR pel value used to fill padding area
+    int FrameMap;                       // [IN] Encoding input mode(tile mode or linear mode)
 
     // MPEG4 specific parameters
     int ProfileIDC;                     // [IN] profile
@@ -261,6 +267,7 @@ typedef struct {
     int LumaPadVal;                     // [IN] Luma pel value used to fill padding area
     int CbPadVal;                       // [IN] CB pel value used to fill padding area
     int CrPadVal;                       // [IN] CR pel value used to fill padding area
+    int FrameMap;                       // [IN] Encoding input mode(tile mode or linear mode)
 
     // H.263 specific parameters
     int FrameRate;                      // [IN] rate control parameter(frame rate)
@@ -285,15 +292,9 @@ extern "C" {
 #endif
 
 /*--------------------------------------------------------------------------------*/
-/* Format Conversion API                                                          */
-/*--------------------------------------------------------------------------------*/
-void Y_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size);
-void CbCr_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size);
-
-/*--------------------------------------------------------------------------------*/
 /* Decoding APIs                                                                  */
 /*--------------------------------------------------------------------------------*/
-void *SsbSipMfcDecOpen(void);
+void *SsbSipMfcDecOpen(void *value);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecInit(void *openHandle, SSBSIP_MFC_CODEC_TYPE codec_type, int Frameleng);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecExe(void *openHandle, int lengthBufFill);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcDecClose(void *openHandle);
@@ -309,11 +310,12 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecGetConfig(void *openHandle, SSBSIP_MFC_DEC_CON
 /*--------------------------------------------------------------------------------*/
 /* Encoding APIs                                                                  */
 /*--------------------------------------------------------------------------------*/
-void *SsbSipMfcEncOpen(void);
+void *SsbSipMfcEncOpen(void *value);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncExe(void *openHandle);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncClose(void *openHandle);
 
+SSBSIP_MFC_ERROR_CODE SsbSipMfcEncSetSize(void *openHandle, SSBSIP_MFC_CODEC_TYPE codecType, int nWidth, int nHeight);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPUT_INFO *input_info);
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncSetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPUT_INFO *input_info);
 

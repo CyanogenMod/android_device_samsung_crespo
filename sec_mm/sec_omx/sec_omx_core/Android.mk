@@ -6,7 +6,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := SEC_OMX_Component_Register.c \
 	SEC_OMX_Core.c
 
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE := libSEC_OMX_Core
 
 LOCAL_CFLAGS :=

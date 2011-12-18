@@ -37,19 +37,19 @@
 
 OSCL_EXPORT_REF int SEC_OMX_COMPONENT_Library_Register(SECRegisterComponentType **secComponents)
 {
-	FunctionIn();
+    FunctionIn();
 
-	if (secComponents == NULL)
-		goto EXIT;
+    if (secComponents == NULL)
+        goto EXIT;
 
-	/* component 1 - video decoder H.264 */
-	SEC_OSAL_Strcpy(secComponents[0]->componentName, SEC_OMX_COMPOMENT_H264_ENC);
-	SEC_OSAL_Strcpy(secComponents[0]->roles[0], SEC_OMX_COMPOMENT_H264_ENC_ROLE);
-	secComponents[0]->totalRoleNum = MAX_COMPONENT_ROLE_NUM;
+    /* component 1 - video decoder H.264 */
+    SEC_OSAL_Strcpy(secComponents[0]->componentName, SEC_OMX_COMPONENT_H264_ENC);
+    SEC_OSAL_Strcpy(secComponents[0]->roles[0], SEC_OMX_COMPONENT_H264_ENC_ROLE);
+    secComponents[0]->totalRoleNum = MAX_COMPONENT_ROLE_NUM;
 
 EXIT:
-	FunctionOut();
+    FunctionOut();
 
-	return MAX_COMPONENT_NUM;
+    return MAX_COMPONENT_NUM;
 }
 

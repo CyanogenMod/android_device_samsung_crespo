@@ -84,11 +84,13 @@ out:
     return MFC_UNPACKED_PB;
 }
 
-void *SsbSipMfcDecOpen(void)
+void *SsbSipMfcDecOpen(void *value)
 {
     int hMFCOpen;
     unsigned int mapped_addr;
     _MFCLIB *pCTX;
+    mfc_common_args DecArg;
+    int ret_code;
 
     pCTX = (_MFCLIB *)malloc(sizeof(_MFCLIB));
     if (pCTX == NULL) {
@@ -101,6 +103,17 @@ void *SsbSipMfcDecOpen(void)
     if (hMFCOpen < 0) {
         LOGE("SsbSipMfcDecOpen: MFC Open failure\n");
         return NULL;
+    }
+
+    if (*(unsigned int *)value == NO_CACHE ||
+        *(unsigned int *)value == CACHE) {
+        DecArg.args.buf_type = *(unsigned int *)value;
+        ret_code = ioctl(hMFCOpen, IOCTL_MFC_BUF_CACHE, &DecArg);
+        if (DecArg.ret_code != MFC_RET_OK) {
+            LOGE("SsbSipMfcDecOpenExt: IOCTL_MFC_BUF_CACHE (%d) failed\n", DecArg.ret_code);
+        }
+    } else {
+        LOGE("SsbSipMfcDecOpenExt: value is invalid, value: %d\n", *(int *)value);
     }
 
     mapped_addr = (unsigned int)mmap(0, MMAP_BUFFER_SIZE_MMAP, PROT_READ | PROT_WRITE, MAP_SHARED, hMFCOpen, 0);
@@ -502,174 +515,4 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcDecGetConfig(void *openHandle, SSBSIP_MFC_DEC_CON
     }
 
     return MFC_RET_OK;
-}
-
-int tile_4x2_read(int x_size, int y_size, int x_pos, int y_pos)
-{
-    int pixel_x_m1, pixel_y_m1;
-    int roundup_x, roundup_y;
-    int linear_addr0, linear_addr1, bank_addr ;
-    int x_addr;
-    int trans_addr;
-
-    pixel_x_m1 = x_size -1;
-    pixel_y_m1 = y_size -1;
-
-    roundup_x = ((pixel_x_m1 >> 7) + 1);
-    roundup_y = ((pixel_x_m1 >> 6) + 1);
-
-    x_addr = x_pos >> 2;
-
-    if ((y_size <= y_pos+32) && ( y_pos < y_size) &&
-        (((pixel_y_m1 >> 5) & 0x1) == 0) && (((y_pos >> 5) & 0x1) == 0)) {
-        linear_addr0 = (((y_pos & 0x1f) <<4) | (x_addr & 0xf));
-        linear_addr1 = (((y_pos >> 6) & 0xff) * roundup_x + ((x_addr >> 6) & 0x3f));
-
-        if (((x_addr >> 5) & 0x1) == ((y_pos >> 5) & 0x1))
-            bank_addr = ((x_addr >> 4) & 0x1);
-        else
-            bank_addr = 0x2 | ((x_addr >> 4) & 0x1);
-    } else {
-        linear_addr0 = (((y_pos & 0x1f) << 4) | (x_addr & 0xf));
-        linear_addr1 = (((y_pos >> 6) & 0xff) * roundup_x + ((x_addr >> 5) & 0x7f));
-
-        if (((x_addr >> 5) & 0x1) == ((y_pos >> 5) & 0x1))
-            bank_addr = ((x_addr >> 4) & 0x1);
-        else
-            bank_addr = 0x2 | ((x_addr >> 4) & 0x1);
-    }
-
-    linear_addr0 = linear_addr0 << 2;
-    trans_addr = (linear_addr1 <<13) | (bank_addr << 11) | linear_addr0;
-
-    return trans_addr;
-}
-
-void Y_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size)
-{
-    int trans_addr;
-    unsigned int i, j, k, index;
-    unsigned char data8[4];
-    unsigned int max_index = x_size * y_size;
-
-    for (i = 0; i < y_size; i = i + 16) {
-        for (j = 0; j < x_size; j = j + 16) {
-            trans_addr = tile_4x2_read(x_size, y_size, j, i);
-            for (k = 0; k < 16; k++) {
-                /* limit check - prohibit segmentation fault */
-                index = (i * x_size) + (x_size * k) + j;
-                /* remove equal condition to solve thumbnail bug */
-                if (index + 16 > max_index) {
-                    continue;
-                }
-
-                data8[0] = p_tiled_addr[trans_addr + 64 * k + 0];
-                data8[1] = p_tiled_addr[trans_addr + 64 * k + 1];
-                data8[2] = p_tiled_addr[trans_addr + 64 * k + 2];
-                data8[3] = p_tiled_addr[trans_addr + 64 * k + 3];
-
-                p_linear_addr[index] = data8[0];
-                p_linear_addr[index + 1] = data8[1];
-                p_linear_addr[index + 2] = data8[2];
-                p_linear_addr[index + 3] = data8[3];
-
-                data8[0] = p_tiled_addr[trans_addr + 64 * k + 4];
-                data8[1] = p_tiled_addr[trans_addr + 64 * k + 5];
-                data8[2] = p_tiled_addr[trans_addr + 64 * k + 6];
-                data8[3] = p_tiled_addr[trans_addr + 64 * k + 7];
-
-                p_linear_addr[index + 4] = data8[0];
-                p_linear_addr[index + 5] = data8[1];
-                p_linear_addr[index + 6] = data8[2];
-                p_linear_addr[index + 7] = data8[3];
-
-                data8[0] = p_tiled_addr[trans_addr + 64 * k + 8];
-                data8[1] = p_tiled_addr[trans_addr + 64 * k + 9];
-                data8[2] = p_tiled_addr[trans_addr + 64 * k + 10];
-                data8[3] = p_tiled_addr[trans_addr + 64 * k + 11];
-
-                p_linear_addr[index + 8] = data8[0];
-                p_linear_addr[index + 9] = data8[1];
-                p_linear_addr[index + 10] = data8[2];
-                p_linear_addr[index + 11] = data8[3];
-
-                data8[0] = p_tiled_addr[trans_addr + 64 * k + 12];
-                data8[1] = p_tiled_addr[trans_addr + 64 * k + 13];
-                data8[2] = p_tiled_addr[trans_addr + 64 * k + 14];
-                data8[3] = p_tiled_addr[trans_addr + 64 * k + 15];
-
-                p_linear_addr[index + 12] = data8[0];
-                p_linear_addr[index + 13] = data8[1];
-                p_linear_addr[index + 14] = data8[2];
-                p_linear_addr[index + 15] = data8[3];
-            }
-        }
-    }
-}
-
-void CbCr_tile_to_linear_4x2(unsigned char *p_linear_addr, unsigned char *p_tiled_addr, unsigned int x_size, unsigned int y_size)
-{
-    int trans_addr;
-    unsigned int i, j, k, index;
-    unsigned char data8[4];
-	unsigned int half_y_size = y_size / 2;
-    unsigned int max_index = x_size * half_y_size;
-    unsigned char *pUVAddr[2];
-    
-    pUVAddr[0] = p_linear_addr;
-    pUVAddr[1] = p_linear_addr + ((x_size * half_y_size) / 2);
-    
-    for (i = 0; i < half_y_size; i = i + 16) {
-        for (j = 0; j < x_size; j = j + 16) {
-            trans_addr = tile_4x2_read(x_size, half_y_size, j, i);
-            for (k = 0; k < 16; k++) {
-                /* limit check - prohibit segmentation fault */
-                index = (i * x_size) + (x_size * k) + j;
-                /* remove equal condition to solve thumbnail bug */
-                if (index + 16 > max_index) {
-                    continue;
-                }
-
-				data8[0] = p_tiled_addr[trans_addr + 64 * k + 0];
-				data8[1] = p_tiled_addr[trans_addr + 64 * k + 1];
-				data8[2] = p_tiled_addr[trans_addr + 64 * k + 2];
-				data8[3] = p_tiled_addr[trans_addr + 64 * k + 3];
-
-				pUVAddr[index%2][index/2] = data8[0];
-				pUVAddr[(index+1)%2][(index+1)/2] = data8[1];
-				pUVAddr[(index+2)%2][(index+2)/2] = data8[2];
-				pUVAddr[(index+3)%2][(index+3)/2] = data8[3];
-
-				data8[0] = p_tiled_addr[trans_addr + 64 * k + 4];
-				data8[1] = p_tiled_addr[trans_addr + 64 * k + 5];
-				data8[2] = p_tiled_addr[trans_addr + 64 * k + 6];
-				data8[3] = p_tiled_addr[trans_addr + 64 * k + 7];
-
-				pUVAddr[(index+4)%2][(index+4)/2] = data8[0];
-				pUVAddr[(index+5)%2][(index+5)/2] = data8[1];
-				pUVAddr[(index+6)%2][(index+6)/2] = data8[2];
-				pUVAddr[(index+7)%2][(index+7)/2] = data8[3];
-
-				data8[0] = p_tiled_addr[trans_addr + 64 * k + 8];
-				data8[1] = p_tiled_addr[trans_addr + 64 * k + 9];
-				data8[2] = p_tiled_addr[trans_addr + 64 * k + 10];
-				data8[3] = p_tiled_addr[trans_addr + 64 * k + 11];
-
-				pUVAddr[(index+8)%2][(index+8)/2] = data8[0];
-				pUVAddr[(index+9)%2][(index+9)/2] = data8[1];
-				pUVAddr[(index+10)%2][(index+10)/2] = data8[2];
-				pUVAddr[(index+11)%2][(index+11)/2] = data8[3];
-
-				data8[0] = p_tiled_addr[trans_addr + 64 * k + 12];
-				data8[1] = p_tiled_addr[trans_addr + 64 * k + 13];
-				data8[2] = p_tiled_addr[trans_addr + 64 * k + 14];
-				data8[3] = p_tiled_addr[trans_addr + 64 * k + 15];
-
-				pUVAddr[(index+12)%2][(index+12)/2] = data8[0];
-				pUVAddr[(index+13)%2][(index+13)/2] = data8[1];
-				pUVAddr[(index+14)%2][(index+14)/2] = data8[2];
-				pUVAddr[(index+15)%2][(index+15)/2] = data8[3];
-            }
-        }
-    }
 }
