@@ -33,6 +33,9 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "wipe cache partition",
                        NULL };
 
+void device_ui_init(UIParameters* ui_parameters) {
+}
+
 int device_recovery_start() {
     // recovery can get started before the kernel has created the EMMC
     // devices, which will make the wipe_data operation fail (trying

@@ -12,18 +12,28 @@ LOCAL_SRC_FILES := \
 	SEC_OSAL_Memory.c \
 	SEC_OSAL_Semaphore.c \
 	SEC_OSAL_Library.c \
-	SEC_OSAL_Log.c
+	SEC_OSAL_Log.c \
+	SEC_OSAL_Buffer.cpp
 
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE := libsecosal
 
 LOCAL_CFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES := libcutils libutils
+
+LOCAL_SHARED_LIBRARIES := libcutils libutils \
+                          libui \
+                          libhardware \
+                          libandroid_runtime \
+                          libsurfaceflinger_client \
+                          libbinder \
+                          libmedia
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
 	$(SEC_OMX_INC)/sec \
-	$(SEC_OMX_TOP)/sec_osal
+	$(SEC_OMX_TOP)/sec_osal \
+	$(SEC_OMX_COMPONENT)/common \
+	$(SEC_OMX_TOP)/../../include
 
 include $(BUILD_STATIC_LIBRARY)

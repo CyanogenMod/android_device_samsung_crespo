@@ -38,15 +38,26 @@ TARGET_SEC_INTERNAL_STORAGE := false
 TARGET_ARCH_VARIANT := armv7-a-neon
 ARCH_ARM_HAVE_TLS_REGISTER := true
 
+# USE_CAMERA_STUB := true
+# ifeq ($(USE_CAMERA_STUB),false)
+# BOARD_CAMERA_LIBRARIES := libcamera
+# endif
+
+BOARD_USES_HGL := true
+##BOARD_USES_OVERLAY := true
+BOARD_USES_GENERIC_AUDIO := false
+
 DEFAULT_FB_NUM := 2
 
-BOARD_NAND_PAGE_SIZE := 4096 -s 128
+BOARD_NAND_PAGE_SIZE := 4096
+BOARD_NAND_SPARE_SIZE := 128
 
 BOARD_KERNEL_BASE := 0x30000000
 BOARD_KERNEL_PAGESIZE := 4096
 BOARD_KERNEL_CMDLINE := console=ttyFIQ0 no_console_suspend
 
-#TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
+TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
+TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 
 TARGET_USERIMAGES_USE_EXT4 := true
@@ -54,31 +65,21 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE := 536870912
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1073741824
 BOARD_FLASH_BLOCK_SIZE := 4096
 
-# FPU compilation flags
-TARGET_GLOBAL_CFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
-TARGET_GLOBAL_CPPFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
-
 # Connectivity - Wi-Fi
-BOARD_WPA_SUPPLICANT_DRIVER := NL80211
-WPA_SUPPLICANT_VERSION      := VER_0_8_X
-BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_bcmdhd
-BOARD_HOSTAPD_DRIVER        := NL80211
-BOARD_HOSTAPD_PRIVATE_LIB   := lib_driver_cmd_bcmdhd
-BOARD_WLAN_DEVICE           := bcmdhd
-BOARD_WLAN_DEVICE_REV       := bcm4329
-WIFI_DRIVER_FW_PATH_PARAM   := "/sys/module/bcmdhd/parameters/firmware_path"
-WIFI_DRIVER_FW_PATH_STA     := "/vendor/firmware/fw_bcmdhd.bin"
-WIFI_DRIVER_FW_PATH_P2P     := "/vendor/firmware/fw_bcmdhd_p2p.bin"
-WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
+WPA_SUPPLICANT_VERSION := VER_0_8_X
+BOARD_WPA_SUPPLICANT_DRIVER := WEXT
+BOARD_WLAN_DEVICE := bcm4329
+BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_wext
+WIFI_DRIVER_MODULE_PATH     := "/system/modules/bcm4329.ko"
+WIFI_DRIVER_FW_PATH_STA     := "/vendor/firmware/fw_bcm4329.bin"
+WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcm4329_apsta.bin"
+WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
+WIFI_DRIVER_MODULE_ARG      :=  "iface_name=wlan0 firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
 
-BOARD_HAS_NO_SELECT_BUTTON := true
+USE_OPENGL_RENDERER	:= true
 
-BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
+# this 2 has being removed by google
+# BOARD_HAS_NO_SELECT_BUTTON := true
+# BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 
-#BOARD_WLAN_DEVICE_REV := bcm4329
-#WIFI_BAND             := 802_11_ABG
-
-#doesn't actually work until we have hwcomposer
-USE_OPENGL_RENDERER := true
-
-ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp
+BOARD_USE_SKIA_LCDTEXT := true

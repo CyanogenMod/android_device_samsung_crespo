@@ -82,7 +82,7 @@ static const struct sensor_t sSensorList[] = {
         { "GP2A Light sensor",
           "Sharp",
           1, SENSORS_LIGHT_HANDLE,
-          SENSOR_TYPE_LIGHT, 3000.0f, 1.0f, 0.75f, 0, { } },
+          SENSOR_TYPE_LIGHT,  powf(10, (280.0f / 47.0f)) * 4, 1.0f, 0.75f, 0, { } },
         { "GP2A Proximity sensor",
           "Sharp",
           1, SENSORS_PROXIMITY_HANDLE,
@@ -252,7 +252,9 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
             // we still have some room, so try to see if we can get
             // some events immediately or just wait if we don't have
             // anything to return
-            n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+            do {
+                n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+            } while (n < 0 && errno == EINTR);
             if (n<0) {
                 LOGE("poll() failed (%s)", strerror(errno));
                 return -errno;

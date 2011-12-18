@@ -33,11 +33,10 @@
 
 #define MAX_QUEUE_ELEMENTS    10
 
-struct SEC_QElem;
 typedef struct _SEC_QElem
 {
-    void             *data;
-    struct SEC_QElem *qNext;
+    void              *data;
+    struct _SEC_QElem *qNext;
 } SEC_QElem;
 
 typedef struct _SEC_QUEUE

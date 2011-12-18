@@ -33,14 +33,12 @@
 #include "SEC_OMX_Venc.h"
 #include "SEC_OMX_Basecomponent.h"
 #include "SEC_OSAL_Thread.h"
+#include "color_space_convertor.h"
 
 #undef  SEC_LOG_TAG
 #define SEC_LOG_TAG    "SEC_VIDEO_ENC"
 #define SEC_LOG_OFF
 #include "SEC_OSAL_Log.h"
-
-#define ONE_FRAME_OUTPUT  /* only one frame output for Android */
-#define S5PC110_ENCODE_IN_DATA_BUFFER /* for Android s5pc110 0copy*/
 
 
 inline void SEC_UpdateFrameSize(OMX_COMPONENTTYPE *pOMXComponent)
@@ -160,6 +158,8 @@ OMX_ERRORTYPE SEC_OMX_UseBuffer(
             goto EXIT;
         }
     }
+
+    SEC_OSAL_Free(temp_bufferHeader);
     ret = OMX_ErrorInsufficientResources;
 
 EXIT:
@@ -256,6 +256,9 @@ OMX_ERRORTYPE SEC_OMX_AllocateBuffer(
             goto EXIT;
         }
     }
+
+    SEC_OSAL_Free(temp_bufferHeader);
+    SEC_OSAL_Free(temp_buffer);
     ret = OMX_ErrorInsufficientResources;
 
 EXIT:
@@ -496,10 +499,9 @@ OMX_ERRORTYPE SEC_InputBufferGetQueue(SEC_OMX_BASECOMPONENT *pSECComponent)
             dataBuffer->dataValid = OMX_TRUE;
             dataBuffer->nFlags = dataBuffer->bufferHeader->nFlags;
             dataBuffer->timeStamp = dataBuffer->bufferHeader->nTimeStamp;
-#ifdef S5PC110_ENCODE_IN_DATA_BUFFER
             pSECComponent->processData[INPUT_PORT_INDEX].dataBuffer = dataBuffer->bufferHeader->pBuffer;
             pSECComponent->processData[INPUT_PORT_INDEX].allocSize = dataBuffer->bufferHeader->nAllocLen;
-#endif
+
             SEC_OSAL_Free(message);
         }
         SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
@@ -686,6 +688,14 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
         if (pSECComponent->bUseFlagEOF == OMX_TRUE) {
             flagEOF = OMX_TRUE;
             checkedSize = checkInputStreamLen;
+            if (checkedSize == 0) {
+                SEC_OMX_BASEPORT *pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
+                int width = pSECPort->portDefinition.format.video.nFrameWidth;
+                int height = pSECPort->portDefinition.format.video.nFrameHeight;
+                inputUseBuffer->remainDataLen = inputUseBuffer->dataLen = (width * height * 3) / 2;
+                checkedSize = checkInputStreamLen = inputUseBuffer->remainDataLen;
+                inputUseBuffer->nFlags |= OMX_BUFFERFLAG_EOS;
+            }
             if (inputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS) {
                 flagEOS = OMX_TRUE;
             }
@@ -738,12 +748,8 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
         if (((inputData->allocSize) - (inputData->dataLen)) >= copySize) {
             SEC_OMX_BASEPORT *pSECPort = &pSECComponent->pSECPort[INPUT_PORT_INDEX];
 
-#ifndef S5PC110_ENCODE_IN_DATA_BUFFER
-            if (copySize > 0) {
-                SEC_OSAL_Memcpy(inputData->dataBuffer + inputData->dataLen, checkInputStream, copySize);
-            }
-#else
-            if (pSECPort->portDefinition.format.video.eColorFormat == OMX_COLOR_FormatYUV420Planar) {
+            if ((pSECPort->portDefinition.format.video.eColorFormat != OMX_SEC_COLOR_FormatNV12TPhysicalAddress) &&
+                (pSECPort->bStoreMetaDataInBuffer == OMX_FALSE)) {
                 if (flagEOF == OMX_TRUE) {
                     OMX_U32 width, height;
 
@@ -756,11 +762,25 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
                     SEC_OSAL_Log(SEC_LOG_TRACE, "width:%d, height:%d, Ysize:%d", width, height, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)));
                     SEC_OSAL_Log(SEC_LOG_TRACE, "width:%d, height:%d, Csize:%d", width, height, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height / 2)));
 
-                    SEC_OSAL_Memcpy(inputData->specificBufferHeader.YVirAddr, checkInputStream, ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)));
-                    SEC_OSAL_Memcpy(inputData->specificBufferHeader.CVirAddr, checkInputStream + ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)), ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height / 2)));
+                    switch (pSECPort->portDefinition.format.video.eColorFormat) {
+                    case OMX_COLOR_FormatYUV420Planar:
+                        /* Real YUV420P Data */
+                        csc_linear_to_tiled(inputData->specificBufferHeader.YVirAddr,
+                                                checkInputStream, width, height);
+                        csc_linear_to_tiled_interleave(inputData->specificBufferHeader.CVirAddr,
+                                                 checkInputStream + (width * height),
+                                                 checkInputStream + (((width * height) * 5) / 4),
+                                                 width, height >> 1);
+                        break;
+                    case OMX_COLOR_FormatYUV420SemiPlanar:
+                    default:
+                        SEC_OSAL_Memcpy(inputData->specificBufferHeader.YVirAddr, checkInputStream, (width * height));
+                        SEC_OSAL_Memcpy(inputData->specificBufferHeader.CVirAddr, checkInputStream + (width * height), (width * height / 2));
+                        break;
+                    }
                 }
             }
-#endif
+
             inputUseBuffer->dataLen -= copySize;
             inputUseBuffer->remainDataLen -= copySize;
             inputUseBuffer->usedDataLen += copySize;
@@ -795,10 +815,8 @@ OMX_BOOL SEC_Preprocessor_InputData(OMX_COMPONENTTYPE *pOMXComponent)
         }
 
         if (inputUseBuffer->remainDataLen == 0) {
-#ifdef S5PC110_ENCODE_IN_DATA_BUFFER
             if(flagEOF == OMX_FALSE)
-#endif
-            SEC_InputBufferReturn(pOMXComponent);
+                SEC_InputBufferReturn(pOMXComponent);
         } else {
             inputUseBuffer->dataValid = OMX_TRUE;
         }
@@ -864,18 +882,9 @@ OMX_BOOL SEC_Postprocess_OutputData(OMX_COMPONENTTYPE *pOMXComponent)
             /* reset outputData */
             SEC_DataReset(pOMXComponent, OUTPUT_PORT_INDEX);
 
-#ifdef ONE_FRAME_OUTPUT  /* only one frame output for Android */
             if ((outputUseBuffer->remainDataLen > 0) ||
                 (outputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS))
                 SEC_OutputBufferReturn(pOMXComponent);
-#else
-            if ((outputUseBuffer->remainDataLen > 0) ||
-                ((outputUseBuffer->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) {
-                SEC_OutputBufferReturn(pOMXComponent);
-            } else {
-                outputUseBuffer->dataValid = OMX_TRUE;
-            }
-#endif
         } else {
             SEC_OSAL_Log(SEC_LOG_ERROR, "output buffer is smaller than encoded data size Out Length");
 
@@ -969,12 +978,12 @@ OMX_ERRORTYPE SEC_OMX_BufferProcess(OMX_HANDLETYPE hComponent)
                 SEC_OSAL_MutexLock(inputUseBuffer->bufferMutex);
                 SEC_OSAL_MutexLock(outputUseBuffer->bufferMutex);
                 ret = pSECComponent->sec_mfc_bufferProcess(pOMXComponent, inputData, outputData);
-#ifdef S5PC110_ENCODE_IN_DATA_BUFFER
+
                 if (inputUseBuffer->remainDataLen == 0)
                     SEC_InputBufferReturn(pOMXComponent);
                 else
                     inputUseBuffer->dataValid = OMX_TRUE;
-#endif
+
                 SEC_OSAL_MutexUnlock(outputUseBuffer->bufferMutex);
                 SEC_OSAL_MutexUnlock(inputUseBuffer->bufferMutex);
 
@@ -1084,21 +1093,28 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
             portDefinition = &pSECPort->portDefinition;
 
             switch (index) {
-            case supportFormat_1:
-                portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
-                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420Planar;
-                portFormat->xFramerate           = portDefinition->format.video.xFramerate;
-                break;
-            case supportFormat_2:
+            case supportFormat_0:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
                 portFormat->eColorFormat       = OMX_COLOR_FormatYUV420SemiPlanar;
                 portFormat->xFramerate         = portDefinition->format.video.xFramerate;
                 break;
+            case supportFormat_1:
+                portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
+                portFormat->eColorFormat       = OMX_COLOR_FormatYUV420Planar;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
+                break;
+            case supportFormat_2:
+                portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
+                portFormat->eColorFormat       = OMX_SEC_COLOR_FormatNV12TPhysicalAddress;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
+                break;
+#ifdef USE_ANDROID_EXTENSION
             case supportFormat_3:
                 portFormat->eCompressionFormat = OMX_VIDEO_CodingUnused;
-                portFormat->eColorFormat       = SEC_OMX_COLOR_FormatNV12PhysicalAddress;
-                portFormat->xFramerate           = portDefinition->format.video.xFramerate;
+                portFormat->eColorFormat       = OMX_COLOR_FormatAndroidOpaque;
+                portFormat->xFramerate         = portDefinition->format.video.xFramerate;
                 break;
+#endif
             }
         } else if (portIndex == OUTPUT_PORT_INDEX) {
             supportFormatNum = OUTPUT_PORT_SUPPORTFORMAT_NUM_MAX - 1;
@@ -1112,7 +1128,7 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
 
             portFormat->eCompressionFormat = portDefinition->format.video.eCompressionFormat;
             portFormat->eColorFormat       = portDefinition->format.video.eColorFormat;
-            portFormat->xFramerate           = portDefinition->format.video.xFramerate;
+            portFormat->xFramerate         = portDefinition->format.video.xFramerate;
         }
         ret = OMX_ErrorNone;
     }
@@ -1135,6 +1151,31 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeGetParameter(
             videoRateControl->nTargetBitrate = portDefinition->format.video.nBitrate;
         }
         ret = OMX_ErrorNone;
+    }
+        break;
+    case OMX_IndexParamPortDefinition:
+    {
+        OMX_PARAM_PORTDEFINITIONTYPE *portDefinition = (OMX_PARAM_PORTDEFINITIONTYPE *)ComponentParameterStructure;
+        OMX_U32                       portIndex = portDefinition->nPortIndex;
+        SEC_OMX_BASEPORT             *pSECPort;
+
+        if (portIndex >= pSECComponent->portParam.nPorts) {
+            ret = OMX_ErrorBadPortIndex;
+            goto EXIT;
+        }
+        ret = SEC_OMX_Check_SizeVersion(portDefinition, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+        if (ret != OMX_ErrorNone) {
+            goto EXIT;
+        }
+
+        pSECPort = &pSECComponent->pSECPort[portIndex];
+        SEC_OSAL_Memcpy(portDefinition, &pSECPort->portDefinition, portDefinition->nSize);
+
+#ifdef USE_ANDROID_EXTENSION
+        if (portIndex == 0 && pSECPort->bStoreMetaDataInBuffer == OMX_TRUE) {
+            portDefinition->nBufferSize = MAX_INPUT_METADATA_BUFFER_SIZE;
+        }
+#endif
     }
         break;
     default:
@@ -1257,6 +1298,21 @@ OMX_ERRORTYPE SEC_OMX_VideoEncodeSetParameter(
         }
     }
         break;
+#ifdef USE_ANDROID_EXTENSION
+    case OMX_IndexParamStoreMetaDataBuffer:
+    {
+        if (OMX_ErrorNone != checkVersionANB(ComponentParameterStructure))
+            goto EXIT;
+
+        if (INPUT_PORT_INDEX != checkPortIndexANB(ComponentParameterStructure)) {
+            ret = OMX_ErrorBadPortIndex;
+            goto EXIT;
+        }
+
+        ret = enableStoreMetaDataInBuffers(hComponent, ComponentParameterStructure);
+    }
+        break;
+#endif
     default:
     {
         ret = SEC_OMX_SetParameter(hComponent, nIndex, ComponentParameterStructure);

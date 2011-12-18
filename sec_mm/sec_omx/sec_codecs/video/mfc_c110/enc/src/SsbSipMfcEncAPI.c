@@ -30,11 +30,13 @@
 
 #define _MFCLIB_MAGIC_NUMBER     0x92241001
 
-void *SsbSipMfcEncOpen(void)
+void *SsbSipMfcEncOpen(void *value)
 {
     int hMFCOpen;
     _MFCLIB *pCTX;
     unsigned int mapped_addr;
+    mfc_common_args EncArg;
+    int ret_code;
 
     hMFCOpen = open(S5PC110_MFC_DEV_NAME, O_RDWR | O_NDELAY);
     if (hMFCOpen < 0) {
@@ -47,6 +49,17 @@ void *SsbSipMfcEncOpen(void)
         LOGE("SsbSipMfcEncOpen: malloc failed.\n");
         close(hMFCOpen);
         return NULL;
+    }
+
+    if (*(unsigned int *)value == NO_CACHE ||
+        *(unsigned int *)value == CACHE) {
+        EncArg.args.buf_type = *(unsigned int *)value;
+        ret_code = ioctl(hMFCOpen, IOCTL_MFC_BUF_CACHE, &EncArg);
+        if (EncArg.ret_code != MFC_RET_OK) {
+            LOGE("SsbSipMfcDecOpenExt: IOCTL_MFC_BUF_CACHE (%d) failed\n", EncArg.ret_code);
+        }
+    } else {
+        LOGE("SsbSipMfcDecOpenExt: value is invalid, value: %d\n", *(int *)value);
     }
 
     mapped_addr = (unsigned int)mmap(0, MMAP_BUFFER_SIZE_MMAP, PROT_READ | PROT_WRITE, MAP_SHARED, hMFCOpen, 0);
@@ -167,6 +180,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_mpeg4.in_luma_pad_val = mpeg4_arg->LumaPadVal;
         EncArg.args.enc_init_mpeg4.in_cb_pad_val = mpeg4_arg->CbPadVal;
         EncArg.args.enc_init_mpeg4.in_cr_pad_val = mpeg4_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         EncArg.args.enc_init_mpeg4.in_time_increament_res = mpeg4_arg->TimeIncreamentRes;
         EncArg.args.enc_init_mpeg4.in_time_vop_time_increament = mpeg4_arg->VopTimeIncreament;
@@ -218,6 +232,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_mpeg4.in_luma_pad_val = h263_arg->LumaPadVal;
         EncArg.args.enc_init_mpeg4.in_cb_pad_val = h263_arg->CbPadVal;
         EncArg.args.enc_init_mpeg4.in_cr_pad_val = h263_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         EncArg.args.enc_init_mpeg4.in_RC_framerate = h263_arg->FrameRate;
         EncArg.args.enc_init_mpeg4.in_RC_bitrate = h263_arg->Bitrate;
@@ -288,6 +303,7 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncInit(void *openHandle, void *param)
         EncArg.args.enc_init_h264.in_luma_pad_val = h264_arg->LumaPadVal;
         EncArg.args.enc_init_h264.in_cb_pad_val = h264_arg->CbPadVal;
         EncArg.args.enc_init_h264.in_cr_pad_val = h264_arg->CrPadVal;
+        EncArg.args.enc_init_mpeg4.in_frame_map = mpeg4_arg->FrameMap;
 
         /* rate control*/
         EncArg.args.enc_init_h264.in_RC_frm_enable = h264_arg->EnableFRMRateControl;
@@ -371,6 +387,13 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncExe(void *openHandle)
     EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf;
     EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf + pCTX->sizeStrmBuf;
     EncArg.args.enc_exe.in_frametag = pCTX->in_frametag;
+    if (pCTX->encode_cnt == 0) {
+        EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf;
+        EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf + pCTX->sizeStrmBuf;
+    } else {
+        EncArg.args.enc_exe.in_strm_st = (unsigned int)pCTX->phyStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+        EncArg.args.enc_exe.in_strm_end = (unsigned int)pCTX->phyStrmBuf  + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2) + pCTX->sizeStrmBuf;
+    }
 
     ret_code = ioctl(pCTX->hMFC, IOCTL_MFC_ENC_EXE, &EncArg);
     if (EncArg.ret_code != MFC_RET_OK) {
@@ -422,6 +445,27 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncClose(void *openHandle)
     return MFC_RET_OK;
 }
 
+SSBSIP_MFC_ERROR_CODE SsbSipMfcEncSetSize(void *openHandle, SSBSIP_MFC_CODEC_TYPE codecType, int nWidth, int nHeight)
+{
+    _MFCLIB *pCTX = (_MFCLIB *)openHandle;
+
+    if (pCTX == NULL)
+        return MFC_RET_INVALID_PARAM;
+
+    if (nWidth <= 0 || nHeight <= 0)
+        return MFC_RET_INVALID_PARAM;
+    pCTX->width = nWidth;
+    pCTX->height = nHeight;
+
+    if ((H264_ENC != codecType) &&
+        (MPEG4_ENC != codecType) &&
+        (H263_ENC != codecType))
+        return MFC_RET_INVALID_PARAM;
+    pCTX->codec_type = codecType;
+
+    return MFC_RET_OK;
+}
+
 SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPUT_INFO *input_info)
 {
     int ret_code;
@@ -467,6 +511,9 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetInBuf(void *openHandle, SSBSIP_MFC_ENC_INPU
     input_info->YVirAddr = (void*)pCTX->virFrmBuf.luma;
     input_info->CVirAddr = (void*)pCTX->virFrmBuf.chroma;
 
+    input_info->YSize    = aligned_y_size;
+    input_info->CSize    = aligned_c_size;
+
     return MFC_RET_OK;
 }
 
@@ -507,8 +554,17 @@ SSBSIP_MFC_ERROR_CODE SsbSipMfcEncGetOutBuf(void *openHandle, SSBSIP_MFC_ENC_OUT
 
     output_info->headerSize = pCTX->encodedHeaderSize;
     output_info->dataSize = pCTX->encodedDataSize;
-    output_info->StrmPhyAddr = (void *)pCTX->phyStrmBuf;
-    output_info->StrmVirAddr = (void *)pCTX->virStrmBuf;
+
+    if (pCTX->encode_cnt == 0) {
+        output_info->StrmPhyAddr = (void *)pCTX->phyStrmBuf;
+        output_info->StrmVirAddr = (void *)pCTX->virStrmBuf;
+    } else {
+        output_info->StrmPhyAddr = (unsigned char *)pCTX->phyStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+        output_info->StrmVirAddr = (unsigned char *)pCTX->virStrmBuf + (MAX_ENCODER_OUTPUT_BUFFER_SIZE/2);
+    }
+
+    pCTX->encode_cnt ++;
+    pCTX->encode_cnt %= 2;
 
     if (pCTX->encodedframeType == 0)
         output_info->frameType = MFC_FRAME_TYPE_NOT_CODED;
