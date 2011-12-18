@@ -40,6 +40,7 @@ typedef struct _SEC_MFC_H264DEC_HANDLE
     OMX_U32    indexTimestamp;
     OMX_BOOL bConfiguredMFC;
     OMX_BOOL bThumbnailMode;
+    OMX_S32  returnCodec;
 } SEC_MFC_H264DEC_HANDLE;
 
 typedef struct _SEC_H264DEC_HANDLE
@@ -50,6 +51,12 @@ typedef struct _SEC_H264DEC_HANDLE
 
     /* SEC MFC Codec specific */
     SEC_MFC_H264DEC_HANDLE hMFCH264Handle;
+
+    /* For Non-Block mode */
+    SEC_MFC_NBDEC_THREAD NBDecThread;
+    OMX_BOOL bFirstFrame;
+    MFC_DEC_INPUT_BUFFER MFCDecInputBuffer[MFC_INPUT_BUFFER_NUM_MAX];
+    OMX_U32  indexInputBuffer;
 } SEC_H264DEC_HANDLE;
 
 #ifdef __cplusplus

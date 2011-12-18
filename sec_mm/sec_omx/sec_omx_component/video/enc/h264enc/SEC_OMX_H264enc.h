@@ -47,9 +47,10 @@ typedef struct _SEC_MFC_H264ENC_HANDLE
     SSBSIP_MFC_ENC_H264_PARAM mfcVideoAvc;
     SSBSIP_MFC_ENC_INPUT_INFO inputInfo;
 /*    SSBSIP_MFC_ENC_OUTPUT_INFO outputInfo; */
-    OMX_U32    indexTimestamp;
+    OMX_U32 indexTimestamp;
     OMX_BOOL bConfiguredMFC;
     EXTRA_DATA headerData;
+    OMX_S32 returnCodec;
 } SEC_MFC_H264ENC_HANDLE;
 
 typedef struct _SEC_H264ENC_HANDLE
@@ -60,6 +61,12 @@ typedef struct _SEC_H264ENC_HANDLE
 
     /* SEC MFC Codec specific */
     SEC_MFC_H264ENC_HANDLE hMFCH264Handle;
+
+    /* For Non-Block mode */
+    SEC_MFC_NBENC_THREAD NBEncThread;
+    OMX_BOOL bFirstFrame;
+    MFC_ENC_INPUT_BUFFER MFCEncInputBuffer[MFC_INPUT_BUFFER_NUM_MAX];
+    OMX_U32  indexInputBuffer;
 } SEC_H264ENC_HANDLE;
 
 #ifdef __cplusplus

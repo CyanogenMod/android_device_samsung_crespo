@@ -75,6 +75,11 @@
 <!ATTLIST VideoEditorCap maxInputFrameHeight CDATA #REQUIRED>
 <!ATTLIST VideoEditorCap maxOutputFrameWidth CDATA #REQUIRED>
 <!ATTLIST VideoEditorCap maxOutputFrameHeight CDATA #REQUIRED>
+<!ATTLIST VideoEditorCap maxPrefetchYUVFrames CDATA #REQUIRED>
+<!ELEMENT ExportVideoProfile EMPTY>
+<!ATTLIST ExportVideoProfile name (h264|h263|m4v) #REQUIRED>
+<!ATTLIST ExportVideoProfile profile CDATA #REQUIRED>
+<!ATTLIST ExportVideoProfile level CDATA #REQUIRED>
 ]>
 <!--
      This file is used to declare the multimedia profiles and capabilities
@@ -219,21 +224,21 @@
     -->
     <VideoEncoderCap name="h264" enabled="true"
         minBitRate="64000" maxBitRate="3000000"
-        minFrameWidth="176" maxFrameWidth="800"
+        minFrameWidth="176" maxFrameWidth="720"
         minFrameHeight="144" maxFrameHeight="480"
-        minFrameRate="1" maxFrameRate="30" />
+        minFrameRate="15" maxFrameRate="30" />
 
     <VideoEncoderCap name="h263" enabled="true"
         minBitRate="64000" maxBitRate="1000000"
-        minFrameWidth="176" maxFrameWidth="800"
+        minFrameWidth="176" maxFrameWidth="720"
         minFrameHeight="144" maxFrameHeight="480"
-        minFrameRate="1" maxFrameRate="30" />
+        minFrameRate="15" maxFrameRate="30" />
 
     <VideoEncoderCap name="m4v" enabled="true"
         minBitRate="64000" maxBitRate="2000000"
-        minFrameWidth="176" maxFrameWidth="800"
+        minFrameWidth="176" maxFrameWidth="720"
         minFrameHeight="144" maxFrameHeight="480"
-        minFrameRate="1" maxFrameRate="30" />
+        minFrameRate="15" maxFrameRate="30" />
 
     <AudioEncoderCap name="aac" enabled="true"
         minBitRate="8192" maxBitRate="96000"
@@ -259,7 +264,38 @@
     -->
     <VideoDecoderCap name="wmv" enabled="false"/>
     <AudioDecoderCap name="wma" enabled="false"/>
+    <!--
+        The VideoEditor Capability configuration:
+        - maxInputFrameWidth: maximum video width of imported video clip.
+        - maxInputFrameHeight: maximum video height of imported video clip.
+        - maxOutputFrameWidth: maximum video width of exported video clip.
+        - maxOutputFrameHeight: maximum video height of exported video clip.
+        - maxPrefetchYUVFrames: maximum prefetch YUV frames for encoder,
+        used to limit the amount of memory for prefetched YUV frames.
+        For this platform, it allows maximum 8MB(1.3MB per 720p frame x 6
+        frames) memory.
+    -->
     <VideoEditorCap  maxInputFrameWidth="1280"
         maxInputFrameHeight="720" maxOutputFrameWidth="1280"
-        maxOutputFrameHeight="720"/>
+        maxOutputFrameHeight="720" maxPrefetchYUVFrames="6"/>
+    <!--
+        The VideoEditor Export codec profile and level values
+        correspond to the values in OMX_Video.h.
+        E.g. for h264, profile value 1 means OMX_VIDEO_AVCProfileBaseline
+        and  level 2048 means OMX_VIDEO_AVCLevel4.
+        Please note that the values are in decimal.
+        These values are for video encoder.
+    -->
+    <!--
+      Codec = h.264, Baseline profile, level 4
+    -->
+    <ExportVideoProfile name="h264" profile= "1" level="2048"/>
+    <!--
+      Codec = h.263, Baseline profile, level 0
+    -->
+    <ExportVideoProfile name="h263" profile= "1" level="1"/>
+    <!--
+      Codec = mpeg4, Simple profile, level 5
+    -->
+    <ExportVideoProfile name="m4v" profile= "1" level="128"/>
 </MediaSettings>

@@ -15,9 +15,7 @@
 
 LOCAL_PATH := $(call my-dir)
 
-ifneq ($(TARGET_SIMULATOR),true)
-
-# HAL module implemenation, not prelinked, and stored in
+# HAL module implemenation stored in
 # hw/<SENSORS_HARDWARE_MODULE_ID>.<ro.product.board>.so
 include $(CLEAR_VARS)
 
@@ -38,8 +36,5 @@ LOCAL_SRC_FILES := 						\
                                 InputEventReader.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
-LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)
-
-endif # !TARGET_SIMULATOR
