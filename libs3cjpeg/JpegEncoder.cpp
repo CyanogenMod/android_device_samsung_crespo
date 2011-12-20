@@ -223,7 +223,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
     if (!available)
         return JPG_FAIL;
 
-    LOGD("encode E");
+    ALOGD("encode E");
 
     jpg_return_status ret = JPG_FAIL;
     unsigned char *exifOut = NULL;
@@ -295,7 +295,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
     fclose(fout);
 #endif
 
-    LOGD("encode X");
+    ALOGD("encode X");
 
     return ret;
 }
@@ -305,7 +305,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     if (!available)
         return JPG_FAIL;
 
-    LOGD("encodeThumbImg E");
+    ALOGD("encodeThumbImg E");
 
     jpg_return_status ret = JPG_FAIL;
     jpg_enc_proc_param *param = mArgs.thumb_enc_param;
@@ -350,7 +350,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     fclose(fout);
 #endif
 
-    LOGD("encodeThumbImg X");
+    ALOGD("encodeThumbImg X");
 
     return JPG_SUCCESS;
 }
@@ -363,7 +363,7 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
     if (!available)
         return JPG_FAIL;
 
-    LOGD("makeExif E");
+    ALOGD("makeExif E");
 
     unsigned char *pCur, *pApp1Start, *pIfdStart, *pGpsIfdPtr, *pNextIfdOffset;
     unsigned int tmp, LongerTagOffest = 0;
@@ -595,7 +595,7 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
     unsigned char size_mm[2] = {(tmp >> 8) & 0xFF, tmp & 0xFF};
     memcpy(pApp1Start, size_mm, 2);
 
-    LOGD("makeExif X");
+    ALOGD("makeExif X");
 
     return JPG_SUCCESS;
 }

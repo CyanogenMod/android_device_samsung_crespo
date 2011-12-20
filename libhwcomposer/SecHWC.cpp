@@ -51,7 +51,7 @@ hwc_module_t HAL_MODULE_INFO_SYM = {
 };
 
 static void dump_layer(hwc_layer_t const* l) {
-    LOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
+    ALOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
             l->compositionType, l->flags, l->handle, l->transform, l->blending,
             l->sourceCrop.left,
             l->sourceCrop.top,
@@ -550,7 +550,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
         goto err;
     }
 
-    LOGD("%s:: success\n", __func__);
+    ALOGD("%s:: success\n", __func__);
 
     return 0;
 

@@ -1506,21 +1506,21 @@ int SecCamera::setSnapshotPixelFormat(int pixel_format)
     if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV420)
         LOGE("%s : SnapshotFormat:V4L2_PIX_FMT_YUV420", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12T)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV21)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV422P)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUYV)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_UYVY)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_RGB565)
-        LOGD("%s : SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
+        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
     else
-        LOGD("SnapshotFormat:UnknownFormat");
+        ALOGD("SnapshotFormat:UnknownFormat");
 #endif
     return 0;
 }
@@ -2892,8 +2892,8 @@ void SecCamera::setExifChangedAttribute()
     sv = APEX_ISO_TO_FILMSENSITIVITY(mExifInfo.iso_speed_rating);
     bv = av + tv - sv;
     ev = av + tv;
-    LOGD("Shutter speed=%d us, iso=%d\n", shutterSpeed, mExifInfo.iso_speed_rating);
-    LOGD("AV=%d, TV=%d, SV=%d\n", av, tv, sv);
+    ALOGD("Shutter speed=%d us, iso=%d\n", shutterSpeed, mExifInfo.iso_speed_rating);
+    ALOGD("AV=%d, TV=%d, SV=%d\n", av, tv, sv);
 
     //3 Shutter Speed
     mExifInfo.shutter_speed.num = tv*EXIF_DEF_APEX_DEN;

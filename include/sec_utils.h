@@ -320,7 +320,7 @@ inline unsigned int FRAME_SIZE(int HAL_PIXEL_FORMAT, int w, int h)
         break;
 
     default:
-        LOGD("%s::no matching source colorformat(0x%x), w(%d), h(%d) fail\n",
+        ALOGD("%s::no matching source colorformat(0x%x), w(%d), h(%d) fail\n",
                 __func__, HAL_PIXEL_FORMAT, w, h);
         break;
     }

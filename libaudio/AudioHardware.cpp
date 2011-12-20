@@ -496,7 +496,7 @@ status_t AudioHardware::setParameters(const String8& keyValuePairs)
             mBluetoothNrec = true;
         } else {
             mBluetoothNrec = false;
-            LOGD("Turning noise reduction and echo cancellation off for BT "
+            ALOGD("Turning noise reduction and echo cancellation off for BT "
                  "headset");
         }
         param.remove(String8(BT_NREC_KEY));
@@ -570,7 +570,7 @@ status_t AudioHardware::setVoiceVolume(float volume)
 
 void AudioHardware::setVoiceVolume_l(float volume)
 {
-    LOGD("### setVoiceVolume_l");
+    ALOGD("### setVoiceVolume_l");
 
     mVoiceVol = volume;
 
@@ -584,28 +584,28 @@ void AudioHardware::setVoiceVolume_l(float volume)
         int int_volume = (int)(volume * 5);
         SoundType type;
 
-        LOGD("### route(%d) call volume(%f)", device, volume);
+        ALOGD("### route(%d) call volume(%f)", device, volume);
         switch (device) {
             case AudioSystem::DEVICE_OUT_EARPIECE:
-                LOGD("### earpiece call volume");
+                ALOGD("### earpiece call volume");
                 type = SOUND_TYPE_VOICE;
                 break;
 
             case AudioSystem::DEVICE_OUT_SPEAKER:
-                LOGD("### speaker call volume");
+                ALOGD("### speaker call volume");
                 type = SOUND_TYPE_SPEAKER;
                 break;
 
             case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO:
             case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
             case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
-                LOGD("### bluetooth call volume");
+                ALOGD("### bluetooth call volume");
                 type = SOUND_TYPE_BTVOICE;
                 break;
 
             case AudioSystem::DEVICE_OUT_WIRED_HEADSET:
             case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE: // Use receive path with 3 pole headset.
-                LOGD("### headset call volume");
+                ALOGD("### headset call volume");
                 type = SOUND_TYPE_HEADSET;
                 break;
 
@@ -711,23 +711,23 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
         (connectRILDIfRequired() == OK)) {
 
         if (mMode == AudioSystem::MODE_IN_CALL) {
-            LOGD("### incall mode route (%d)", device);
+            ALOGD("### incall mode route (%d)", device);
             AudioPath path;
             switch(device){
                 case AudioSystem::DEVICE_OUT_EARPIECE:
-                    LOGD("### incall mode earpiece route");
+                    ALOGD("### incall mode earpiece route");
                     path = SOUND_AUDIO_PATH_HANDSET;
                     break;
 
                 case AudioSystem::DEVICE_OUT_SPEAKER:
-                    LOGD("### incall mode speaker route");
+                    ALOGD("### incall mode speaker route");
                     path = SOUND_AUDIO_PATH_SPEAKER;
                     break;
 
                 case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO:
                 case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
                 case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
-                    LOGD("### incall mode bluetooth route %s NR", mBluetoothNrec ? "" : "NO");
+                    ALOGD("### incall mode bluetooth route %s NR", mBluetoothNrec ? "" : "NO");
                     if (mBluetoothNrec) {
                         path = SOUND_AUDIO_PATH_BLUETOOTH;
                     } else {
@@ -736,11 +736,11 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                     break;
 
                 case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE :
-                    LOGD("### incall mode headphone route");
+                    ALOGD("### incall mode headphone route");
                     path = SOUND_AUDIO_PATH_HEADPHONE;
                     break;
                 case AudioSystem::DEVICE_OUT_WIRED_HEADSET :
-                    LOGD("### incall mode headset route");
+                    ALOGD("### incall mode headset route");
                     path = SOUND_AUDIO_PATH_HEADSET;
                     break;
                 default:
@@ -770,7 +770,7 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
 
 struct pcm *AudioHardware::openPcmOut_l()
 {
-    LOGD("openPcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
+    ALOGD("openPcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
     if (mPcmOpenCnt++ == 0) {
         if (mPcm != NULL) {
             LOGE("openPcmOut_l() mPcmOpenCnt == 0 and mPcm == %p\n", mPcm);
@@ -807,7 +807,7 @@ struct pcm *AudioHardware::openPcmOut_l()
 
 void AudioHardware::closePcmOut_l()
 {
-    LOGD("closePcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
+    ALOGD("closePcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
     if (mPcmOpenCnt == 0) {
         LOGE("closePcmOut_l() mPcmOpenCnt == 0");
         return;
@@ -1155,7 +1155,7 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
         if (mStandby) {
             AutoMutex hwLock(mHardware->lock());
 
-            LOGD("AudioHardware pcm playback is exiting standby.");
+            ALOGD("AudioHardware pcm playback is exiting standby.");
             sp<AudioStreamInALSA> spIn = mHardware->getActiveInput_l();
             while (spIn != 0) {
                 int cnt = spIn->prepareLock();
@@ -1245,7 +1245,7 @@ void AudioHardware::AudioStreamOutALSA::doStandby_l()
     mStandbyCnt++;
 
     if (!mStandby) {
-        LOGD("AudioHardware pcm playback is going to standby.");
+        ALOGD("AudioHardware pcm playback is going to standby.");
         // stop echo reference capture
         if (mEchoReference != NULL) {
             mEchoReference->write(mEchoReference, NULL);
@@ -1345,7 +1345,7 @@ status_t AudioHardware::AudioStreamOutALSA::setParameters(const String8& keyValu
     AudioParameter param = AudioParameter(keyValuePairs);
     status_t status = NO_ERROR;
     int device;
-    LOGD("AudioStreamOutALSA::setParameters() %s", keyValuePairs.string());
+    ALOGD("AudioStreamOutALSA::setParameters() %s", keyValuePairs.string());
 
     if (mHardware == NULL) return NO_INIT;
 
@@ -1777,7 +1777,7 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
         if (mStandby) {
             AutoMutex hwLock(mHardware->lock());
 
-            LOGD("AudioHardware pcm capture is exiting standby.");
+            ALOGD("AudioHardware pcm capture is exiting standby.");
             sp<AudioStreamOutALSA> spOut = mHardware->output();
             while (spOut != 0) {
                 spOut->prepareLock();
@@ -1873,7 +1873,7 @@ void AudioHardware::AudioStreamInALSA::doStandby_l()
     mStandbyCnt++;
 
     if (!mStandby) {
-        LOGD("AudioHardware pcm capture is going to standby.");
+        ALOGD("AudioHardware pcm capture is going to standby.");
         if (mEchoReference != NULL) {
             // stop reading from echo reference
             mEchoReference->read(mEchoReference, NULL);
@@ -2025,7 +2025,7 @@ status_t AudioHardware::AudioStreamInALSA::setParameters(const String8& keyValue
     status_t status = NO_ERROR;
     int value;
 
-    LOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
+    ALOGD("AudioStreamInALSA::setParameters() %s", keyValuePairs.string());
 
     if (mHardware == NULL) return NO_INIT;
 

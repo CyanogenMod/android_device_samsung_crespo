@@ -712,7 +712,7 @@ status_t CameraHardwareSec::startPreviewInternal()
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
 
-    LOGD("mPreviewHeap(fd(%d), size(%d), width(%d), height(%d))",
+    ALOGD("mPreviewHeap(fd(%d), size(%d), width(%d), height(%d))",
          mSecCamera->getCameraFd(), frame_size, width, height);
     if (mPreviewHeap) {
         mPreviewHeap->release(mPreviewHeap);
@@ -955,14 +955,14 @@ void CameraHardwareSec::save_postview(const char *fname, uint8_t *buf, uint32_t 
     int cnt = 0;
     uint32_t written = 0;
 
-    LOGD("opening file [%s]\n", fname);
+    ALOGD("opening file [%s]\n", fname);
     int fd = open(fname, O_RDWR | O_CREAT);
     if (fd < 0) {
         LOGE("failed to create file [%s]: %s", fname, strerror(errno));
     return;
     }
 
-    LOGD("writing %d bytes to file [%s]\n", size, fname);
+    ALOGD("writing %d bytes to file [%s]\n", size, fname);
     while (written < size) {
         nw = ::write(fd, buf + written, size - written);
         if (nw < 0) {
@@ -972,7 +972,7 @@ void CameraHardwareSec::save_postview(const char *fname, uint8_t *buf, uint32_t 
         written += nw;
         cnt++;
     }
-    LOGD("done writing %d bytes to file [%s] in %d passes\n",size, fname, cnt);
+    ALOGD("done writing %d bytes to file [%s] in %d passes\n",size, fname, cnt);
     ::close(fd);
 }
 
@@ -1201,7 +1201,7 @@ status_t CameraHardwareSec::waitCaptureCompletion() {
             LOGE("Timed out waiting picture thread.");
             return TIMED_OUT;
         }
-        LOGD("Waiting for picture thread to complete.");
+        ALOGD("Waiting for picture thread to complete.");
         mCaptureCondition.waitRelative(mCaptureLock, remainingTime);
     }
     return NO_ERROR;

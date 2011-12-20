@@ -46,8 +46,8 @@ namespace android {
 #define ENABLE_ESD_PREVIEW_CHECK
 
 #if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
-#define LOG_CAMERA LOGD
-#define LOG_CAMERA_PREVIEW LOGD
+#define LOG_CAMERA ALOGD
+#define LOG_CAMERA_PREVIEW ALOGD
 
 #define LOG_TIME_DEFINE(n) \
     struct timeval time_start_##n, time_stop_##n; unsigned long log_time_##n = 0;
