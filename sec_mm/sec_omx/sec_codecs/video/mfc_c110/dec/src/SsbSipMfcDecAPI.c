@@ -69,7 +69,7 @@ static mfc_packed_mode isPBPacked(_MFCLIB *pCtx, int length)
 
         do {
             if (*strmBuffer == 'p') {
-                LOGI("isPBPacked: Packed PB\n");
+                ALOGI("isPBPacked: Packed PB\n");
                 return MFC_PACKED_PB;
             }
             getAByte(strmBuffer, &startCode);

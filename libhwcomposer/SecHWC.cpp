@@ -539,7 +539,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
         for (int j = 0; j < NUM_OF_WIN_BUF; j++) {
             win->addr[j] = win->fix_info.smem_start + (win->size * j);
-            LOGI("%s::win-%d add[%d] %x ", __func__, i, j, win->addr[j]);
+            ALOGI("%s::win-%d add[%d] %x ", __func__, i, j, win->addr[j]);
         }
     }
 
