@@ -376,7 +376,7 @@ status_t CameraHardwareSec::setPreviewWindow(preview_stream_ops *w)
     mPreviewLock.lock();
 
     if (mPreviewRunning && !mPreviewStartDeferred) {
-        LOGI("stop preview (window change)");
+        ALOGI("stop preview (window change)");
         stopPreviewInternal();
     }
 
@@ -477,21 +477,21 @@ void CameraHardwareSec::setSkipFrame(int frame)
 
 int CameraHardwareSec::previewThreadWrapper()
 {
-    LOGI("%s: starting", __func__);
+    ALOGI("%s: starting", __func__);
     while (1) {
         mPreviewLock.lock();
         while (!mPreviewRunning) {
-            LOGI("%s: calling mSecCamera->stopPreview() and waiting", __func__);
+            ALOGI("%s: calling mSecCamera->stopPreview() and waiting", __func__);
             mSecCamera->stopPreview();
             /* signal that we're stopping */
             mPreviewStoppedCondition.signal();
             mPreviewCondition.wait(mPreviewLock);
-            LOGI("%s: return from wait", __func__);
+            ALOGI("%s: return from wait", __func__);
         }
         mPreviewLock.unlock();
 
         if (mExitPreviewThread) {
-            LOGI("%s: exiting", __func__);
+            ALOGI("%s: exiting", __func__);
             mSecCamera->stopPreview();
             return 0;
         }
@@ -680,7 +680,7 @@ status_t CameraHardwareSec::startPreview()
     mPreviewStartDeferred = false;
 
     if (!mPreviewWindow) {
-        LOGI("%s : deferring", __func__);
+        ALOGI("%s : deferring", __func__);
         mPreviewStartDeferred = true;
         mPreviewLock.unlock();
         return NO_ERROR;
@@ -746,7 +746,7 @@ void CameraHardwareSec::stopPreviewInternal()
         else
             ALOGV("%s : preview running but deferred, doing nothing", __func__);
     } else
-        LOGI("%s : preview not running, doing nothing", __func__);
+        ALOGI("%s : preview not running, doing nothing", __func__);
 }
 
 void CameraHardwareSec::stopPreview()
@@ -1111,7 +1111,7 @@ int CameraHardwareSec::pictureThread()
             ret = UNKNOWN_ERROR;
             goto out;
         }
-        LOGI("snapshotandjpeg done\n");
+        ALOGI("snapshotandjpeg done\n");
     }
 
     LOG_TIME_END(1)
@@ -1120,7 +1120,7 @@ int CameraHardwareSec::pictureThread()
     if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8);
         if(isLSISensor) {
-            LOGI("== Camera Sensor Detect %s - Samsung LSI SOC 5M ==\n", mCameraSensorName);
+            ALOGI("== Camera Sensor Detect %s - Samsung LSI SOC 5M ==\n", mCameraSensorName);
             // LSI 5M SOC
             if (!SplitFrame(jpeg_data, SecCamera::getInterleaveDataSize(),
                             SecCamera::getJpegLineLength(),
@@ -1131,7 +1131,7 @@ int CameraHardwareSec::pictureThread()
                 goto out;
             }
         } else {
-            LOGI("== Camera Sensor Detect %s Sony SOC 5M ==\n", mCameraSensorName);
+            ALOGI("== Camera Sensor Detect %s Sony SOC 5M ==\n", mCameraSensorName);
             decodeInterleaveData(jpeg_data,
                                  SecCamera::getInterleaveDataSize(),
                                  mPostViewWidth, mPostViewHeight,
@@ -2316,7 +2316,7 @@ static camera_device_t *g_cam_device;
 
 static int HAL_camera_device_close(struct hw_device_t* device)
 {
-    LOGI("%s", __func__);
+    ALOGI("%s", __func__);
     if (device) {
         camera_device_t *cam_device = (camera_device_t *)device;
         delete static_cast<CameraHardwareSec *>(cam_device->priv);
@@ -2684,13 +2684,13 @@ static int HAL_camera_device_open(const struct hw_module_t* module,
 
     g_cam_device->ops = &camera_device_ops;
 
-    LOGI("%s: open camera %s", __func__, id);
+    ALOGI("%s: open camera %s", __func__, id);
 
     g_cam_device->priv = new CameraHardwareSec(cameraId, g_cam_device);
 
 done:
     *device = (hw_device_t *)g_cam_device;
-    LOGI("%s: opened camera %s (%p)", __func__, id, *device);
+    ALOGI("%s: opened camera %s (%p)", __func__, id, *device);
     return 0;
 }
 

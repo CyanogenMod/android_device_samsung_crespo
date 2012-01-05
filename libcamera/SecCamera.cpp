@@ -209,7 +209,7 @@ static const __u8* fimc_v4l2_enuminput(int fp, int index)
         LOGE("ERR(%s):No matching index found\n", __func__);
         return NULL;
     }
-    LOGI("Name of input channel[%d] is %s\n", input.index, input.name);
+    ALOGI("Name of input channel[%d] is %s\n", input.index, input.name);
 
     return input.name;
 }
@@ -343,7 +343,7 @@ static int fimc_v4l2_querybuf(int fp, struct fimc_buffer *buffer, enum v4l2_buf_
     struct v4l2_buffer v4l2_buf;
     int ret;
 
-    LOGI("%s :", __func__);
+    ALOGI("%s :", __func__);
 
     v4l2_buf.type = type;
     v4l2_buf.memory = V4L2_MEMORY_MMAP;
@@ -363,7 +363,7 @@ static int fimc_v4l2_querybuf(int fp, struct fimc_buffer *buffer, enum v4l2_buf_
          return -1;
     }
 
-    LOGI("%s: buffer->start = %p v4l2_buf.length = %d",
+    ALOGI("%s: buffer->start = %p v4l2_buf.length = %d",
          __func__, buffer->start, v4l2_buf.length);
 
     return 0;
@@ -665,7 +665,7 @@ int SecCamera::initCamera(int index)
         setExifFixedAttribute();
 
         m_flag_init = 1;
-        LOGI("%s : initialized", __FUNCTION__);
+        ALOGI("%s : initialized", __FUNCTION__);
     }
     return 0;
 }
@@ -688,13 +688,13 @@ void SecCamera::DeinitCamera()
         /* close m_cam_fd after stopRecord() because stopRecord()
          * uses m_cam_fd to change frame rate
          */
-        LOGI("DeinitCamera: m_cam_fd(%d)", m_cam_fd);
+        ALOGI("DeinitCamera: m_cam_fd(%d)", m_cam_fd);
         if (m_cam_fd > -1) {
             close(m_cam_fd);
             m_cam_fd = -1;
         }
 
-        LOGI("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
+        ALOGI("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
         if (m_cam_fd2 > -1) {
             close(m_cam_fd2);
             m_cam_fd2 = -1;
@@ -702,7 +702,7 @@ void SecCamera::DeinitCamera()
 
         m_flag_init = 0;
     }
-    else LOGI("%s : already deinitialized", __FUNCTION__);
+    else ALOGI("%s : already deinitialized", __FUNCTION__);
 }
 
 
@@ -840,7 +840,7 @@ int SecCamera::startRecord(void)
     ret = fimc_v4l2_enum_fmt(m_cam_fd2, V4L2_PIX_FMT_NV12T);
     CHECK(ret);
 
-    LOGI("%s: m_recording_width = %d, m_recording_height = %d\n",
+    ALOGI("%s: m_recording_width = %d, m_recording_height = %d\n",
          __func__, m_recording_width, m_recording_height);
 
     ret = fimc_v4l2_s_fmt(m_cam_fd2, m_recording_width,
@@ -1005,7 +1005,7 @@ int SecCamera::releaseRecordFrame(int index)
          * cases where fimc could crash if we called qbuf and it
          * wasn't expecting it.
          */
-        LOGI("%s: recording not in progress, ignoring", __func__);
+        ALOGI("%s: recording not in progress, ignoring", __func__);
         return 0;
     }
 
@@ -1123,10 +1123,10 @@ int SecCamera::endSnapshot(void)
 {
     int ret;
 
-    LOGI("%s :", __func__);
+    ALOGI("%s :", __func__);
     if (m_capture_buf.start) {
         munmap(m_capture_buf.start, m_capture_buf.length);
-        LOGI("munmap():virt. addr %p size = %d\n",
+        ALOGI("munmap():virt. addr %p size = %d\n",
              m_capture_buf.start, m_capture_buf.length);
         m_capture_buf.start = NULL;
         m_capture_buf.length = 0;
@@ -1366,7 +1366,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
 
     LOG_TIME_END(2)
 
-    LOGI("%s : calling memcpy from m_capture_buf", __func__);
+    ALOGI("%s : calling memcpy from m_capture_buf", __func__);
     memcpy(yuv_buf, (unsigned char*)m_capture_buf.start, m_snapshot_width * m_snapshot_height * 2);
     LOG_TIME_START(5) // post
     fimc_v4l2_streamoff(m_cam_fd);
