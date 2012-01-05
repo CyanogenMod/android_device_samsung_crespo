@@ -632,7 +632,7 @@ jpg_return_status JpegEncoder::checkMcu(sample_mode_t sampleMode,
     if (expectedWidth == width && expectedHeight == height)
         return JPG_SUCCESS;
 
-    LOGW("The image is not matched for MCU");
+    ALOGW("The image is not matched for MCU");
 
     uint32_t size = width*height * 2;
     char *srcBuf, *dstBuf;

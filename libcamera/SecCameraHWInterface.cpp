@@ -1701,7 +1701,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
      * on scene mode.  don't return an error because it causes CTS failure.
      */
     if (new_frame_rate != mParameters.getPreviewFrameRate()) {
-        LOGW("WARN(%s): request for preview frame %d not allowed, != %d\n",
+        ALOGW("WARN(%s): request for preview frame %d not allowed, != %d\n",
              __func__, new_frame_rate, mParameters.getPreviewFrameRate());
     }
 
@@ -1785,7 +1785,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     if (new_scene_mode_str && current_scene_mode_str) {
         if (!strcmp(new_scene_mode_str, current_scene_mode_str)) {
             if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
-                LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
+                ALOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
                         __func__, new_min_fps, new_max_fps);
                 LOGE("%s : current_min_fps = %d, current_max_fps = %d",
                         __func__, current_min_fps, current_max_fps);

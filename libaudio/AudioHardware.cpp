@@ -251,7 +251,7 @@ void AudioHardware::closeOutputStream(AudioStreamOut* out) {
     {
         Mutex::Autolock lock(mLock);
         if (mOutput == 0 || mOutput.get() != out) {
-            LOGW("Attempt to close invalid output stream");
+            ALOGW("Attempt to close invalid output stream");
             return;
         }
         spOut = mOutput;
@@ -316,7 +316,7 @@ void AudioHardware::closeInputStream(AudioStreamIn* in) {
 
         ssize_t index = mInputs.indexOf((AudioStreamInALSA *)in);
         if (index < 0) {
-            LOGW("Attempt to close invalid input stream");
+            ALOGW("Attempt to close invalid input stream");
             return;
         }
         spIn = mInputs[index];
@@ -543,16 +543,16 @@ String8 AudioHardware::getParameters(const String8& keys)
 size_t AudioHardware::getInputBufferSize(uint32_t sampleRate, int format, int channelCount)
 {
     if (format != AudioSystem::PCM_16_BIT) {
-        LOGW("getInputBufferSize bad format: %d", format);
+        ALOGW("getInputBufferSize bad format: %d", format);
         return 0;
     }
     if (channelCount < 1 || channelCount > 2) {
-        LOGW("getInputBufferSize bad channel count: %d", channelCount);
+        ALOGW("getInputBufferSize bad channel count: %d", channelCount);
         return 0;
     }
 
     if (sampleRate != getInputSampleRate(sampleRate)) {
-        LOGW("getInputBufferSize bad sample rate: %d", sampleRate);
+        ALOGW("getInputBufferSize bad sample rate: %d", sampleRate);
         return 0;
     }
 
@@ -610,7 +610,7 @@ void AudioHardware::setVoiceVolume_l(float volume)
                 break;
 
             default:
-                LOGW("### Call volume setting error!!!0x%08x \n", device);
+                ALOGW("### Call volume setting error!!!0x%08x \n", device);
                 type = SOUND_TYPE_VOICE;
                 break;
         }
@@ -744,7 +744,7 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                     path = SOUND_AUDIO_PATH_HEADSET;
                     break;
                 default:
-                    LOGW("### incall mode Error!! route = [%d]", device);
+                    ALOGW("### incall mode Error!! route = [%d]", device);
                     path = SOUND_AUDIO_PATH_HANDSET;
                     break;
             }
@@ -1209,7 +1209,7 @@ ssize_t AudioHardware::AudioStreamOutALSA::write(const void* buffer, size_t byte
             ALOGV("-----AudioStreamInALSA::write(%p, %d) END", buffer, (int)bytes);
             return bytes;
         }
-        LOGW("write error: %d", errno);
+        ALOGW("write error: %d", errno);
         status = -errno;
     }
 Error:
@@ -1495,7 +1495,7 @@ status_t AudioHardware::AudioStreamInALSA::set(
                                                     &mBufferProvider.mProvider,
                                                     &mDownSampler);
         if (status != 0) {
-            LOGW("AudioStreamInALSA::set() downsampler init failed: %d", status);
+            ALOGW("AudioStreamInALSA::set() downsampler init failed: %d", status);
             mDownSampler = NULL;
             return status;
         }
@@ -1728,7 +1728,7 @@ void AudioHardware::AudioStreamInALSA::getCaptureDelay(size_t frames,
         buffer->time_stamp.tv_sec  = 0;
         buffer->time_stamp.tv_nsec = 0;
         buffer->delay_ns           = 0;
-        LOGW("read getCaptureDelay(): pcm_htimestamp error");
+        ALOGW("read getCaptureDelay(): pcm_htimestamp error");
         return;
     }
 
@@ -1836,7 +1836,7 @@ ssize_t AudioHardware::AudioStreamInALSA::read(void* buffer, ssize_t bytes)
             return framesRd * mChannelCount * sizeof(int16_t);
         }
 
-        LOGW("read error: %d", (int)framesRd);
+        ALOGW("read error: %d", (int)framesRd);
         status = framesRd;
     }
 

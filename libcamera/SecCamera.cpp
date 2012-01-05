@@ -798,7 +798,7 @@ int SecCamera::stopPreview(void)
     ALOGV("%s :", __func__);
 
     if (m_flag_camera_start == 0) {
-        LOGW("%s: doing nothing because m_flag_camera_start is zero", __func__);
+        ALOGW("%s: doing nothing because m_flag_camera_start is zero", __func__);
         return 0;
     }
 
@@ -882,7 +882,7 @@ int SecCamera::stopRecord(void)
     ALOGV("%s :", __func__);
 
     if (m_flag_record_start == 0) {
-        LOGW("%s: doing nothing because m_flag_record_start is zero", __func__);
+        ALOGW("%s: doing nothing because m_flag_record_start is zero", __func__);
         return 0;
     }
 
@@ -1088,7 +1088,7 @@ int SecCamera::setSnapshotCmd(void)
 
     if (m_flag_camera_start > 0) {
         LOG_TIME_START(0)
-        LOGW("WARN(%s):Camera was in preview, should have been stopped\n", __func__);
+        ALOGW("WARN(%s):Camera was in preview, should have been stopped\n", __func__);
         stopPreview();
         LOG_TIME_END(0)
     }
@@ -1308,7 +1308,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
 
     if (m_flag_camera_start > 0) {
         LOG_TIME_START(0)
-        LOGW("WARN(%s):Camera was in preview, should have been stopped\n", __func__);
+        ALOGW("WARN(%s):Camera was in preview, should have been stopped\n", __func__);
         stopPreview();
         LOG_TIME_END(0)
     }
