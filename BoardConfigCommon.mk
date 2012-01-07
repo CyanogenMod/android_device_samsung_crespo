@@ -78,8 +78,7 @@ WIFI_DRIVER_MODULE_ARG      :=  "iface_name=wlan0 firmware_path=/vendor/firmware
 
 USE_OPENGL_RENDERER	:= true
 
-# this 2 has being removed by google
-# BOARD_HAS_NO_SELECT_BUTTON := true
-# BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
+BOARD_HAS_NO_SELECT_BUTTON := true
+BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 
 BOARD_USE_SKIA_LCDTEXT := true
