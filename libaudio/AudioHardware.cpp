@@ -124,10 +124,10 @@ AudioHardware::~AudioHardware()
 
     if (mSecRilLibHandle) {
         if (disconnectRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS)
-            LOGE("Disconnect_RILD() error");
+            ALOGE("Disconnect_RILD() error");
 
         if (closeClientRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS)
-            LOGE("CloseClient_RILD() error");
+            ALOGE("CloseClient_RILD() error");
 
         mRilClient = 0;
 
@@ -170,28 +170,28 @@ void AudioHardware::loadRILD(void)
         if (!openClientRILD  || !disconnectRILD   || !closeClientRILD ||
             !isConnectedRILD || !connectRILD      ||
             !setCallVolume   || !setCallAudioPath || !setCallClockSync) {
-            LOGE("Can't load all functions from libsecril-client.so");
+            ALOGE("Can't load all functions from libsecril-client.so");
 
             dlclose(mSecRilLibHandle);
             mSecRilLibHandle = NULL;
         } else {
             mRilClient = openClientRILD();
             if (!mRilClient) {
-                LOGE("OpenClient_RILD() error");
+                ALOGE("OpenClient_RILD() error");
 
                 dlclose(mSecRilLibHandle);
                 mSecRilLibHandle = NULL;
             }
         }
     } else {
-        LOGE("Can't load libsecril-client.so");
+        ALOGE("Can't load libsecril-client.so");
     }
 }
 
 status_t AudioHardware::connectRILDIfRequired(void)
 {
     if (!mSecRilLibHandle) {
-        LOGE("connectIfRequired() lib is not loaded");
+        ALOGE("connectIfRequired() lib is not loaded");
         return INVALID_OPERATION;
     }
 
@@ -200,7 +200,7 @@ status_t AudioHardware::connectRILDIfRequired(void)
     }
 
     if (connectRILD(mRilClient) != RIL_CLIENT_ERR_SUCCESS) {
-        LOGE("Connect_RILD() error");
+        ALOGE("Connect_RILD() error");
         return INVALID_OPERATION;
     }
 
@@ -755,7 +755,7 @@ status_t AudioHardware::setIncallPath_l(uint32_t device)
                 TRACE_DRIVER_IN(DRV_MIXER_GET)
                 struct mixer_ctl *ctl= mixer_get_ctl_by_name(mMixer, "Voice Call Path");
                 TRACE_DRIVER_OUT
-                LOGE_IF(ctl == NULL, "setIncallPath_l() could not get mixer ctl");
+                ALOGE_IF(ctl == NULL, "setIncallPath_l() could not get mixer ctl");
                 if (ctl != NULL) {
                     ALOGV("setIncallPath_l() Voice Call Path, (%x)", device);
                     TRACE_DRIVER_IN(DRV_MIXER_SEL)
@@ -773,7 +773,7 @@ struct pcm *AudioHardware::openPcmOut_l()
     ALOGD("openPcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
     if (mPcmOpenCnt++ == 0) {
         if (mPcm != NULL) {
-            LOGE("openPcmOut_l() mPcmOpenCnt == 0 and mPcm == %p\n", mPcm);
+            ALOGE("openPcmOut_l() mPcmOpenCnt == 0 and mPcm == %p\n", mPcm);
             mPcmOpenCnt--;
             return NULL;
         }
@@ -794,7 +794,7 @@ struct pcm *AudioHardware::openPcmOut_l()
         mPcm = pcm_open(0, 0, flags, &config);
         TRACE_DRIVER_OUT
         if (!pcm_is_ready(mPcm)) {
-            LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_get_error(mPcm));
+            ALOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_get_error(mPcm));
             TRACE_DRIVER_IN(DRV_PCM_CLOSE)
             pcm_close(mPcm);
             TRACE_DRIVER_OUT
@@ -809,7 +809,7 @@ void AudioHardware::closePcmOut_l()
 {
     ALOGD("closePcmOut_l() mPcmOpenCnt: %d", mPcmOpenCnt);
     if (mPcmOpenCnt == 0) {
-        LOGE("closePcmOut_l() mPcmOpenCnt == 0");
+        ALOGE("closePcmOut_l() mPcmOpenCnt == 0");
         return;
     }
 
@@ -826,7 +826,7 @@ struct mixer *AudioHardware::openMixer_l()
     ALOGV("openMixer_l() mMixerOpenCnt: %d", mMixerOpenCnt);
     if (mMixerOpenCnt++ == 0) {
         if (mMixer != NULL) {
-            LOGE("openMixer_l() mMixerOpenCnt == 0 and mMixer == %p\n", mMixer);
+            ALOGE("openMixer_l() mMixerOpenCnt == 0 and mMixer == %p\n", mMixer);
             mMixerOpenCnt--;
             return NULL;
         }
@@ -834,7 +834,7 @@ struct mixer *AudioHardware::openMixer_l()
         mMixer = mixer_open(0);
         TRACE_DRIVER_OUT
         if (mMixer == NULL) {
-            LOGE("openMixer_l() cannot open mixer");
+            ALOGE("openMixer_l() cannot open mixer");
             mMixerOpenCnt--;
             return NULL;
         }
@@ -846,7 +846,7 @@ void AudioHardware::closeMixer_l()
 {
     ALOGV("closeMixer_l() mMixerOpenCnt: %d", mMixerOpenCnt);
     if (mMixerOpenCnt == 0) {
-        LOGE("closeMixer_l() mMixerOpenCnt == 0");
+        ALOGE("closeMixer_l() mMixerOpenCnt == 0");
         return;
     }
 
@@ -1217,7 +1217,7 @@ Error:
 
     // Simulate audio output timing in case of error
     usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
-    LOGE("AudioStreamOutALSA::write END WITH ERROR !!!!!!!!!(%p, %u)", buffer, bytes);
+    ALOGE("AudioStreamOutALSA::write END WITH ERROR !!!!!!!!!(%p, %u)", buffer, bytes);
     return status;
 }
 
@@ -1846,7 +1846,7 @@ Error:
 
     // Simulate audio output timing in case of error
     usleep((((bytes * 1000) / frameSize()) * 1000) / sampleRate());
-    LOGE("-----AudioStreamInALSA::read(%p, %d) END ERROR", buffer, (int)bytes);
+    ALOGE("-----AudioStreamInALSA::read(%p, %d) END ERROR", buffer, (int)bytes);
     return status;
 }
 
@@ -1940,7 +1940,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     mPcm = pcm_open(0, 0, flags, &config);
     TRACE_DRIVER_OUT
     if (!pcm_is_ready(mPcm)) {
-        LOGE("cannot open pcm_in driver: %s\n", pcm_get_error(mPcm));
+        ALOGE("cannot open pcm_in driver: %s\n", pcm_get_error(mPcm));
         TRACE_DRIVER_IN(DRV_PCM_CLOSE)
         pcm_close(mPcm);
         TRACE_DRIVER_OUT
@@ -2198,7 +2198,7 @@ size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int 
     }
     // this should never happen as getBufferSize() is always called after getInputSampleRate()
     // that checks for valid sampling rates.
-    LOGE("AudioStreamInALSA::getBufferSize() invalid sampling rate %d", sampleRate);
+    ALOGE("AudioStreamInALSA::getBufferSize() invalid sampling rate %d", sampleRate);
     return 0;
 }
 
