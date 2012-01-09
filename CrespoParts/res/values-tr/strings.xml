@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Nexus S ayarları</string>
+
+    <string name="category_screen_title">WM8994 ayarları ( voodoo )</string>
+    <string name="color_tuning_title_head">Renk ayarı</string>
+    <string name="color_tuning_summary_head">Ekran rengi kalibrasyonu</string>
+    <string name="color_red_title">Kırmızı</string>
+    <string name="color_green_title">Yeşil</string>
+    <string name="color_blue_title">Mavi</string>
+
+    <!-- WM8994 Kontrol Ayarları -->
+    <string name="general_sound_title">Ses</string>
+    <!--  Kategoriler -->
+    <string name="category_wm8994_internal_speaker">Dahili hoparlör konfigürasyonu</string>
+    <string name="category_wm8994_signal_processing">Sinyal işleme</string>
+    <string name="category_wm8994_headphone_amp">Kulaklık amplifikatörü</string>
+    <string name="category_wm8994_codec_optimization">Codec optimizasyonu</string>
+    <string name="category_wm8994_dac_config">Dijital / Analog Dönüştürücü ayarları</string>
+    <string name="category_wm8994_analog_path">Analog yol konfigürasyonu</string>
+    <string name="category_wm8994_mic_settings">Mikrofon ayarları</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">Ses ayarları</string>
+    <string name="wm8994_settings_title_subhead">Ses ayarları</string>
+    <string name="wm8994_settings_summary_head">WM8994 Ses işlemcisi donanımı gelişmiş kontrolü</string>
+    <string name="pref_wm8994_control_enable_title">WM8994 Kontrolünü etkinleştir</string>
+    <string name="pref_wm8994_control_enable_summary">WM8994 ses işlemcisi donanımı için gelişmiş denetimlerini etkinleştirme</string>
+    <string name="pref_wm8994_speaker_tuning_title">Müzik için hoparlör ayarı</string>
+    <string name="pref_wm8994_speaker_tuning_summary">Daha fazla bas ve dengeli bir ses elde etmek için EQ donanımını yeniden yapılandırır</string>
+    <string name="pref_wm8994_mono_downmix_title">Mono indirgeme</string>
+    <string name="pref_wm8994_mono_downmix_summary">Stereo sesi monoya indirgeme (stereo çıkış, kulaklık gibi)</string>
+    <string name="pref_wm8994_stereo_expansion_title">Stereo geliştirme</string>
+    <string name="pref_wm8994_stereo_expansion_summary">Dijital sinyal işleme üzerinden stereo ses "Gelistirme"</string>
+    <string name="pref_wm8994_dac_direct_title">D / AC direkt</string>
+    <string name="pref_wm8994_dac_direct_summary">Kanal mikser atlayarak, doğrudan, analog / dijital dönüştürücü erişim. Temiz ses (düşük sinyal-gürültü oranı) üretir.</string>
+    <string name="pref_wm8994_dac_osr128_title">Hi-fi oynatma</string>
+    <string name="pref_wm8994_dac_osr128_summary">Dijital-analog çevirici 128x örnekleme - Müzik çalarken daha temiz ses</string>
+    <string name="pref_wm8994_adc_osr128_title">Hi-fi kaydı</string>
+    <string name="pref_wm8994_adc_osr128_summary">Analog-dijital dönüştürücü 128x örnekleme -- kayıtların kalitesini artırır</string>
+    <string name="pref_wm8994_fll_tuning_title">Ayarlı ses saati</string>
+    <string name="pref_wm8994_fll_tuning_summary">WM8994 ses saati kaynağı ayarlı kullan - ses kalitesini artırır</string>
+
+    <string name="category_touchkey_title">Dokunmatik tuşlar</string>
+    <string name="backlight_timeout_title_head">Arka ışık zaman aşımı</string>
+    <string name="backlight_timeout_summary_head">Dokunmatik tuşa ışığı otomatik kapanmadan önceki gecikmeyi ayarlayın</string>
+    <string name="blink_timeout_title_head">Yanıp sönme zaman aşımı</string>
+    <string name="blink_timeout_summary_head">Bir bildirim sonrası dokunmatik tuşun yanıp söner arka ışığın otomatik kapanmadan önceki gecikmeyi ayarlayın.</string>
+
+</resources>

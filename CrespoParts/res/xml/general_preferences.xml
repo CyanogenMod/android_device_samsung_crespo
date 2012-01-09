@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- General settings -->
+    <PreferenceCategory android:key="category_battery"
+        android:title="@string/category_battery_title">
+
+        <CheckBoxPreference android:key="deepidle"
+            android:title="@string/cpu_deepidle_title_head"
+            android:summary="@string/cpu_deepidle_summary_head" />
+    </PreferenceCategory>
+
+    <!-- Touch key backlight timeout -->
+    <PreferenceCategory android:key="category_touchkey"
+        android:title="@string/category_touchkey_title">
+    <ListPreference
+        android:key="backlight_timeout"
+        android:title="@string/backlight_timeout_title_head"
+        android:summary="@string/backlight_timeout_summary_head"
+        android:entries="@array/backlight_timeout_entries"
+        android:entryValues="@array/backlight_timeout_entries_values"
+        android:defaultValue="5" />
+    <ListPreference
+        android:key="blink_timeout"
+        android:title="@string/blink_timeout_title_head"
+        android:summary="@string/blink_timeout_summary_head"
+        android:entries="@array/blink_timeout_entries"
+        android:entryValues="@array/blink_timeout_entries_values"
+        android:defaultValue="5" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
