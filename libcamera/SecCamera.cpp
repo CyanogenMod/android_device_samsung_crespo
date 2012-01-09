@@ -2477,9 +2477,6 @@ int SecCamera::setObjectPosition(int x, int y)
 {
     LOGV("%s(setObjectPosition(x=%d, y=%d))", __func__, x, y);
 
-    if (m_preview_width ==640)
-        x = x - 80;
-
     if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_OBJECT_POSITION_X, x) < 0) {
         LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_OBJECT_POSITION_X", __func__);
         return -1;
