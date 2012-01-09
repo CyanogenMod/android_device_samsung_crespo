@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Paramètres Nexus S</string>
+
+    <string name="category_screen_title">Paramètres WM8994 ( voodoo )</string>
+    <string name="color_tuning_title_head">Réglages Couleurs</string>
+    <string name="color_tuning_summary_head">Calibrage des couleurs de l\'écran</string>
+    <string name="color_red_title">Rouge</string>
+    <string name="color_green_title">Vert</string>
+    <string name="color_blue_title">Bleu</string>
+
+    <!-- WM8994 Control Settings -->
+    <string name="general_sound_title">Son</string>
+    <!--  Categories -->
+    <string name="category_wm8994_internal_speaker">Configuration Haut-Parleur Interne</string>
+    <string name="category_wm8994_signal_processing">Traitement du Signal</string>
+    <string name="category_wm8994_headphone_amp">Amplificateur Ecouteurs</string>
+    <string name="category_wm8994_codec_optimization">Optimisation du Codec</string>
+    <string name="category_wm8994_dac_config">Configuration du Convertisseur Analogique Numérique</string>
+    <string name="category_wm8994_analog_path">Configuration du Chemin Analogique</string>
+    <string name="category_wm8994_mic_settings">Configuration du Micro</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">Paramètres du Son</string>
+    <string name="wm8994_settings_title_subhead">Paamètres du Son</string>
+    <string name="wm8994_settings_summary_head">Contrôle Avancé du Matériel de Traitement du Son WM8994</string>
+    <string name="pref_wm8994_control_enable_title">Activer le Contrôle WM8994</string>
+    <string name="pref_wm8994_control_enable_summary">Activer les Contrôles Avancés du Matériel de Traitement du Son WM8994</string>
+    <string name="pref_wm8994_speaker_tuning_title">Régler le Haut-Parleur pour la Musique</string>
+    <string name="pref_wm8994_speaker_tuning_summary">Reconfigurer le matériel EQ pour un son plus grave et équilibré</string>
+    <string name="pref_wm8994_mono_downmix_title">Mélangeur Mono</string>
+    <string name="pref_wm8994_mono_downmix_summary">Mixer le signal stéréo en mono (vers une sortie stéréo, comme des écouteurs)</string>
+    <string name="pref_wm8994_stereo_expansion_title">Expansion Stéréo</string>
+    <string name="pref_wm8994_stereo_expansion_summary">"Expand" le signal stéréo via le processeur de traitement du signal numérique</string>
+    <string name="pref_wm8994_dac_direct_title">D/AC direct</string>
+    <string name="pref_wm8994_dac_direct_summary">Accéder au convertisseur numérique analogique directement, en court-circuitant le mélangeur de canaux. Produit un son plus propre (signal sur bruit meilleur)</string>
+    <string name="pref_wm8994_dac_osr128_title">Reproduction HiFi</string>
+    <string name="pref_wm8994_dac_osr128_summary">Suréchantillonnage 128x du convertisseur analogique numérique -- son plus propre pour la reproduction de musique</string>
+    <string name="pref_wm8994_adc_osr128_title">Enregistrement HiFi</string>
+    <string name="pref_wm8994_adc_osr128_summary">Suréchantillonnage 128x du convertisseur analogique numérique -- améliore la qualité des enregistrements</string>
+    <string name="pref_wm8994_fll_tuning_title">Horloge audio précise</string>
+    <string name="pref_wm8994_fll_tuning_summary">Utiliser une source horloge audio précise -- améliore la qualité du son</string>
+
+    <string name="category_touchkey_title">Touches tactiles</string>
+    <string name="backlight_timeout_title_head">Délai rétroéclairage</string>
+    <string name="backlight_timeout_summary_head">Régler le délai avant l\'extinction du rétroéclairage des touches tactiles</string>
+    <string name="blink_timeout_title_head">Délai clignotement</string>
+    <string name="blink_timeout_summary_head">Régler le délai avant l\'arrêt du clignotement du rétroéclairage des touches tactiles après une notification</string>
+
+</resources>
+

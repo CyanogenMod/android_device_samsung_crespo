@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">넥서스 S 설정</string>
+
+    <string name="category_screen_title">WM8994 설정 ( 부두 )</string>
+    <string name="color_tuning_title_head">색상 조율</string>
+    <string name="color_tuning_summary_head">화면 색상 보정</string>
+    <string name="color_red_title">빨강</string>
+    <string name="color_green_title">녹색</string>
+    <string name="color_blue_title">파랑</string>
+
+    <!-- WM8994 Control Settings -->
+    <string name="general_sound_title">소리</string>
+    <!--  Categories -->
+    <string name="category_wm8994_internal_speaker">내장 스피커 구성</string>
+    <string name="category_wm8994_signal_processing">신호 처리</string>
+    <string name="category_wm8994_headphone_amp">헤드폰 증폭기</string>
+    <string name="category_wm8994_codec_optimization">코덱 최적화</string>
+    <string name="category_wm8994_dac_config">디지털/아날로그 변환기 설정</string>
+    <string name="category_wm8994_analog_path">아날로그 경로 구성</string>
+    <string name="category_wm8994_mic_settings">마이크로폰 설정</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">소리 설정</string>
+    <string name="wm8994_settings_title_subhead">소리 설정</string>
+    <string name="wm8994_settings_summary_head">WM8994 소리 프로세서 하드웨어 고급 제어</string>
+    <string name="pref_wm8994_control_enable_title">WM8994 제어 허가</string>
+    <string name="pref_wm8994_control_enable_summary">WM8994 소리 프로세서 하드웨어 고급 제어 허가</string>
+    <string name="pref_wm8994_speaker_tuning_title">음악을 위한 스피커 조정</string>
+    <string name="pref_wm8994_speaker_tuning_summary">더 낮고 균형 잡힌 소리를 위해 하드웨어 이퀄라이저 변경</string>
+    <string name="pref_wm8994_mono_downmix_title">모노 다운믹스</string>
+    <string name="pref_wm8994_mono_downmix_summary">스테레오 소리를 모노로 다운믹스 (헤드폰 같은 장치에서 스테레오로 출력하기 위함)</string>
+    <string name="pref_wm8994_stereo_expansion_title">스테레오 확장</string>
+    <string name="pref_wm8994_stereo_expansion_summary">디지털 신호 처리를 통해 스테레오 소리 "확장"</string>
+    <string name="pref_wm8994_dac_direct_title">디지털/아날로그 변환기 방향</string>
+    <string name="pref_wm8994_dac_direct_summary">채널 혼합을 거치지 않고 직접 디지털/아날로그 변환기 연결. 깔끔한 음향을 만듦 (신호대잡음비)</string>
+    <string name="pref_wm8994_dac_osr128_title">고감도 재생</string>
+    <string name="pref_wm8994_dac_osr128_summary">디지털/아날로그 변환기 128x 과 샘플링 -- 깔끔한 소리로 음악 재생</string>
+    <string name="pref_wm8994_adc_osr128_title">고감도 녹음</string>
+    <string name="pref_wm8994_adc_osr128_summary">아날로그/디지털 변환기 128x 과 샘플링 -- 녹음 품질 증가</string>
+    <string name="pref_wm8994_fll_tuning_title">조율된 음향 회로</string>
+    <string name="pref_wm8994_fll_tuning_summary">조율된 WM8994 음향 회로 소스 사용 -- 소리 품질 향상</string>
+
+    <string name="category_touchkey_title">터치키</string>
+    <string name="backlight_timeout_title_head">조명 지속시간</string>
+    <string name="backlight_timeout_summary_head">터치키 조명이 자동으로 꺼지기 전 지속시간 조정</string>
+    <string name="blink_timeout_title_head">깜빡임 지속시간</string>
+    <string name="blink_timeout_summary_head">알림 뒤 깜빡임 조명이 자동으로 꺼지기 전 지속시간 조정</string>
+
+</resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus S 设置</string>
+
+    <string name="category_screen_title">WM8994 设置（Voodoo）</string>
+    <string name="color_tuning_title_head">颜色增值</string>
+    <string name="color_tuning_summary_head">调整屏幕颜色增值</string>
+    <string name="gamma_tuning_title_head">伽玛颜色校正</string>
+    <string name="gamma_tuning_summary_head">调整伽玛颜色校正</string>
+    <string name="color_red_title">红</string>
+    <string name="color_green_title">绿</string>
+    <string name="color_blue_title">蓝</string>
+
+    <!-- WM8994 Control Settings -->
+    <string name="general_sound_title">音效</string>
+    <!--  Categories -->
+    <string name="category_wm8994_internal_speaker">內置喇叭设置</string>
+    <string name="category_wm8994_signal_processing">信号处理</string>
+    <string name="category_wm8994_headphone_amp">耳机扩音</string>
+    <string name="category_wm8994_codec_optimization">信号编解码器优化</string>
+    <string name="category_wm8994_dac_config">数模转换器设置</string>
+    <string name="category_wm8994_analog_path">模拟路径设置</string>
+    <string name="category_wm8994_mic_settings">麦克风设置</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">音效设置</string>
+    <string name="wm8994_settings_title_subhead">音效设置</string>
+    <string name="wm8994_settings_summary_head">WM8994 音效处理器硬件高级控制</string>
+    <string name="pref_wm8994_control_enable_title">开启 WM8994 控制</string>
+    <string name="pref_wm8994_control_enable_summary">开启 WM8994 音效处理器硬件的高级控制</string>
+    <string name="pref_wm8994_speaker_tuning_title">为音乐调整喇叭</string>
+    <string name="pref_wm8994_speaker_tuning_summary">重新设置硬件均衡器来获取更加低音及均衡的音效</string>
+    <string name="pref_wm8994_mono_downmix_title">单声道混合</string>
+    <string name="pref_wm8994_mono_downmix_summary">将立体声道混合成单声道（用于立体声道输出，例如耳机）</string>
+    <string name="pref_wm8994_stereo_expansion_title">立体声道扩展</string>
+    <string name="pref_wm8994_stereo_expansion_summary">通过信号处理来”扩展“立体声道</string>
+    <string name="pref_wm8994_dac_direct_title">直接数模转换</string>
+    <string name="pref_wm8994_dac_direct_summary">绕过频道混音器，直接访问数模转换器，来产生更清晰的音频（较低的信噪比）</string>
+    <string name="pref_wm8994_dac_osr128_title">Hi-Fi 播放</string>
+    <string name="pref_wm8994_dac_osr128_summary">数模转换器128倍过密采样，使播放音乐时的音质更加清晰</string>
+    <string name="pref_wm8994_adc_osr128_title">Hi-Fi 录音</string>
+    <string name="pref_wm8994_adc_osr128_summary">数模转换器128倍过密采样，提高录音品质</string>
+    <string name="pref_wm8994_fll_tuning_title">调整音频时钟</string>
+    <string name="pref_wm8994_fll_tuning_summary">使用调整过的 WM8994 音频时钟源，改善音效品质</string>
+
+    <string name="category_touchkey_title">触控键</string>
+    <string name="backlight_timeout_title_head">背光延时</string>
+    <string name="backlight_timeout_summary_head">调整触控键背光自动关闭前的延迟时间</string>
+    <string name="blink_timeout_title_head">闪烁延时</string>
+    <string name="blink_timeout_summary_head">调整触控键闪烁通知自动关闭前的延迟时间</string>
+
+    <string name="category_radio_title">无线电</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">启用 HSDPA／HSUPA</string>
+</resources>
