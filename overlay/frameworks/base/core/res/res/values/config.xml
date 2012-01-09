@@ -210,4 +210,6 @@
 
     <bool name="config_ui_enableFadingMarquee">false</bool>
 
+    <bool name="config_bluetooth_adapter_quick_switch">false</bool>
+
 </resources>
