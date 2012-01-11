@@ -2,8 +2,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- General settings -->
-    <PreferenceCategory android:key="category_battery"
-        android:title="@string/category_battery_title">
+    <PreferenceCategory android:key="category_cpu"
+        android:title="@string/category_cpu_title">
 
         <CheckBoxPreference android:key="deepidle"
             android:title="@string/cpu_deepidle_title_head"
@@ -13,20 +13,25 @@
     <!-- Touch key backlight timeout -->
     <PreferenceCategory android:key="category_touchkey"
         android:title="@string/category_touchkey_title">
-    <ListPreference
-        android:key="backlight_timeout"
-        android:title="@string/backlight_timeout_title_head"
-        android:summary="@string/backlight_timeout_summary_head"
-        android:entries="@array/backlight_timeout_entries"
-        android:entryValues="@array/backlight_timeout_entries_values"
-        android:defaultValue="5" />
-    <ListPreference
-        android:key="blink_timeout"
-        android:title="@string/blink_timeout_title_head"
-        android:summary="@string/blink_timeout_summary_head"
-        android:entries="@array/blink_timeout_entries"
-        android:entryValues="@array/blink_timeout_entries_values"
-        android:defaultValue="5" />
+        <CheckBoxPreference android:key="touchkey_notification"
+            android:title="@string/touchkey_notification_title_head"
+            android:summary="@string/touchkey_notification_summary_head" />
+        <ListPreference
+            android:key="backlight_timeout"
+            android:title="@string/backlight_timeout_title_head"
+            android:summary="@string/backlight_timeout_summary_head"
+            android:entries="@array/backlight_timeout_entries"
+            android:entryValues="@array/backlight_timeout_entries_values"
+            android:defaultValue="5"
+            android:dependency="touchkey_notification" />
+        <ListPreference
+            android:key="blink_timeout"
+            android:title="@string/blink_timeout_title_head"
+            android:summary="@string/blink_timeout_summary_head"
+            android:entries="@array/blink_timeout_entries"
+            android:entryValues="@array/blink_timeout_entries_values"
+            android:defaultValue="5"
+            android:dependency="touchkey_notification" />
     </PreferenceCategory>
 
 </PreferenceScreen>
