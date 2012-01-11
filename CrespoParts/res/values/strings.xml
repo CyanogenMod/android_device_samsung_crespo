@@ -7,7 +7,7 @@
     <string name="display_title">DISPLAY</string>
     <string name="sound_title">SOUND</string>
 
-    <string name="category_battery_title">Battery</string>
+    <string name="category_cpu_title">CPU</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
     <string name="cpu_deepidle_summary_head">Enables deep idle, intended to provide better battery life. (Experimental at this time!)</string>
     <string name="category_screen_title">WM8994 Settings ( voodoo )</string>
@@ -51,6 +51,8 @@
     <string name="pref_wm8994_fll_tuning_summary">Use tuned WM8994 audio clock source -- improves quality of sound</string>
 
     <string name="category_touchkey_title">Touch Keys</string>
+    <string name="touchkey_notification_title_head">Backlight Notifications</string>
+    <string name="touchkey_notification_summary_head">The touch key backlights will turn on when there is a notification.</string>
     <string name="backlight_timeout_title_head">Backlight Timeout</string>
     <string name="backlight_timeout_summary_head">Adjust the delay before the touch key backlight automatically turns off</string>
     <string name="blink_timeout_title_head">Blink Timeout</string>

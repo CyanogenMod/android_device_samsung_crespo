@@ -32,11 +32,13 @@ import com.cyanogenmod.settings.device.R;
 
 public class GeneralFragmentActivity extends PreferenceFragment {
 
-    private static final String DEEPIDLE_FILE = "/sys/class/misc/deepidle/enabled";
+    private static final String CPU_DEEPIDLE_FILE = "/sys/class/misc/deepidle/enabled";
+    private static final String TOUCHKEY_NOTIFICATION_FILE = "/sys/class/misc/notification/enabled";
     private static final String PREF_ENABLED = "1";
     private static final String TAG = "CrespoParts_General";
 
     private CheckBoxPreference mDeepIdle;
+    private CheckBoxPreference mNotification;
     private ListPreference mBacklightTimeout;
     private ListPreference mBlinkTimeout;
 
@@ -48,11 +50,18 @@ public class GeneralFragmentActivity extends PreferenceFragment {
 
         PreferenceScreen prefSet = getPreferenceScreen();
         mDeepIdle = (CheckBoxPreference) findPreference(DeviceSettings.KEY_DEEPIDLE);
+        mNotification = (CheckBoxPreference) findPreference(DeviceSettings.KEY_NOTIFICATION);
 
-        if (isSupported(DEEPIDLE_FILE)) {   
-            mDeepIdle.setChecked(PREF_ENABLED.equals(Utils.readOneLine(DEEPIDLE_FILE)));
+        if (isSupported(CPU_DEEPIDLE_FILE)) {   
+            mDeepIdle.setChecked(PREF_ENABLED.equals(Utils.readOneLine(CPU_DEEPIDLE_FILE)));
         } else {
             mDeepIdle.setEnabled(false);
+        }
+
+        if (isSupported(TOUCHKEY_NOTIFICATION_FILE)) {   
+            mNotification.setChecked(PREF_ENABLED.equals(Utils.readOneLine(TOUCHKEY_NOTIFICATION_FILE)));
+        } else {
+            mNotification.setEnabled(false);
         }
 
         mBacklightTimeout = (ListPreference) findPreference(DeviceSettings.KEY_BACKLIGHT_TIMEOUT);
@@ -76,7 +85,11 @@ public class GeneralFragmentActivity extends PreferenceFragment {
         if (key.equals(DeviceSettings.KEY_DEEPIDLE)) {
             final CheckBoxPreference chkPref = (CheckBoxPreference) preference;
             boxValue = chkPref.isChecked() ? "1" : "0";
-            Utils.writeValue(DEEPIDLE_FILE, boxValue);
+            Utils.writeValue(CPU_DEEPIDLE_FILE, boxValue);
+        } else if (key.equals(DeviceSettings.KEY_NOTIFICATION)) {
+            final CheckBoxPreference chkPref = (CheckBoxPreference) preference;
+            boxValue = chkPref.isChecked() ? "1" : "0";
+            Utils.writeValue(TOUCHKEY_NOTIFICATION_FILE, boxValue);
         }
 
         return true;
@@ -88,9 +101,13 @@ public class GeneralFragmentActivity extends PreferenceFragment {
 
     public static void restore(Context context) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        if (isSupported(DEEPIDLE_FILE)) {
-            String sDefaultValue = Utils.readOneLine(DEEPIDLE_FILE);
-            Utils.writeValue(DEEPIDLE_FILE, sharedPrefs.getBoolean(DeviceSettings.KEY_DEEPIDLE, PREF_ENABLED.equals(sDefaultValue)));
+        if (isSupported(CPU_DEEPIDLE_FILE)) {
+            String sDefaultValue = Utils.readOneLine(CPU_DEEPIDLE_FILE);
+            Utils.writeValue(CPU_DEEPIDLE_FILE, sharedPrefs.getBoolean(DeviceSettings.KEY_DEEPIDLE, PREF_ENABLED.equals(sDefaultValue)));
+        }
+        if (isSupported(TOUCHKEY_NOTIFICATION_FILE)) {
+            String sDefaultValue = Utils.readOneLine(TOUCHKEY_NOTIFICATION_FILE);
+            Utils.writeValue(TOUCHKEY_NOTIFICATION_FILE, sharedPrefs.getBoolean(DeviceSettings.KEY_NOTIFICATION, PREF_ENABLED.equals(sDefaultValue)));
         }
     }
 }
