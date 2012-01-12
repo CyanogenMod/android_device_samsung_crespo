@@ -47,9 +47,9 @@ public class GammaTuningPreference extends DialogPreference {
     };
 
     private static final String[] FILE_PATH = new String[] {
-            "/sys/class/misc/voodoo_color/red_v1_offset",
-            "/sys/class/misc/voodoo_color/green_v1_offset",
-            "/sys/class/misc/voodoo_color/blue_v1_offset"
+            "/sys/class/misc/tl2796_color/red_v1_offset",
+            "/sys/class/misc/tl2796_color/green_v1_offset",
+            "/sys/class/misc/tl2796_color/blue_v1_offset"
     };
 
     private GammaSeekBar mSeekBars[] = new GammaSeekBar[3];
