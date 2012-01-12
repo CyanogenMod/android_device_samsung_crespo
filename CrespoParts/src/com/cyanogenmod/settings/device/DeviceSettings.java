@@ -71,8 +71,6 @@ public class DeviceSettings extends Activity {
                 GeneralFragmentActivity.class, null);
         mTabsAdapter.addTab(bar.newTab().setText(R.string.display_title),
                 DisplayFragmentActivity.class, null);
-        mTabsAdapter.addTab(bar.newTab().setText(R.string.sound_title),
-                SoundFragmentActivity.class, null);
 
         if (savedInstanceState != null) {
             bar.setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
