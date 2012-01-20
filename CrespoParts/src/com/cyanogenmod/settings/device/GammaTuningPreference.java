@@ -47,16 +47,16 @@ public class GammaTuningPreference extends DialogPreference {
     };
 
     private static final String[] FILE_PATH = new String[] {
-            "/sys/class/misc/tl2796_color/red_v1_offset",
-            "/sys/class/misc/tl2796_color/green_v1_offset",
-            "/sys/class/misc/tl2796_color/blue_v1_offset"
+            "/sys/class/misc/samoled_color/red_v1_offset",
+            "/sys/class/misc/samoled_color/green_v1_offset",
+            "/sys/class/misc/samoled_color/blue_v1_offset"
     };
 
     private GammaSeekBar mSeekBars[] = new GammaSeekBar[3];
 
     private static final int MAX_VALUE = 80;
 
-    private static final int OFFSET_VALUE = 60;
+    private static final int OFFSET_VALUE = 0;
 
     // Track instances to know when to restore original color
     // (when the orientation changes, a new dialog is created before the old one
