@@ -214,9 +214,6 @@ else
 LOCAL_WIFI_MODULE := $(TARGET_PREBUILT_WIFI_MODULE)
 endif
 
-PRODUCT_COPY_FILES += \
-	$(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko
-
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
 else
@@ -227,3 +224,6 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_KERNEL):kernel
 
 $(call inherit-product-if-exists, vendor/nxp/pn544/nxp-pn544-fw-vendor.mk)
+
+WIFI_BAND := 802_11_BG
+$(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
