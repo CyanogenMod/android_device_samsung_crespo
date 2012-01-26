@@ -44,7 +44,7 @@ public class DisplayFragmentActivity extends PreferenceFragment {
         mColorTuning.setEnabled(ColorTuningPreference.isSupported());
 
         mGammaTuning = (GammaTuningPreference) findPreference(DeviceSettings.KEY_GAMMA_TUNING);
-        mGammaTuning.setEnabled(ColorTuningPreference.isSupported());
+        mGammaTuning.setEnabled(GammaTuningPreference.isSupported());
     }
 
 }
