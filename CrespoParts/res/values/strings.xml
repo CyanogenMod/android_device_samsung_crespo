@@ -9,7 +9,9 @@
 
     <string name="category_cpu_title">CPU</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
-    <string name="cpu_deepidle_summary_head">Enables deep idle, intended to provide better battery life. (Experimental at this time!)</string>
+    <string name="cpu_deepidle_summary_head">Enables deep idle, intended to provide better battery life.</string>
+    <string name="cpu_ksm_title_head">Kernel Samepage Merging</string>
+    <string name="cpu_ksm_summary_head">Enables kernel samepage merging(KSM), reduces physical memory requirements and improves performance.</string>
     <string name="category_screen_title">WM8994 Settings ( voodoo )</string>
     <string name="color_tuning_title_head">Color Multipliers Tuning</string>
     <string name="color_tuning_summary_head">Calibrate multipliers screen color</string>

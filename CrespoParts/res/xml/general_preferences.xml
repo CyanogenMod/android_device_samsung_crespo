@@ -8,6 +8,9 @@
         <CheckBoxPreference android:key="deepidle"
             android:title="@string/cpu_deepidle_title_head"
             android:summary="@string/cpu_deepidle_summary_head" />
+        <CheckBoxPreference android:key="ksm"
+            android:title="@string/cpu_ksm_title_head"
+            android:summary="@string/cpu_ksm_summary_head" />
     </PreferenceCategory>
 
     <!-- Touch key backlight timeout -->
