@@ -37,7 +37,7 @@ SECOMXPlugin::SECOMXPlugin()
       mGetRolesOfComponentHandle(NULL) {
     if (mLibHandle != NULL) {
         mInit = (InitFunc)dlsym(mLibHandle, "SEC_OMX_Init");
-        mDeinit = (DeinitFunc)dlsym(mLibHandle, "SEC_OMX_DeInit");
+        mDeinit = (DeinitFunc)dlsym(mLibHandle, "SEC_OMX_Deinit");
 
         mComponentNameEnum =
             (ComponentNameEnumFunc)dlsym(mLibHandle, "SEC_OMX_ComponentNameEnum");
