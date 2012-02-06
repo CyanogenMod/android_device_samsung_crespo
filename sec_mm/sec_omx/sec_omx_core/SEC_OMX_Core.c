@@ -29,8 +29,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>         // for pthread related functions
 
 #include "SEC_OMX_Core.h"
+#include "SEC_OSAL_Mutex.h"  // for mutext related functions
+#include "SEC_OSAL_ETC.h"    // for SEC_OSAL_Strcmp, etc
 #include "SEC_OMX_Component_Register.h"
 #include "SEC_OSAL_Memory.h"
 #include "SEC_OMX_Resourcemanager.h"
@@ -42,11 +45,11 @@
 
 
 static int gInitialized = 0;
-static int gComponentNum = 0;
+static OMX_U32 gComponentNum = 0;
 
 static SEC_OMX_COMPONENT_REGLIST *gComponentList = NULL;
 static SEC_OMX_COMPONENT *gLoadComponentList = NULL;
-static OMX_HANDLETYPE ghLoadComponentListMutex = NULL;
+static pthread_mutex_t ghLoadComponentListMutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_Init(void)
@@ -55,6 +58,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_Init(void)
 
     FunctionIn();
 
+    SEC_OSAL_MutexLock(&ghLoadComponentListMutex);
     if (gInitialized == 0) {
         if (SEC_OMX_Component_Register(&gComponentList, &gComponentNum)) {
             ret = OMX_ErrorInsufficientResources;
@@ -63,14 +67,12 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_Init(void)
         }
 
         SEC_OMX_ResourceManager_Init();
-
-        SEC_OSAL_MutexCreate(&ghLoadComponentListMutex);
-
-        gInitialized = 1;
         SEC_OSAL_Log(SEC_LOG_TRACE, "SEC_OMX_Init : %s", "OMX_ErrorNone");
     }
+    ++gInitialized;
 
 EXIT:
+    SEC_OSAL_MutexUnlock(&ghLoadComponentListMutex);
     FunctionOut();
 
     return ret;
@@ -82,8 +84,16 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_Deinit(void)
 
     FunctionIn();
 
-    SEC_OSAL_MutexTerminate(ghLoadComponentListMutex);
-    ghLoadComponentListMutex = NULL;
+    SEC_OSAL_MutexLock(&ghLoadComponentListMutex);
+    if (gInitialized > 0) {
+        --gInitialized;
+    }
+
+    if (gInitialized != 0) {
+        // Some component still uses the core.
+        // Nothing needs to be done
+        goto EXIT;
+    }
 
     SEC_OMX_ResourceManager_Deinit();
 
@@ -93,9 +103,9 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_Deinit(void)
     }
     gComponentList = NULL;
     gComponentNum = 0;
-    gInitialized = 0;
 
 EXIT:
+    SEC_OSAL_MutexUnlock(&ghLoadComponentListMutex);
     FunctionOut();
 
     return ret;
@@ -133,7 +143,6 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_GetHandle(
     OMX_ERRORTYPE      ret = OMX_ErrorNone;
     SEC_OMX_COMPONENT *loadComponent;
     SEC_OMX_COMPONENT *currentComponent;
-    int i = 0;
 
     FunctionIn();
 
@@ -148,6 +157,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_GetHandle(
     }
     SEC_OSAL_Log(SEC_LOG_TRACE, "ComponentName : %s", cComponentName);
 
+    OMX_U32 i = 0;
     for (i = 0; i < gComponentNum; i++) {
         if (SEC_OSAL_Strcmp(cComponentName, gComponentList[i].component.componentName) == 0) {
             loadComponent = SEC_OSAL_Malloc(sizeof(SEC_OMX_COMPONENT));
@@ -170,7 +180,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_GetHandle(
                 goto EXIT;
             }
 
-            SEC_OSAL_MutexLock(ghLoadComponentListMutex);
+            SEC_OSAL_MutexLock(&ghLoadComponentListMutex);
             if (gLoadComponentList == NULL) {
                 gLoadComponentList = loadComponent;
             } else {
@@ -180,7 +190,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_GetHandle(
                 }
                 currentComponent->nextOMXComp = loadComponent;
             }
-            SEC_OSAL_MutexUnlock(ghLoadComponentListMutex);
+            SEC_OSAL_MutexUnlock(&ghLoadComponentListMutex);
 
             *pHandle = loadComponent->pOMXComponent;
             ret = OMX_ErrorNone;
@@ -215,7 +225,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_FreeHandle(OMX_IN OMX_HANDLETYPE hCom
         goto EXIT;
     }
 
-    SEC_OSAL_MutexLock(ghLoadComponentListMutex);
+    SEC_OSAL_MutexLock(&ghLoadComponentListMutex);
     currentComponent = gLoadComponentList;
     if (gLoadComponentList->pOMXComponent == hComponent) {
         deleteComponent = gLoadComponentList;
@@ -229,16 +239,15 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY SEC_OMX_FreeHandle(OMX_IN OMX_HANDLETYPE hCom
             currentComponent->nextOMXComp = deleteComponent->nextOMXComp;
         } else if (currentComponent == NULL) {
             ret = OMX_ErrorComponentNotFound;
-            SEC_OSAL_MutexUnlock(ghLoadComponentListMutex);
             goto EXIT;
         }
     }
-    SEC_OSAL_MutexUnlock(ghLoadComponentListMutex);
 
     SEC_OMX_ComponentUnload(deleteComponent);
     SEC_OSAL_Free(deleteComponent);
 
 EXIT:
+    SEC_OSAL_MutexUnlock(&ghLoadComponentListMutex);
     FunctionOut();
 
     return ret;
