@@ -25,6 +25,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.util.Log;
 
 /**
  * Special preference type that allows configuration of both the ring volume and
@@ -104,20 +105,28 @@ public class ColorTuningPreference extends DialogPreference {
      * @param context The context to read the SharedPreferences from
      */
     public static void restore(Context context) {
+        int iValue, iValue2;
         if (!isSupported()) {
             return;
         }
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         for (String filePath : FILE_PATH) {
-            int iValue;
             String sDefaultValue = Utils.readOneLine(filePath);
+            Log.d(TAG,"INIT: " + sDefaultValue);
             try {
-                iValue = sharedPrefs.getInt(filePath, Integer.parseInt(sDefaultValue));
+                iValue2 = Integer.parseInt(sDefaultValue);
             } catch (NumberFormatException e) {
-                iValue = MAX_VALUE;
+                iValue2 = MAX_VALUE;
             }
-            Utils.writeColor(filePath, iValue);
+            try {
+                iValue = sharedPrefs.getInt(filePath, iValue2);
+                Log.d(TAG, "restore: iValue: " + iValue + " File: " + filePath);
+            } catch (NumberFormatException e) {
+                iValue = iValue2;
+                Log.e(TAG, "restore ERROR: iValue: " + iValue + " File: " + filePath);
+            }
+            Utils.writeColor(filePath, (int) iValue);
         }
     }
 
