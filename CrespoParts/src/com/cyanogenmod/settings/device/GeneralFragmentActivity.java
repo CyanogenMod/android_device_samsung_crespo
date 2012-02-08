@@ -38,6 +38,7 @@ public class GeneralFragmentActivity extends PreferenceFragment {
     private static final String TAG = "CrespoParts_General";
 
     private CheckBoxPreference mDeepIdle;
+    private LulzactiveTuningPreference mLulzactiveTuning;
     private CheckBoxPreference mNotification;
 
     @Override
@@ -55,6 +56,9 @@ public class GeneralFragmentActivity extends PreferenceFragment {
         } else {
             mDeepIdle.setEnabled(false);
         }
+
+        mLulzactiveTuning = (LulzactiveTuningPreference) findPreference(DeviceSettings.KEY_Lulzactive_TUNING);
+        mLulzactiveTuning.setEnabled(LulzactiveTuningPreference.isSupported());
 
         if (isSupported(TOUCHKEY_NOTIFICATION_FILE)) {
             mNotification.setChecked(PREF_ENABLED.equals(Utils.readOneLine(TOUCHKEY_NOTIFICATION_FILE)));

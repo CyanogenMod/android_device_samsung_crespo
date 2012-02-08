@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:paddingBottom="20dip">
+
+        <TextView android:id="@+id/inccpuload_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/inccpuload_title"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <TextView android:id="@+id/inccpuload_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <SeekBar android:id="@+id/inccpuload_seekbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/inccpuload_text"
+                android:paddingTop="2dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+
+        <TextView android:id="@+id/pumpup_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/inccpuload_seekbar"
+                android:text="@string/pumpup_title"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <TextView android:id="@+id/pumpup_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/inccpuload_seekbar"
+                android:layout_alignParentRight="true"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <SeekBar android:id="@+id/pumpup_seekbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpup_text"
+                android:paddingTop="2dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+
+        <TextView android:id="@+id/pumpdown_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpup_seekbar"
+                android:text="@string/pumpdown_title"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <TextView android:id="@+id/pumpdown_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpup_seekbar"
+                android:layout_alignParentRight="true"
+                android:paddingTop="7dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <SeekBar android:id="@+id/pumpdown_seekbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpdown_text"
+                android:paddingTop="2dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+
+        <TextView android:id="@+id/upsampletime_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpdown_seekbar"
+                android:text="@string/upsampletime_title"
+                android:paddingTop="10dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <TextView android:id="@+id/upsampletime_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/pumpdown_seekbar"
+                android:layout_alignParentRight="true"
+                android:paddingTop="10dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <SeekBar android:id="@+id/upsampletime_seekbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/upsampletime_text"
+                android:paddingTop="2dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+
+        <TextView android:id="@+id/downsampletime_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/upsampletime_seekbar"
+                android:text="@string/downsampletime_title"
+                android:paddingTop="10dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <TextView android:id="@+id/downsampletime_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/upsampletime_seekbar"
+                android:layout_alignParentRight="true"
+                android:paddingTop="10dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+        <SeekBar android:id="@+id/downsampletime_seekbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/downsampletime_text"
+                android:paddingTop="2dip"
+                android:paddingLeft="20dip"
+                android:paddingRight="20dip" />
+
+        <LinearLayout
+            android:id="@+id/linearLayout1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:layout_below="@id/downsampletime_seekbar" >
+
+            <Button
+                android:id="@+id/btnLulzDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lulz_default_title" />
+
+            <Button
+                android:id="@+id/btnLulzBatt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lulz_batt_title" />
+
+            <Button
+                android:id="@+id/btnLulzSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lulz_speed_title" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</ScrollView>

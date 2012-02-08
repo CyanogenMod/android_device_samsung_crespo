@@ -19,6 +19,17 @@
     <string name="color_green_title">Green</string>
     <string name="color_blue_title">Blue</string>
 
+    <string name="lulzactive_tuning_title_head">Lulzactive Tuning</string>
+    <string name="lulzactive_tuning_summary_head">Controls parameters for lulzactive governor</string>
+    <string name="inccpuload_title">% of change</string>
+    <string name="pumpup_title">Steps when UP</string>
+    <string name="pumpdown_title">Steps when DOWN</string>
+    <string name="upsampletime_title">Time before rise up [ms]</string>
+    <string name="downsampletime_title">Time before goes down [ms]</string>
+    <string name="lulz_default_title">Default</string>
+    <string name="lulz_batt_title">Batt. Save</string>
+    <string name="lulz_speed_title">Fast</string>
+
     <string name="category_touchkey_title">Touch Keys</string>
     <string name="touchkey_notification_title_head">Backlight Notifications</string>
     <string name="touchkey_notification_summary_head">The touch key backlights will turn on when there is a notification.</string>

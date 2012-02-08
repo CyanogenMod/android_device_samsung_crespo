@@ -19,6 +19,18 @@ on boot
 # phone
     setprop ro.telephony.call_ring.multiple 0
 
+# allow lulzactive to be externally controled
+    chown root system /sys/devices/system/cpu/cpufreq/lulzactive/inc_cpu_load
+    chown root system /sys/devices/system/cpu/cpufreq/lulzactive/pump_up_step
+    chown root system /sys/devices/system/cpu/cpufreq/lulzactive/pump_down_step
+    chown root system /sys/devices/system/cpu/cpufreq/lulzactive/up_sample_time
+    chown root system /sys/devices/system/cpu/cpufreq/lulzactive/down_sample_time
+    chmod 0666 system /sys/devices/system/cpu/cpufreq/lulzactive/inc_cpu_load
+    chmod 0666 system /sys/devices/system/cpu/cpufreq/lulzactive/pump_up_step
+    chmod 0666 system /sys/devices/system/cpu/cpufreq/lulzactive/pump_down_step
+    chmod 0666 system /sys/devices/system/cpu/cpufreq/lulzactive/up_sample_time
+    chmod 0666 system /sys/devices/system/cpu/cpufreq/lulzactive/down_sample_time
+
 # change permission for uart_switch
     chown radio radio /sys/class/sec/uart_switch/UART_SEL/value
     chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
@@ -30,7 +42,7 @@ on boot
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
 # cpufreq, set ondemand governor
-    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor lulzactive
 
 on fs
     mkdir /efs 0775 radio radio
