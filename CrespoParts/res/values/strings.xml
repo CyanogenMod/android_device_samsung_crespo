@@ -22,10 +22,6 @@
     <string name="category_touchkey_title">Touch Keys</string>
     <string name="touchkey_notification_title_head">Backlight Notifications</string>
     <string name="touchkey_notification_summary_head">The touch key backlights will turn on when there is a notification.</string>
-    <string name="backlight_timeout_title_head">Backlight Timeout</string>
-    <string name="backlight_timeout_summary_head">Adjust the delay before the touch key backlight automatically turns off</string>
-    <string name="blink_timeout_title_head">Blink Timeout</string>
-    <string name="blink_timeout_summary_head">Adjust the delay before the touch key blink backlight automatically turns off after a notification</string>
 
     <string name="category_radio_title">Radio</string>
     <string name="hspa_title_head">HSPA</string>

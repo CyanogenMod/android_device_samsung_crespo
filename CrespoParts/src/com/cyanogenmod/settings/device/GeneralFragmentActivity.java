@@ -39,8 +39,6 @@ public class GeneralFragmentActivity extends PreferenceFragment {
 
     private CheckBoxPreference mDeepIdle;
     private CheckBoxPreference mNotification;
-    private ListPreference mBacklightTimeout;
-    private ListPreference mBlinkTimeout;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -64,14 +62,6 @@ public class GeneralFragmentActivity extends PreferenceFragment {
             mNotification.setEnabled(false);
         }
 
-        mBacklightTimeout = (ListPreference) findPreference(DeviceSettings.KEY_BACKLIGHT_TIMEOUT);
-        mBacklightTimeout.setEnabled(TouchKeyBacklightTimeout.isSupported());
-        mBacklightTimeout.setOnPreferenceChangeListener(new TouchKeyBacklightTimeout());
-
-        mBlinkTimeout = (ListPreference) findPreference(DeviceSettings.KEY_BLINK_TIMEOUT);
-        mBlinkTimeout.setEnabled(TouchKeyBlinkTimeout.isSupported());
-        mBlinkTimeout.setOnPreferenceChangeListener(new TouchKeyBlinkTimeout());
-
     }
 
     @Override
@@ -81,7 +71,6 @@ public class GeneralFragmentActivity extends PreferenceFragment {
         String key = preference.getKey();
 
         Log.w(TAG, "key: " + key);
-        
         if (key.equals(DeviceSettings.KEY_DEEPIDLE)) {
             final CheckBoxPreference chkPref = (CheckBoxPreference) preference;
             boxValue = chkPref.isChecked() ? "1" : "0";
