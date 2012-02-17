@@ -104,7 +104,7 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0
 
 # DHCPCD
 # wi-fi
-service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+service dhcpcd_wlan0 /system/bin/dhcpcd -aABKL
     class main
     disabled
     oneshot
