@@ -168,6 +168,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
         CrespoParts
 
+# Torch
+PRODUCT_PACKAGES += \
+        Torch
+
 # for bugmailer
 PRODUCT_PACKAGES += send_bug
 PRODUCT_COPY_FILES += \
