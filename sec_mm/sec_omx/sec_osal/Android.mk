@@ -22,12 +22,11 @@ LOCAL_CFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
 
-LOCAL_SHARED_LIBRARIES := libcutils libutils \
+LOCAL_SHARED_LIBRARIES := libcutils \
+                          libutils \
                           libui \
                           libhardware \
                           libandroid_runtime \
-                          libsurfaceflinger_client \
-                          libbinder \
                           libmedia
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \
