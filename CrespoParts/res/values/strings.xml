@@ -9,7 +9,7 @@
 
     <string name="category_cpu_title">CPU</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
-    <string name="cpu_deepidle_summary_head">Enables deep idle, intended to provide better battery life. (Experimental at this time!)</string>
+    <string name="cpu_deepidle_summary_head">Enables deep idle, intended to provide better battery life. (NO STABLE AT ALL. you can have reboots!)</string>
     <string name="category_screen_title">WM8994 Settings ( voodoo )</string>
     <string name="color_tuning_title_head">Color Multipliers Tuning</string>
     <string name="color_tuning_summary_head">Calibrate multipliers screen color</string>
@@ -18,17 +18,6 @@
     <string name="color_red_title">Red</string>
     <string name="color_green_title">Green</string>
     <string name="color_blue_title">Blue</string>
-
-    <string name="lulzactive_tuning_title_head">Lulzactive Tuning</string>
-    <string name="lulzactive_tuning_summary_head">Controls parameters for lulzactive governor</string>
-    <string name="inccpuload_title">% of change</string>
-    <string name="pumpup_title">Steps when UP</string>
-    <string name="pumpdown_title">Steps when DOWN</string>
-    <string name="upsampletime_title">Time before rise up [ms]</string>
-    <string name="downsampletime_title">Time before goes down [ms]</string>
-    <string name="lulz_default_title">Default</string>
-    <string name="lulz_batt_title">Batt. Save</string>
-    <string name="lulz_speed_title">Fast</string>
 
     <string name="category_touchkey_title">Touch Keys</string>
     <string name="touchkey_notification_title_head">Backlight Notifications</string>

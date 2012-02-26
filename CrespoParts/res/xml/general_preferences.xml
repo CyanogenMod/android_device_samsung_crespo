@@ -8,10 +8,6 @@
         <CheckBoxPreference android:key="deepidle"
             android:title="@string/cpu_deepidle_title_head"
             android:summary="@string/cpu_deepidle_summary_head" />
-        <com.cyanogenmod.settings.device.LulzactiveTuningPreference
-            android:key="lulzactive_tuning"
-            android:title="@string/lulzactive_tuning_title_head"
-            android:summary="@string/lulzactive_tuning_summary_head" />
     </PreferenceCategory>
 
     <!-- Touch key backlight timeout -->
