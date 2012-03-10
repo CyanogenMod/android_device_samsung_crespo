@@ -220,8 +220,7 @@ else
 LOCAL_WIFI_MODULE := $(TARGET_PREBUILT_WIFI_MODULE)
 endif
 
-PRODUCT_COPY_FILES += \
-	$(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko
+include device/samsung/crespo/KernelModules.mk
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
