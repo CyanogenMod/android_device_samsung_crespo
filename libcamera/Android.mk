@@ -9,6 +9,7 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libs3cjpeg
+LOCAL_C_INCLUDES += frameworks/native/include/media/hardware
 
 LOCAL_SRC_FILES:= \
 	SecCamera.cpp SecCameraHWInterface.cpp
