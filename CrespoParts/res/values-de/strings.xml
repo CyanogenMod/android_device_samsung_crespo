@@ -10,7 +10,7 @@
     <string name="category_cpu_title">CPU</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
     <string name="cpu_deepidle_summary_head">Schaltet Deep Idle ein, um die Akku Laufzeit zu erhöhen. (Nicht STABIL! Es kann zu Neustarts kommen)</string>
-    <string name="category_screen_title">WM8994 Einstellungen ( voodoo )</string>
+    <string name="category_screen_title">WM8994 Einstellungen (voodoo)</string>
     <string name="color_tuning_title_head">Multiplikator Einstellung</string>
     <string name="color_tuning_summary_head">Farb - Multiplikator einstellen</string>
     <string name="gamma_tuning_title_head">Gamma Einstellungen</string>
