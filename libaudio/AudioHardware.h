@@ -24,7 +24,6 @@
 #include <utils/SortedVector.h>
 
 #include <hardware_legacy/AudioHardwareBase.h>
-#include <media/mediarecorder.h>
 #include <hardware/audio_effect.h>
 
 #include "secril-client.h"
