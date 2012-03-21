@@ -65,6 +65,11 @@ on fs
 # Permissions for System Server and daemons.
     chown system system /sys/class/backlight/s5p_bl/brightness
 
+# Configure and enable KSM
+    write /sys/kernel/mm/ksm/pages_to_scan 100
+    write /sys/kernel/mm/ksm/sleep_millisecs 500
+    write /sys/kernel/mm/ksm/run 1
+
 on post-fs-data
 # wi-fi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
