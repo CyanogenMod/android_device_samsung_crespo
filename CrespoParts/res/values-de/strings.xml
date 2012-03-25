@@ -4,17 +4,17 @@
 
     <!-- Page Headers -->
     <string name="general_title">ALLGEMEIN</string>
-    <string name="display_title">ANZEIGE</string>
+    <string name="display_title">BILDSCHIRM</string>
     <string name="sound_title">TON</string>
 
-    <string name="category_cpu_title">CPU</string>
+    <string name="category_cpu_title">Prozessor</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
     <string name="cpu_deepidle_summary_head">Schaltet Deep Idle ein, um die Akku Laufzeit zu erhöhen. (Nicht STABIL! Es kann zu Neustarts kommen)</string>
     <string name="category_screen_title">WM8994 Einstellungen (voodoo)</string>
-    <string name="color_tuning_title_head">Multiplikator Einstellungen</string>
-    <string name="color_tuning_summary_head">Farb - Multiplikator einstellen</string>
-    <string name="gamma_tuning_title_head">Gamma Einstellungen</string>
-    <string name="gamma_tuning_summary_head">Farb - Gamma Korrektur einstellen</string>
+    <string name="color_tuning_title_head">Farbmultiplikator</string>
+    <string name="color_tuning_summary_head">Farbmultiplikator einstellen</string>
+    <string name="gamma_tuning_title_head">Gammakorrektur</string>
+    <string name="gamma_tuning_summary_head">Gammawert einstellen</string>
     <string name="color_red_title">Rot</string>
     <string name="color_green_title">Grün</string>
     <string name="color_blue_title">Blau</string>
@@ -23,7 +23,7 @@
     <string name="touchkey_notification_title_head">Hintergrundbeleuchtung</string>
     <string name="touchkey_notification_summary_head">Die Hintergrundbeleuchtung wird nach erhalten einer Nachricht aktiviert.</string>
 
-    <string name="category_radio_title">Radio</string>
+    <string name="category_radio_title">Mobilfunk</string>
     <string name="hspa_title_head">HSPA</string>
-    <string name="hspa_summary_head">HSDPA/HSUPA einschalten</string>
+    <string name="hspa_summary_head">HSDPA/HSUPA aktivieren</string>
 </resources>
