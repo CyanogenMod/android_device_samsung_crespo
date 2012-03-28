@@ -37,8 +37,13 @@
 # 257829 = IMM30B
 # 262866 = IMM30D
 # 299849 = IMM76D
-ZIP=soju-ota-299849.zip
-BUILD=imm76d
+# end ics-mr1
+BRANCH=ics-mr1
+if test $BRANCH=ics-mr1
+then
+  ZIP=soju-ota-299849.zip
+  BUILD=imm76d
+fi # ics-mr1
 ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
