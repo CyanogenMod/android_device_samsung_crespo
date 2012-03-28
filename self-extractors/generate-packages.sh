@@ -36,8 +36,9 @@
 # 239410 = IML74K
 # 257829 = IMM30B
 # 262866 = IMM30D
-ZIP=soju-ota-262866.zip
-BUILD=imm30d
+# 299849 = IMM76D
+ZIP=soju-ota-299849.zip
+BUILD=imm76d
 ROOTDEVICE=crespo
 DEVICE=crespo
 MANUFACTURER=samsung
