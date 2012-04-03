@@ -1,3 +1,4 @@
+# Portions Copyright (C) 2012 VMware, Inc. All Rights Reserved.
 # Copyright (C) 2010 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -214,13 +215,22 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 # Screen size is "normal", density is "hdpi"
 PRODUCT_AAPT_CONFIG := normal hdpi
 
+# Kernel Modules to be copied
 ifeq ($(TARGET_PREBUILT_WIFI_MODULE),)
 LOCAL_WIFI_MODULE := device/samsung/crespo/bcm4329.ko
 else
 LOCAL_WIFI_MODULE := $(TARGET_PREBUILT_WIFI_MODULE)
 endif
 
-include device/samsung/crespo/KernelModules.mk
+ifeq ($(TARGET_PREBUILT_SCSI_MODULE),)
+LOCAL_SCSI_MODULE := device/samsung/crespo/scsi_wait_scan.ko
+else
+LOCAL_SCSI_MODULE := $(TARGET_PREBUILT_SCSI_MODULE)
+endif
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_WIFI_MODULE):system/modules/bcm4329.ko \
+    $(LOCAL_SCSI_MODULE):system/modules/scsi_wait_scan.ko
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 LOCAL_KERNEL := device/samsung/crespo/kernel
