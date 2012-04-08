@@ -54,9 +54,9 @@ public class GammaTuningPreference extends DialogPreference {
 
     private GammaSeekBar mSeekBars[] = new GammaSeekBar[3];
 
-    private static final int MAX_VALUE = 80;
+    private static final int MAX_VALUE = 200;
 
-    private static final int OFFSET_VALUE = 0;
+    private static final int OFFSET_VALUE = 100;
 
     // Track instances to know when to restore original color
     // (when the orientation changes, a new dialog is created before the old one
@@ -110,10 +110,20 @@ public class GammaTuningPreference extends DialogPreference {
         }
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Boolean bFirstTime = sharedPrefs.getBoolean("FirstTimeGamma", true);
         for (String filePath : FILE_PATH) {
             String sDefaultValue = Utils.readOneLine(filePath);
             int iValue = sharedPrefs.getInt(filePath, Integer.valueOf(sDefaultValue));
-            Utils.writeValue(filePath, String.valueOf((long) iValue));
+            if (bFirstTime)
+                Utils.writeValue(filePath, "0");
+            else
+                Utils.writeValue(filePath, String.valueOf((long) iValue));
+        }
+        if (bFirstTime)
+        {
+            SharedPreferences.Editor editor = sharedPrefs.edit();
+            editor.putBoolean("FirstTimeGamma", false);
+            editor.commit();
         }
     }
 
