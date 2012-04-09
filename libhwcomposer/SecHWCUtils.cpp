@@ -166,40 +166,30 @@ int window_hide(struct hwc_win_info_t *win)
     return 0;
 }
 
-int window_get_global_lcd_info(struct fb_var_screeninfo *lcd_info)
+int window_get_global_lcd_info(struct hwc_context_t *ctx)
 {
     struct hwc_win_info_t win;
     int ret = 0;
 
-    if (window_open(&win, 2)  < 0) {
-        ALOGE("%s:: Failed to open window 2 device ", __func__);
+    if (ioctl(ctx->global_lcd_win.fd, FBIOGET_VSCREENINFO, &ctx->lcd_info) < 0) {
+        ALOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
         return -1;
     }
 
-    if (ioctl(win.fd, FBIOGET_VSCREENINFO, lcd_info) < 0) {
-        ALOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
-        ret = -1;
-        goto fun_err;
+    if (ctx->lcd_info.xres == 0) {
+        ctx->lcd_info.xres = DEFAULT_LCD_WIDTH;
+        ctx->lcd_info.xres_virtual = DEFAULT_LCD_WIDTH;
     }
 
-    if (lcd_info->xres == 0) {
-        lcd_info->xres = DEFAULT_LCD_WIDTH;
-        lcd_info->xres_virtual = DEFAULT_LCD_WIDTH;
+    if (ctx->lcd_info.yres == 0) {
+        ctx->lcd_info.yres = DEFAULT_LCD_HEIGHT;
+        ctx->lcd_info.yres_virtual = DEFAULT_LCD_HEIGHT * NUM_OF_WIN_BUF;
     }
 
-    if (lcd_info->yres == 0) {
-        lcd_info->yres = DEFAULT_LCD_HEIGHT;
-        lcd_info->yres_virtual = DEFAULT_LCD_HEIGHT * NUM_OF_WIN_BUF;
-    }
+    if (ctx->lcd_info.bits_per_pixel == 0)
+        ctx->lcd_info.bits_per_pixel = DEFAULT_LCD_BPP;
 
-    if (lcd_info->bits_per_pixel == 0)
-        lcd_info->bits_per_pixel = DEFAULT_LCD_BPP;
-
-fun_err:
-    if (window_close(&win) < 0)
-        ALOGE("%s::window2 close fail", __func__);   
-
-    return ret;
+    return 0;
 }
 
 int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
