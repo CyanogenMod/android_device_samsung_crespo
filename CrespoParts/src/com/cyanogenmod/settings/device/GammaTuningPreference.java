@@ -23,14 +23,16 @@ import android.preference.DialogPreference;
 import android.preference.PreferenceManager;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Button;
 
 /**
  * Special preference type that allows configuration of both the ring volume and
  * notification volume.
  */
-public class GammaTuningPreference extends DialogPreference {
+public class GammaTuningPreference extends DialogPreference implements OnClickListener {
 
     private static final String TAG = "GAMMA...";
 
@@ -80,6 +82,16 @@ public class GammaTuningPreference extends DialogPreference {
             TextView valueDisplay = (TextView) view.findViewById(VALUE_DISPLAY_ID[i]);
             mSeekBars[i] = new GammaSeekBar(seekBar, valueDisplay, FILE_PATH[i]);
         }
+        SetupButtonClickListeners(view);
+    }
+
+    private void SetupButtonClickListeners(View view) {
+            Button mDefaultButton = (Button)view.findViewById(R.id.btnGammaDefault);
+            Button mCMButton = (Button)view.findViewById(R.id.btnGammaCM);
+            Button mBrightButton = (Button)view.findViewById(R.id.btnGammaBright);
+            mDefaultButton.setOnClickListener(this);
+            mCMButton.setOnClickListener(this);
+            mBrightButton.setOnClickListener(this);
     }
 
     @Override
@@ -216,6 +228,43 @@ public class GammaTuningPreference extends DialogPreference {
             mValueDisplay.setText(String.format("%d", (int) progress));
         }
 
+        public void SetNewValue(int iValue) {
+            mOriginal = iValue;
+            reset();
+        }
+
+    }
+
+    public void onClick(View v) {
+        switch(v.getId()){
+            case R.id.btnGammaDefault:
+                    SetDefaultSettings();
+                    break;
+            case R.id.btnGammaCM:
+                    SetCMSettings();
+                    break;
+            case R.id.btnGammaBright:
+                    SetSBrightSettings();
+                    break;
+        }
+    }
+
+    private void SetCMSettings() {
+        mSeekBars[0].SetNewValue(-63);
+        mSeekBars[1].SetNewValue(-59);
+        mSeekBars[2].SetNewValue(-61);
+    }
+
+    private void SetSBrightSettings() {
+        mSeekBars[0].SetNewValue(70);
+        mSeekBars[1].SetNewValue(68);
+        mSeekBars[2].SetNewValue(61);
+    }
+
+    private void SetDefaultSettings() {
+        mSeekBars[0].SetNewValue(0);
+        mSeekBars[1].SetNewValue(0);
+        mSeekBars[2].SetNewValue(0);
     }
 
 }

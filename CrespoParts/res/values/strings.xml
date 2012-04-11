@@ -18,6 +18,9 @@
     <string name="color_red_title">Red</string>
     <string name="color_green_title">Green</string>
     <string name="color_blue_title">Blue</string>
+    <string name="gamma_default_title">Default</string>
+    <string name="gamma_CM_title">CM Sett.</string>
+    <string name="gamma_bright_title">Bright Sett.</string>
 
     <string name="category_touchkey_title">Touch Keys</string>
     <string name="touchkey_notification_title_head">Backlight Notifications</string>
