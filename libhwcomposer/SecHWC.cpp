@@ -23,10 +23,12 @@
  *
  */
 
+#include <sys/resource.h>
 #include <cutils/log.h>
 #include <cutils/atomic.h>
 #include <EGL/egl.h>
 #include <GLES/gl.h>
+#include <hardware_legacy/uevent.h>
 #include "SecHWCUtils.h"
 
 static IMG_gralloc_module_public_t *gpsGrallocModule;
@@ -41,8 +43,8 @@ static struct hw_module_methods_t hwc_module_methods = {
 hwc_module_t HAL_MODULE_INFO_SYM = {
     common: {
         tag: HARDWARE_MODULE_TAG,
-        version_major: 1,
-        version_minor: 0,
+        module_api_version: HWC_MODULE_API_VERSION_0_1,
+        hal_api_version: HARDWARE_HAL_API_VERSION,
         id: HWC_HARDWARE_MODULE_ID,
         name: "Samsung S5PC11X hwcomposer module",
         author: "SAMSUNG",
@@ -292,7 +294,6 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_rect src_rect;
     struct sec_rect dst_rect;
 
-
     if (dpy == NULL && sur == NULL && list == NULL) {
         // release our resources, the screen is turning off
         // in our case, there is nothing to do.
@@ -424,6 +425,94 @@ static int hwc_set(hwc_composer_device_t *dev,
     return 0;
 }
 
+static void hwc_registerProcs(struct hwc_composer_device* dev,
+        hwc_procs_t const* procs)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+    ctx->procs = const_cast<hwc_procs_t *>(procs);
+}
+
+static int hwc_query(struct hwc_composer_device* dev,
+        int what, int* value)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+
+    switch (what) {
+    case HWC_BACKGROUND_LAYER_SUPPORTED:
+        // we don't support the background layer yet
+        value[0] = 0;
+        break;
+    case HWC_VSYNC_PERIOD:
+        // vsync period in nanosecond
+        value[0] = 1000000000.0 / gpsGrallocModule->psFrameBufferDevice->base.fps;
+        break;
+    default:
+        // unsupported query
+        return -EINVAL;
+    }
+    return 0;
+}
+
+static int hwc_eventControl(struct hwc_composer_device* dev,
+        int event, int enabled)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+
+    switch (event) {
+    case HWC_EVENT_VSYNC:
+        int val = !!enabled;
+        int err = ioctl(ctx->global_lcd_win.fd, S3CFB_SET_VSYNC_ACTIVE, &val);
+        if (err < 0)
+            return -errno;
+
+        return 0;
+    }
+
+    return -EINVAL;
+}
+
+void handle_vsync_uevent(hwc_context_t *ctx, const char *buff, int len)
+{
+    uint64_t timestamp = 0;
+    const char *s = buff;
+
+    if(!ctx->procs || !ctx->procs->vsync)
+       return;
+
+    s += strlen(s) + 1;
+
+    while(*s) {
+        if (!strncmp(s, "VSYNC=", strlen("VSYNC=")))
+            timestamp = strtoull(s + strlen("VSYNC="), NULL, 0);
+
+        s += strlen(s) + 1;
+        if (s - buff >= len)
+            break;
+    }
+
+    ctx->procs->vsync(ctx->procs, 0, timestamp);
+}
+
+static void *hwc_vsync_thread(void *data)
+{
+    hwc_context_t *ctx = (hwc_context_t *)(data);
+    char uevent_desc[4096];
+    memset(uevent_desc, 0, sizeof(uevent_desc));
+
+    setpriority(PRIO_PROCESS, 0, HAL_PRIORITY_URGENT_DISPLAY);
+
+    uevent_init();
+    while(true) {
+        int len = uevent_next_event(uevent_desc, sizeof(uevent_desc) - 2);
+
+        bool vsync = !strcmp(uevent_desc, "change@/devices/platform/s3cfb");
+        if(vsync)
+            handle_vsync_uevent(ctx, uevent_desc, len);
+    }
+
+    return NULL;
+}
+
 static int hwc_device_close(struct hw_device_t *dev)
 {
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
@@ -448,15 +537,22 @@ static int hwc_device_close(struct hw_device_t *dev)
             }
         }
 
+        // TODO: stop vsync_thread
+
         free(ctx);
     }
     return ret;
 }
 
+static const struct hwc_methods hwc_methods = {
+    eventControl: hwc_eventControl
+};
+
 static int hwc_device_open(const struct hw_module_t* module, const char* name,
         struct hw_device_t** device)
 {
     int status = 0;
+    int err;
     struct hwc_win_info_t *win;
 
     if(hw_get_module(GRALLOC_HARDWARE_MODULE_ID,
@@ -477,18 +573,21 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
     /* initialize the procs */
     dev->device.common.tag = HARDWARE_DEVICE_TAG;
-    dev->device.common.version = 0;
+    dev->device.common.version = HWC_DEVICE_API_VERSION_0_3;
     dev->device.common.module = const_cast<hw_module_t*>(module);
     dev->device.common.close = hwc_device_close;
 
     dev->device.prepare = hwc_prepare;
     dev->device.set = hwc_set;
+    dev->device.registerProcs = hwc_registerProcs;
+    dev->device.query = hwc_query;
+    dev->device.methods = &hwc_methods;
 
     *device = &dev->device.common;
 
     /* initializing */
     memset(&(dev->fimc), 0, sizeof(s5p_fimc_t));
-	dev->fimc.dev_fd = -1;
+    dev->fimc.dev_fd = -1;
 
     /* open WIN0 & WIN1 here */
     for (int i = 0; i < NUM_OF_WIN; i++) {
@@ -509,7 +608,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     /* get default window config */
     if (window_get_global_lcd_info(dev) < 0) {
         ALOGE("%s::window_get_global_lcd_info is failed : %s",
-				__func__, strerror(errno));
+                __func__, strerror(errno));
         status = -EINVAL;
         goto err;
     }
@@ -529,14 +628,14 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
         if (window_set_pos(win) < 0) {
             ALOGE("%s::window_set_pos is failed : %s",
-					__func__, strerror(errno));
+                    __func__, strerror(errno));
             status = -EINVAL;
             goto err;
         }
 
         if (window_get_info(win) < 0) {
             ALOGE("%s::window_get_info is failed : %s",
-					__func__, strerror(errno));
+                    __func__, strerror(errno));
             status = -EINVAL;
             goto err;
         }
@@ -559,6 +658,13 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     if (createFimc(&dev->fimc) < 0) {
         ALOGE("%s::creatFimc() fail", __func__);
         status = -EINVAL;
+        goto err;
+    }
+
+    err = pthread_create(&dev->vsync_thread, NULL, hwc_vsync_thread, dev);
+    if (err) {
+        ALOGE("%s::pthread_create() failed : %s", __func__, strerror(err));
+        status = -err;
         goto err;
     }
 
