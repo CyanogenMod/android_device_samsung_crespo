@@ -8,8 +8,6 @@ on boot
     setprop ro.radio.noril yes
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
-    setprop ro.crypto.keyfile.userdata /efs/userdata_footer
-
 # fake some battery state
     setprop status.battery.state Slow
     setprop status.battery.level 5
@@ -37,8 +35,7 @@ on fs
     mount yaffs2 mtd@efs /efs noatime nosuid nodev
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
+    mount_all /fstab.herring
 
     export EXTERNAL_STORAGE /storage/sdcard0
     mkdir /storage 0050 system sdcard_r
