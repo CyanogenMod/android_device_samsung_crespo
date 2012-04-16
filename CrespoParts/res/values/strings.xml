@@ -21,6 +21,9 @@
     <string name="gamma_default_title">Default</string>
     <string name="gamma_CM_title">CM Sett.</string>
     <string name="gamma_bright_title">Bright Sett.</string>
+    <string name="color_default_title">Default</string>
+    <string name="color_CM_title">CM Sett.</string>
+    <string name="color_dark_title">Dark Sett.</string>
 
     <string name="category_touchkey_title">Touch Keys</string>
     <string name="touchkey_notification_title_head">Backlight Notifications</string>
@@ -29,4 +32,15 @@
     <string name="category_radio_title">Radio</string>
     <string name="hspa_title_head">HSPA</string>
     <string name="hspa_summary_head">Enable HSDPA/HSUPA</string>
+
+    <string name="label_deepidle_stats">Idle Stats</string>
+    <string name="label_state">State</string>
+    <string name="label_time">Time (ms)</string>
+    <string name="label_average">Avg (ms)</string>
+    <string name="label_reset">Reset</string>
+    <string name="label_close">Close</string>
+    <string name="label_idle1">Idle</string>
+    <string name="label_idle2">Deep Idle (TOP=ON)</string>
+    <string name="label_idle3">Deep Idle (TOP=OFF)</string>
+
 </resources>

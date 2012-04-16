@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:stretchColumns="1,2,3" 
+    android:padding="3dip">
+
+    <TableRow >
+
+        <TextView
+            android:layout_column="1"
+            android:text="@string/label_state" />
+
+        <TextView
+            android:layout_column="2"
+            android:gravity="right"
+            android:text="@string/label_time" />
+
+        <TextView
+            android:layout_column="3"
+            android:gravity="right"
+            android:text="@string/label_average" />
+    </TableRow>
+
+    <View
+        android:layout_height="1dip"
+        android:layout_marginBottom="3dip"
+        android:background="#FF909090" />
+
+    <TableRow >
+
+        <TextView
+            android:layout_column="1"
+            android:text="@string/label_idle1" />
+
+        <TextView
+            android:layout_column="2"
+            android:gravity="right"
+            android:id="@+id/time1"
+            android:text="@+id/time1" />
+
+        <TextView
+            android:layout_column="3"
+            android:gravity="right"
+            android:id="@+id/avg1"
+            android:text="@+id/avg1" />
+    </TableRow>
+
+    <TableRow >
+
+        <TextView
+            android:layout_column="1"
+            android:text="@string/label_idle2" />
+
+        <TextView
+            android:layout_column="2"
+            android:gravity="right"
+            android:id="@+id/time2"
+            android:text="@+id/time2" />
+
+        <TextView
+            android:layout_column="3"
+            android:gravity="right"
+            android:id="@+id/avg2"
+            android:text="@+id/avg2" />
+    </TableRow>
+
+    <TableRow >
+
+        <TextView
+            android:layout_column="1"
+            android:text="@string/label_idle3" />
+
+        <TextView
+            android:layout_column="2"
+            android:gravity="right"
+            android:id="@+id/time3"
+            android:text="@+id/time3" />
+
+        <TextView
+            android:layout_column="3"
+            android:gravity="right"
+            android:id="@+id/avg3"
+            android:text="@+id/avg3" />
+    </TableRow>
+
+</TableLayout>

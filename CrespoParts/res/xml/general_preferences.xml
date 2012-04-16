@@ -8,6 +8,10 @@
         <CheckBoxPreference android:key="deepidle"
             android:title="@string/cpu_deepidle_title_head"
             android:summary="@string/cpu_deepidle_summary_head" />
+
+        <PreferenceScreen android:key="deepidle_stats"
+            android:title="@string/label_deepidle_stats" />
+
     </PreferenceCategory>
 
     <!-- Touch key backlight timeout -->
