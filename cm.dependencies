@@ -1,0 +1,7 @@
+[
+    {
+      "repository": "samsung_kernel_crespo",
+      "target_path": "kernel/samsung/crespo",
+      "branch": "ics"
+    }
+]
