@@ -80,6 +80,9 @@ WIFI_DRIVER_FW_PATH_P2P     := "/vendor/firmware/fw_bcmdhd_p2p.bin"
 
 USE_OPENGL_RENDERER	:= true
 
-# disable triple buffering on crespos, it's not needed because it always
-# uses GPU composition
-TARGET_DISABLE_TRIPLE_BUFFERING := true
+# TARGET_DISABLE_TRIPLE_BUFFERING can be used to disable triple buffering
+# on per target basis. On crespo it is possible to do so in theory
+# to save memory, however, there are currently some limitations in the
+# OpenGL ES driver that in conjunction with disable triple-buffering
+# would hurt performance significantly (see b/6016711)
+TARGET_DISABLE_TRIPLE_BUFFERING := false
