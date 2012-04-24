@@ -79,3 +79,7 @@ WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
 WIFI_DRIVER_FW_PATH_P2P     := "/vendor/firmware/fw_bcmdhd_p2p.bin"
 
 USE_OPENGL_RENDERER	:= true
+
+# disable triple buffering on crespos, it's not needed because it always
+# uses GPU composition
+TARGET_DISABLE_TRIPLE_BUFFERING := true
