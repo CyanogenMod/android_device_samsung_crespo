@@ -27,6 +27,7 @@ import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Button;
+import android.util.Log;
 
 /**
  * Special preference type that allows configuration of both the ring volume and
@@ -122,6 +123,7 @@ public class GammaTuningPreference extends DialogPreference implements OnClickLi
         }
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+
         Boolean bFirstTime = sharedPrefs.getBoolean("FirstTimeGamma", true);
         for (String filePath : FILE_PATH) {
             String sDefaultValue = Utils.readOneLine(filePath);

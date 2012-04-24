@@ -43,6 +43,7 @@ public class DeviceSettings extends Activity {
     public static final String ACTION_UPDATE_PREFERENCES = "com.cyanogenmod.settings.device.UPDATE";
     public static final String KEY_COLOR_TUNING = "color_tuning";
     public static final String KEY_GAMMA_TUNING = "gamma_tuning";
+    public static final String KEY_COLOR_PRESET = "color_presets";
     public static final String KEY_DEEPIDLE = "deepidle";
     public static final String KEY_DEEPIDLE_STATS = "deepidle_stats";
     public static final String KEY_NOTIFICATION = "touchkey_notification";

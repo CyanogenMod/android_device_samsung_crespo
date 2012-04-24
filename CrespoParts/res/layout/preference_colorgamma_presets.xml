@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:paddingBottom="20dip">
+
+        <ImageView
+            android:id="@+id/imageView0"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:paddingLeft="20dip"
+            android:paddingRight="20dip"
+            android:paddingTop="5dip"
+            android:src="@drawable/color_tuning_preview" />
+
+        <ImageView
+            android:id="@+id/imageView1"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:paddingLeft="20dip"
+            android:paddingRight="20dip"
+            android:paddingTop="5dip"
+            android:src="@drawable/red_tuning_preview" />
+
+        <ImageView
+            android:id="@+id/imageView2"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@+id/imageView1"
+            android:paddingLeft="20dip"
+            android:paddingRight="20dip"
+            android:paddingTop="5dip"
+            android:src="@drawable/green_tuning_preview" />
+
+        <ImageView
+            android:id="@+id/imageView3"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@+id/imageView2"
+            android:paddingLeft="20dip"
+            android:paddingRight="20dip"
+            android:paddingTop="5dip"
+            android:src="@drawable/blue_tuning_preview" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageView0"
+            android:orientation="vertical" >
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" >
+
+                <Button
+                    android:id="@+id/btnPreset1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset1_default_title" android:textSize="10dp" android:width="100dp"/>
+
+                <Button
+                    android:id="@+id/btnPreset2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset2_default_title" android:textSize="10dp" android:width="100dp"/>
+
+                <Button
+                    android:id="@+id/btnPreset3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset3_default_title" android:textSize="10dp" android:width="100dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" >
+
+                <Button
+                    android:id="@+id/btnPreset4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset4_default_title" android:textSize="10dp" android:width="100dp"/>
+
+                <Button
+                    android:id="@+id/btnPreset5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset5_default_title" android:textSize="10dp" android:width="100dp"/>
+
+                <Button
+                    android:id="@+id/btnPreset6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset6_default_title" android:textSize="10dp" android:width="100dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="320dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" >
+
+                <TextView
+                    android:id="@+id/textView1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/credits_presets" android:textSize="12dp"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</ScrollView>
