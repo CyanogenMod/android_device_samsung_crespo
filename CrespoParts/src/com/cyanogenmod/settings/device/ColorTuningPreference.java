@@ -23,15 +23,17 @@ import android.preference.DialogPreference;
 import android.preference.PreferenceManager;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.util.Log;
+import android.widget.Button;
 
 /**
  * Special preference type that allows configuration of both the ring volume and
  * notification volume.
  */
-public class ColorTuningPreference extends DialogPreference {
+public class ColorTuningPreference extends DialogPreference implements OnClickListener {
 
     private static final String TAG = "COLOR...";
 
@@ -80,6 +82,16 @@ public class ColorTuningPreference extends DialogPreference {
             TextView valueDisplay = (TextView) view.findViewById(VALUE_DISPLAY_ID[i]);
             mSeekBars[i] = new ColorSeekBar(seekBar, valueDisplay, FILE_PATH[i]);
         }
+        SetupButtonClickListeners(view);
+    }
+
+    private void SetupButtonClickListeners(View view) {
+            Button mDefaultButton = (Button)view.findViewById(R.id.btnColorDefault);
+            Button mCMButton = (Button)view.findViewById(R.id.btnColorCM);
+            Button mDarkButton = (Button)view.findViewById(R.id.btnColorDark);
+            mDefaultButton.setOnClickListener(this);
+            mCMButton.setOnClickListener(this);
+            mDarkButton.setOnClickListener(this);
     }
 
     @Override
@@ -210,6 +222,42 @@ public class ColorTuningPreference extends DialogPreference {
             mValueDisplay.setText(String.format("%.10f", (double) progress / MAX_VALUE));
         }
 
+        public void SetNewValue(int iValue) {
+            mOriginal = iValue;
+            reset();
+        }
+
     }
 
+    public void onClick(View v) {
+        switch(v.getId()){
+            case R.id.btnColorDefault:
+                    SetDefaultSettings();
+                    break;
+            case R.id.btnColorCM:
+                    SetCMSettings();
+                    break;
+            case R.id.btnColorDark:
+                    SetDarkSettings();
+                    break;
+        }
+    }
+
+    private void SetCMSettings() {
+        mSeekBars[0].SetNewValue(1766478464);
+        mSeekBars[1].SetNewValue(1766478464);
+        mSeekBars[2].SetNewValue(1766478464);
+    }
+
+    private void SetDarkSettings() {
+        mSeekBars[0].SetNewValue(877466432);
+        mSeekBars[1].SetNewValue(877466432);
+        mSeekBars[2].SetNewValue(877466432);
+    }
+
+    private void SetDefaultSettings() {
+        mSeekBars[0].SetNewValue(MAX_VALUE);
+        mSeekBars[1].SetNewValue(MAX_VALUE);
+        mSeekBars[2].SetNewValue(MAX_VALUE);
+    }
 }

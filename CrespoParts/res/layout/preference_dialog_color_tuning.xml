@@ -80,13 +80,40 @@
                 android:paddingLeft="20dip"
                 android:paddingRight="20dip" />
 
-        <ImageView android:src="@drawable/color_tuning_preview"
+        <ImageView android:id="@+id/black_scale_picture_color"
+                android:src="@drawable/color_tuning_preview"
                 android:layout_width="match_parent"
                 android:layout_height="40dip"
                 android:layout_below="@id/color_blue_seekbar"
                 android:paddingTop="20dip"
                 android:paddingLeft="20dip"
                 android:paddingRight="20dip" />
+
+        <LinearLayout
+            android:id="@+id/linearLayout1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/black_scale_picture_color" >
+
+            <Button
+                android:id="@+id/btnColorDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/color_default_title" />
+
+            <Button
+                android:id="@+id/btnColorCM"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/color_CM_title" />
+
+            <Button
+                android:id="@+id/btnColorDark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/color_dark_title" />
+
+        </LinearLayout>
 
     </RelativeLayout>
 </ScrollView>
