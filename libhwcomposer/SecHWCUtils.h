@@ -116,6 +116,8 @@ struct hwc_context_t {
     struct hwc_win_info_t     global_lcd_win;
     struct fb_var_screeninfo  lcd_info;
     s5p_fimc_t                fimc;
+    hwc_procs_t               *procs;
+    pthread_t                 vsync_thread;
     unsigned int              num_of_fb_layer;
     unsigned int              num_of_hwc_layer;
     unsigned int              num_of_fb_layer_prev;
