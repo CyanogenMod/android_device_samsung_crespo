@@ -148,7 +148,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	audio_policy.herring \
 	audio.primary.herring \
-	audio.a2dp.default
+	audio.a2dp.default \
+	audio.usb.default
 
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/libaudio/audio_policy.conf:system/etc/audio_policy.conf
