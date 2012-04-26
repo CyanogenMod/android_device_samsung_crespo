@@ -113,6 +113,7 @@ struct hwc_context_t {
 
     /* our private state goes below here */
     struct hwc_win_info_t     win[NUM_OF_WIN];
+    struct hwc_win_info_t     global_lcd_win;
     struct fb_var_screeninfo  lcd_info;
     s5p_fimc_t                fimc;
     unsigned int              num_of_fb_layer;
@@ -127,7 +128,7 @@ int window_get_info(struct hwc_win_info_t *win);
 int window_pan_display(struct hwc_win_info_t *win);
 int window_show(struct hwc_win_info_t *win);
 int window_hide(struct hwc_win_info_t *win);
-int window_get_global_lcd_info(struct fb_var_screeninfo *lcd_info);
+int window_get_global_lcd_info(struct hwc_context_t *ctx);
 
 int createFimc(s5p_fimc_t *fimc);
 int destroyFimc(s5p_fimc_t *fimc);
