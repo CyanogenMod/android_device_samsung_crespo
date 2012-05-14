@@ -86,3 +86,5 @@ USE_OPENGL_RENDERER	:= true
 # OpenGL ES driver that in conjunction with disable triple-buffering
 # would hurt performance significantly (see b/6016711)
 TARGET_DISABLE_TRIPLE_BUFFERING := false
+
+BOARD_ALLOW_EGL_HIBERNATION := true
