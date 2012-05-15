@@ -461,7 +461,7 @@ static int hwc_eventControl(struct hwc_composer_device* dev,
     switch (event) {
     case HWC_EVENT_VSYNC:
         int val = !!enabled;
-        int err = ioctl(ctx->global_lcd_win.fd, S3CFB_SET_VSYNC_ACTIVE, &val);
+        int err = ioctl(ctx->global_lcd_win.fd, S3CFB_SET_VSYNC_INT, &val);
         if (err < 0)
             return -errno;
 
