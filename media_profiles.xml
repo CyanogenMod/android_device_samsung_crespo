@@ -97,7 +97,7 @@
                    frameRate="30" />
 
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -125,7 +125,7 @@
 
             <!-- Audio settings are not used for timealpse video recording -->
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -160,7 +160,7 @@
                    frameRate="15" />
 
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -188,7 +188,7 @@
 
             <!-- Audio settings are not used for timealpse video recording -->
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
