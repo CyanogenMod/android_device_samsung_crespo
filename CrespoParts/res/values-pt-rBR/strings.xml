@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Configurações Nexus S</string>
+    <string name="general_title">GERAL</string>
+    <string name="display_title">TELA</string>
+    <string name="sound_title">SOM</string>
+    <string name="category_cpu_title">CPU</string>
+    <string name="cpu_deepidle_title_head">Ociosidade Profunda</string>
+    <string name="cpu_deepidle_summary_head">Ativa ociosidade profunda.</string>
+    <string name="category_screen_title">Configurações WM8994 ( voodoo )</string>
+    <string name="color_tuning_title_head">Ajuste de Cor</string>
+    <string name="color_tuning_summary_head">Ajustar cor da tela</string>
+    <string name="gamma_tuning_title_head">Ajudar cor gama</string>
+    <string name="gamma_tuning_summary_head">Calibrar correção da cor gama</string>
+    <string name="color_hack_presets_title_head">Predefinições de cor</string>
+    <string name="color_hack_presets_summary_head">Predefinições para gama e multiplicadores testados por alguns usuários</string>
+    <string name="color_red_title">Vermelho</string>
+    <string name="color_green_title">Verde</string>
+    <string name="color_blue_title">Azul</string>
+    <string name="gamma_default_title">Padrão</string>
+    <string name="gamma_CM_title">Conf. CM</string>
+    <string name="gamma_bright_title">Conf. de Brilho</string>
+    <string name="color_default_title">Padrão</string>
+    <string name="color_CM_title">Conf. CM</string>
+    <string name="color_dark_title">Conf. Escuro</string>
+    <string name="preset1_default_title">Padrão</string>
+    <string name="preset2_default_title">Natural</string>
+    <string name="preset3_default_title">Azul Escuro</string>
+    <string name="preset4_default_title">Quente</string>
+    <string name="preset5_default_title">Frio Escuro</string>
+    <string name="preset6_default_title">Proc. Cruzado</string>
+    <string name="credits_presets">Créditos: ale.landra91 cpaixao provolinoo</string>
+    <string name="category_touchkey_title">Teclas Sensíveis ao Toque</string>
+    <string name="touchkey_notification_title_head">Notificações de Luz de Fundo</string>
+    <string name="touchkey_notification_summary_head">As luzes de fundo das teclas sensíveis ao toque irão acender quando houver uma notificação.</string>
+    <string name="category_radio_title">Rádio</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">Ativar HSDPA/HSUPA</string>
+    <string name="label_deepidle_stats">Estátitiscas de Ociosidade</string>
+    <string name="label_state">Estado</string>
+    <string name="label_time">Tempo (ms)</string>
+    <string name="label_average">Média (ms)</string>
+    <string name="label_reset">Restaurar</string>
+    <string name="label_close">Fechar</string>
+    <string name="label_idle1">Ocioso</string>
+    <string name="label_idle2">Ociosidade Profunda (TOP=LIGADO)</string>
+    <string name="label_idle3">Ociosidade Profunda (TOP=DESLIGADO)</string>
+</resources>
