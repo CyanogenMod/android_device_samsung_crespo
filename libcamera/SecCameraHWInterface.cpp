@@ -898,6 +898,11 @@ status_t CameraHardwareSec::cancelAutoFocus()
 {
     ALOGV("%s :", __func__);
 
+    // If preview is not running, cancel autofocus can still be called.
+    // Since the camera subsystem is completely reset on preview start,
+    // cancel AF is a no-op.
+    if (!mPreviewRunning) return NO_ERROR;
+
     // cancelAutoFocus should be allowed after preview is started. But if
     // the preview is deferred, cancelAutoFocus will fail. Ignore it if that is
     // the case.
