@@ -163,6 +163,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw \
+	libdrmdecrypt \
 	com.android.future.usb.accessory
 
 # Input device calibration files
