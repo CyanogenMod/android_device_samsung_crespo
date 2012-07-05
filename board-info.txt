@@ -2,5 +2,5 @@
 # version of the radio and bootloader that are available to the
 # public.
 require board=herring
-require version-bootloader=I9020XXKA3|I9020XXKL1
+require version-bootloader=I9020XXKL1|I9020XXLC2
 require version-baseband=I9020XXKI1|I9020UCKJ1|M200KRKC1
