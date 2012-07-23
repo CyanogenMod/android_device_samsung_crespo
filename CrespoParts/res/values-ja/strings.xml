@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus S 設定</string>
+
+    <string name="category_screen_title">WM8994 設定 ( voodoo )</string>
+    <string name="color_tuning_title_head">色の調整</string>
+    <string name="color_tuning_summary_head">画面色の調整</string>
+    <string name="gamma_tuning_title_head">ガンマの調整</string>
+    <string name="gamma_tuning_summary_head">ガンマ補正の調整</string>
+    <string name="color_red_title">赤</string>
+    <string name="color_green_title">緑</string>
+    <string name="color_blue_title">青</string>
+
+    <!-- WM8994 Control Settings -->
+    <string name="general_sound_title">サウンド</string>
+    <!--  Categories -->
+    <string name="category_wm8994_internal_speaker">スピーカー設定</string>
+    <string name="category_wm8994_signal_processing">信号処理</string>
+    <string name="category_wm8994_headphone_amp">ヘッドフォンアンプ</string>
+    <string name="category_wm8994_codec_optimization">Codec最適化</string>
+    <string name="category_wm8994_dac_config">デジタル/アナログコンバータ設定</string>
+    <string name="category_wm8994_analog_path">アナログパス設定</string>
+    <string name="category_wm8994_mic_settings">マイク設定</string>
+    <!--  Titles/Summaries -->
+    <string name="wm8994_settings_title_head">サウンド設定</string>
+    <string name="wm8994_settings_title_subhead">サウンド設定</string>
+    <string name="wm8994_settings_summary_head">WM8994サウンドプロセッサの高度な制御</string>
+    <string name="pref_wm8994_control_enable_title">WM8994サウンドプロセッサの制御を有効にする</string>
+    <string name="pref_wm8994_control_enable_summary">WM8994サウンドプロセッサの高度な制御を有効にする</string>
+    <string name="pref_wm8994_speaker_tuning_title">音楽再生用のスピーカー調整</string>
+    <string name="pref_wm8994_speaker_tuning_summary">より豊かな低音とバランスの取れた音質にするためハードウェアEQを再設定する</string>
+    <string name="pref_wm8994_mono_downmix_title">モノダウンミックス</string>
+    <string name="pref_wm8994_mono_downmix_summary">ステレオサウンドをモノラルサウンドへダウンミックスする(ヘッドホンなどのステレオ出力用)</string>
+    <string name="pref_wm8994_stereo_expansion_title">ステレオ拡張モード</string>
+    <string name="pref_wm8994_stereo_expansion_summary">DSPを使用することによりステレオサウンドを拡張する</string>
+    <string name="pref_wm8994_dac_direct_title">D/AC ダイレクト</string>
+    <string name="pref_wm8994_dac_direct_summary">チャンネルのミキサーをバイパスし、直接デジタル/アナログコンバーターにアクセスする。よりクリアな音質を生成（S/N比）</string>
+    <string name="pref_wm8994_dac_osr128_title">Hi-fi再生</string>
+    <string name="pref_wm8994_dac_osr128_summary">デジタル - アナログ コンバーター 128x オーバーサンプリング -- よりクリアな音で音楽を再生する</string>
+    <string name="pref_wm8994_adc_osr128_title">Hi-fi録音</string>
+    <string name="pref_wm8994_adc_osr128_summary">アナログ - デジタル コンバーター 128x オーバーサンプリング -- 録音品質を向上させる</string>
+    <string name="pref_wm8994_fll_tuning_title">チューニング済みのaudio clock</string>
+    <string name="pref_wm8994_fll_tuning_summary">チューニング済みのWM8994オーディオクロックソースを使用 -- 音質を向上させる</string>
+
+    <string name="category_touchkey_title">タッチキー</string>
+    <string name="backlight_timeout_title_head">バックライトのタイムアウト</string>
+    <string name="backlight_timeout_summary_head">タッチキーのバックライトが自動的にオフになるまでの遅延を調整する</string>
+    <string name="blink_timeout_title_head">点滅のタイムアウト</string>
+    <string name="blink_timeout_summary_head">タッチキーの点滅のバックライトが通知した後、自動的に消えるまでの遅延時間を調整する</string>
+
+    <string name="category_radio_title">ラジオ</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">HSDPA/HSUPAを有効にする</string>
+
+</resources>

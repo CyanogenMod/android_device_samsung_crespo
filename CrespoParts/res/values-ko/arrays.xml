@@ -1,0 +1,28 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string-array name="backlight_timeout_entries">
+        <item>2 초</item>
+        <item>기본값 (5 초)</item>
+        <item>10 초</item>
+        <item>15 초</item>
+        <item>20 초</item>
+        <item>30 초</item>
+        <item>안함</item>
+    </string-array>
+
+    <string-array name="blink_timeout_entries">
+        <item>1 분</item>
+        <item>2 분</item>
+        <item>기본값(5 분)</item>
+        <item>10 분</item>
+        <item>15 분</item>
+        <item>30 분</item>
+        <item>안함</item>
+    </string-array>
+
+    <string-array name="hspa_entries">
+        <item>UMTS 전용</item>
+        <item>HSDPA 전용</item>
+        <item>HSDPA + HSUPA</item>
+    </string-array>
+
+</resources>

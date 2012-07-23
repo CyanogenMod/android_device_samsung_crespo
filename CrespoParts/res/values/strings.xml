@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus S Settings</string>
+
+    <!-- Page Headers -->
+    <string name="general_title">GENERAL</string>
+    <string name="display_title">DISPLAY</string>
+    <string name="sound_title">SOUND</string>
+
+    <string name="category_cpu_title">CPU</string>
+    <string name="cpu_deepidle_title_head">Deep Idle</string>
+    <string name="cpu_deepidle_summary_head">Enables deep idle.</string>
+    <string name="category_screen_title">WM8994 Settings ( voodoo )</string>
+    <string name="color_tuning_title_head">Color Multipliers Tuning</string>
+    <string name="color_tuning_summary_head">Calibrate multipliers screen color</string>
+    <string name="gamma_tuning_title_head">Color Gamma Tuning</string>
+    <string name="gamma_tuning_summary_head">Calibrate gamma color correction</string>
+    <string name="color_hack_presets_title_head">Color hack presets</string>
+    <string name="color_hack_presets_summary_head">Presets for gamma and multipliers tested by some users</string>
+    <string name="color_red_title">Red</string>
+    <string name="color_green_title">Green</string>
+    <string name="color_blue_title">Blue</string>
+    <string name="gamma_default_title">Default</string>
+    <string name="gamma_CM_title">CM Sett.</string>
+    <string name="gamma_bright_title">Bright Sett.</string>
+    <string name="color_default_title">Default</string>
+    <string name="color_CM_title">CM Sett.</string>
+    <string name="color_dark_title">Dark Sett.</string>
+
+    <string name="preset1_default_title">Default.</string>
+    <string name="preset2_default_title">Natural</string>
+    <string name="preset3_default_title">Dark Blue</string>
+    <string name="preset4_default_title">Warm</string>
+    <string name="preset5_default_title">Dark Cold</string>
+    <string name="preset6_default_title">Cross Proc.</string>
+    <string name="credits_presets">Credits: ale.landra91 cpaixao provolinoo</string>
+
+    <string name="category_touchkey_title">Touch Keys</string>
+    <string name="touchkey_notification_title_head">Backlight Notifications</string>
+    <string name="touchkey_notification_summary_head">The touch key backlights will turn on when there is a notification.</string>
+
+    <string name="category_radio_title">Radio</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">Enable HSDPA/HSUPA</string>
+
+    <string name="label_deepidle_stats">Idle Stats</string>
+    <string name="label_state">State</string>
+    <string name="label_time">Time (ms)</string>
+    <string name="label_average">Avg (ms)</string>
+    <string name="label_reset">Reset</string>
+    <string name="label_close">Close</string>
+    <string name="label_idle1">Idle</string>
+    <string name="label_idle2">Deep Idle (TOP=ON)</string>
+    <string name="label_idle3">Deep Idle (TOP=OFF)</string>
+
+</resources>

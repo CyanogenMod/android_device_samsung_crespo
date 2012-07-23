@@ -46,3 +46,4 @@ BOOTLOADER=i9020xxka3
 RADIO=m200krkc1
 
 source ../../../common/generate-factory-images-common.sh
+

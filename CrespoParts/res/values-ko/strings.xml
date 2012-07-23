@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">넥서스 S 설정</string>
+
+    <!-- Page Headers -->
+    <string name="general_title">일반</string>
+    <string name="display_title">화면</string>
+    <string name="sound_title">소리</string>
+
+    <string name="category_cpu_title">CPU</string>
+    <string name="cpu_deepidle_title_head">Deep Idle</string>
+    <string name="cpu_deepidle_summary_head">Deep idle 활성화.</string>
+    <string name="category_screen_title">WM8994 설정 ( voodoo )</string>
+    <string name="color_tuning_title_head">색상 혼합 설정</string>
+    <string name="color_tuning_summary_head">화면 색상 배율을 조절합니다.</string>
+    <string name="gamma_tuning_title_head">색상 감마 조정</string>
+    <string name="gamma_tuning_summary_head">색상 감마를 조정합니다.</string>
+    <string name="color_hack_presets_title_head">색상 프리셋</string>
+    <string name="color_hack_presets_summary_head">일부 유저들이 만든 감마와 배율 프리셋입니다</string>
+    <string name="color_red_title">빨강</string>
+    <string name="color_green_title">녹색</string>
+    <string name="color_blue_title">파랑</string>
+    <string name="gamma_default_title">기본값</string>
+    <string name="gamma_CM_title">CM 설정</string>
+    <string name="gamma_bright_title">밝은 설정</string>
+    <string name="color_default_title">기본값</string>
+    <string name="color_CM_title">CM 설정</string>
+    <string name="color_dark_title">어두운 설정</string>
+
+    <string name="preset1_default_title">기본값</string>
+    <string name="preset2_default_title">자연스러운</string>
+    <string name="preset3_default_title">어두운 파랑</string>
+    <string name="preset4_default_title">따뜻한</string>
+    <string name="preset5_default_title">어둡고 차가운</string>
+    <string name="preset6_default_title">Cross Proc.</string>
+    <string name="credits_presets">제작: ale.landra91 cpaixao provolinoo</string>
+
+    <string name="category_touchkey_title">터치 키</string>
+    <string name="touchkey_notification_title_head">터치 키 백라이트 알림</string>
+    <string name="touchkey_notification_summary_head">알림이 있을 때 터치 키 백라이트가 켜집니다.</string>
+
+    <string name="category_radio_title">무선</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">HSDPA/HSUPA 활성화</string>
+
+    <string name="label_deepidle_stats">Idle 통계</string>
+    <string name="label_state">상태</string>
+    <string name="label_time">시간 (ms)</string>
+    <string name="label_average">평균 (ms)</string>
+    <string name="label_reset">초기화 </string>
+    <string name="label_close">닫기</string>
+    <string name="label_idle1">Idle</string>
+    <string name="label_idle2">Deep Idle (TOP=ON)</string>
+    <string name="label_idle3">Deep Idle (TOP=OFF)</string>
+</resources>

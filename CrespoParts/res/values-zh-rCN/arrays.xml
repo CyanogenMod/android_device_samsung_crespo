@@ -1,0 +1,34 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string-array name="backlight_timeout_entries">
+        <item>2秒</item>
+        <item>默认（5秒）</item>
+        <item>10秒</item>
+        <item>15秒</item>
+        <item>20秒</item>
+        <item>30秒</item>
+        <item>永不</item>
+    </string-array>
+
+    <!-- skipping untranslatable /resources:0/string-array:name=backlight_timeout_entries_values -->
+
+    <string-array name="blink_timeout_entries">
+        <item>1分钟</item>
+        <item>2分钟</item>
+        <item>默认（5分钟）</item>
+        <item>10分钟</item>
+        <item>15分钟</item>
+        <item>30分钟</item>
+        <item>永不</item>
+    </string-array>
+
+    <!-- skipping untranslatable /resources:0/string-array:name=blink_timeout_entries_values -->
+
+    <string-array name="hspa_entries">
+        <item>仅 UMTS</item>
+        <item>仅 HSDPA</item>
+        <item>HSDPA＋HSUPA</item>
+    </string-array>
+
+    <!-- skipping untranslatable /resources:0/string-array:name=hspa_entries_values -->
+
+</resources>
