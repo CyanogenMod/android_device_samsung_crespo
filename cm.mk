@@ -11,9 +11,11 @@ $(call inherit-product, device/samsung/crespo/full_crespo.mk)
 # Enhanced NFC
 $(call inherit-product, vendor/cm/config/nfc_enhanced.mk)
 
-PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=soju BUILD_FINGERPRINT=google/soju/crespo:4.0.4/IMM76D/299849:user/release-keys PRIVATE_BUILD_DESC="soju-user 4.0.4 IMM76D 299849 release-keys" BUILD_NUMBER=299849
 PRODUCT_NAME := cm_crespo
 PRODUCT_DEVICE := crespo
 PRODUCT_BRAND := Google
 PRODUCT_MODEL := Nexus S
 PRODUCT_MANUFACTURER := Samsung
+
+#Set build fingerprint / ID / Product Name ect.
+PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=takju BUILD_FINGERPRINT="google/yakju/maguro:4.1.1/JRO03C/113740:user/release-keys" PRIVATE_BUILD_DESC="takju-user 4.1.1 JRO03C 113740 release-keys"
