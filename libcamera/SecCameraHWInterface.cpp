@@ -1965,7 +1965,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         // touch to focus
         const char *new_focus_area = params.get(CameraParameters::KEY_FOCUS_AREAS);
         if (new_focus_area != NULL) {
-            LOGI("focus area: %s", new_focus_area);
+            ALOGI("focus area: %s", new_focus_area);
             SecCameraArea area(new_focus_area);
 
             if (!area.isDummy()) {
@@ -1975,9 +1975,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                 int x = area.getX(width);
                 int y = area.getY(height);
 
-                LOGI("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
+                ALOGI("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
                 if (mSecCamera->setObjectPosition(x, y) < 0) {
-                    LOGE("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
+                    ALOGI("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
                     ret = UNKNOWN_ERROR;
                 }
             }

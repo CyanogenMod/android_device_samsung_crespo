@@ -77,7 +77,7 @@ static int set_light_notifications(struct light_device_t* dev,
             v = 1;
     } else
         v = 0;
-    LOGI("color %u fm %u status %u is lit %u brightness", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness);
+    ALOGI("color %u fm %u status %u is lit %u brightness", state->color, state->flashMode, v, (state->color & 0x00ffffff), brightness);
     ret = write_int(LED_FILE, v);
     pthread_mutex_unlock(&g_lock);
     return ret;
