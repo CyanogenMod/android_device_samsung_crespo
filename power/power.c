@@ -27,7 +27,9 @@
 #include <hardware/hardware.h>
 #include <hardware/power.h>
 
-#define BOOSTPULSE_PATH "/sys/devices/system/cpu/cpufreq/ondemand/boostpulse"
+#define SCALING_GOVERNOR_PATH "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+#define BOOSTPULSE_ONDEMAND "/sys/devices/system/cpu/cpufreq/ondemand/boostpulse"
+#define BOOSTPULSE_INTERACTIVE "/sys/devices/system/cpu/cpufreq/interactive/boostpulse"
 
 struct s5pc110_power_module {
     struct power_module base;
@@ -36,21 +38,97 @@ struct s5pc110_power_module {
     int boostpulse_warned;
 };
 
+static int sysfs_read(char *path, char *s, int num_bytes)
+{
+    char buf[80];
+    int count;
+    int ret = 0;
+    int fd = open(path, O_RDONLY);
+
+    if (fd < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error opening %s: %s\n", path, buf);
+
+        return -1;
+    }
+
+    if ((count = read(fd, s, num_bytes - 1)) < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error writing to %s: %s\n", path, buf);
+
+        ret = -1;
+    } else {
+        s[count] = '\0';
+    }
+
+    close(fd);
+
+    return ret;
+}
+
+static void sysfs_write(char *path, char *s)
+{
+    char buf[80];
+    int len;
+    int fd = open(path, O_WRONLY);
+
+    if (fd < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error opening %s: %s\n", path, buf);
+        return;
+    }
+
+    len = write(fd, s, strlen(s));
+    if (len < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error writing to %s: %s\n", path, buf);
+    }
+
+    close(fd);
+}
+
+static int get_scaling_governor(char governor[], int size)
+{
+    if (sysfs_read(SCALING_GOVERNOR_PATH, governor,
+                size) == -1) {
+        // Can't obtain the scaling governor. Return.
+        return -1;
+    } else {
+        // Strip newline at the end.
+        int len = strlen(governor);
+
+        len--;
+
+        while (len >= 0 && (governor[len] == '\n' || governor[len] == '\r'))
+            governor[len--] = '\0';
+    }
+
+    return 0;
+}
+
 static int boostpulse_open(struct s5pc110_power_module *s5pc110)
 {
     char buf[80];
+    char governor[80];
 
     pthread_mutex_lock(&s5pc110->lock);
 
     if (s5pc110->boostpulse_fd < 0) {
-        s5pc110->boostpulse_fd = open(BOOSTPULSE_PATH, O_WRONLY);
+        if (get_scaling_governor(governor, sizeof(governor)) < 0) {
+            ALOGE("Can't read scaling governor.");
+            s5pc110->boostpulse_warned = 1;
+        } else {
+            if (strncmp(governor, "ondemand", 8) == 0)
+                s5pc110->boostpulse_fd = open(BOOSTPULSE_ONDEMAND, O_WRONLY);
+            else if (strncmp(governor, "interactive", 11) == 0)
+                s5pc110->boostpulse_fd = open(BOOSTPULSE_INTERACTIVE, O_WRONLY);
 
-        if (s5pc110->boostpulse_fd < 0) {
-            if (!s5pc110->boostpulse_warned) {
+            if (s5pc110->boostpulse_fd < 0 && !s5pc110->boostpulse_warned) {
                 strerror_r(errno, buf, sizeof(buf));
-                ALOGE("Error opening %s: %s\n", BOOSTPULSE_PATH, buf);
+                ALOGE("Error opening boostpulse: %s\n", buf);
                 s5pc110->boostpulse_warned = 1;
-            }
+            } else if (s5pc110->boostpulse_fd > 0)
+                ALOGD("Opened %s boostpulse interface", governor);
         }
     }
 
@@ -78,7 +156,12 @@ static void s5pc110_power_hint(struct power_module *module, power_hint_t hint,
 
             if (len < 0) {
                 strerror_r(errno, buf, sizeof(buf));
-                ALOGE("Error writing to %s: %s\n", BOOSTPULSE_PATH, buf);
+                ALOGE("Error writing to boostpulse: %s\n", buf);
+                pthread_mutex_lock(&s5pc110->lock);
+                close(s5pc110->boostpulse_fd);
+                s5pc110->boostpulse_fd = -1;
+                s5pc110->boostpulse_warned = 0;
+                pthread_mutex_unlock(&s5pc110->lock);
             }
         }
         break;
