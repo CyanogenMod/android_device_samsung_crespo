@@ -17,6 +17,9 @@
 # Product-specific compile-time definitions.
 #
 
+# Use RGB565 instead of ARGB8888 for smoother bootanimation experience
+TARGET_BOOTANIMATION_USE_RGB565 := true
+
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
 
