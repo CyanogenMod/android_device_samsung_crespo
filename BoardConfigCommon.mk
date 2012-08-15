@@ -17,6 +17,11 @@
 # Product-specific compile-time definitions.
 #
 
+# Boot Animation		
+TARGET_BOOTANIMATION_PRELOAD := true		
+TARGET_BOOTANIMATION_TEXTURE_CACHE := true		
+TARGET_BOOTANIMATION_USE_RGB565 := true
+
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
 
