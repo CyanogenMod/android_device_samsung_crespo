@@ -142,6 +142,10 @@ PRODUCT_PACKAGES += \
 	hwcomposer.s5pc110 \
 	sensors.herring
 
+# Torch
+PRODUCT_PACKAGES += \
+    Torch
+
 # Camera
 PRODUCT_PACKAGES += \
 	camera.herring
