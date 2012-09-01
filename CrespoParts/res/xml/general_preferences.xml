@@ -20,6 +20,10 @@
         <CheckBoxPreference android:key="touchkey_notification"
             android:title="@string/touchkey_notification_title_head"
             android:summary="@string/touchkey_notification_summary_head" />
+        <com.cyanogenmod.settings.device.bldTuningPreference
+            android:key="bld_tuning"
+            android:title="@string/bld_tuning_title_head"
+            android:summary="@string/bld_tuning_summary_head" />
     </PreferenceCategory>
 
 </PreferenceScreen>

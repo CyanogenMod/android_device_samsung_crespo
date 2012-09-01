@@ -26,6 +26,9 @@
     <string name="color_default_title">Default</string>
     <string name="color_CM_title">CM Sett.</string>
     <string name="color_dark_title">Dark Sett.</string>
+    <string name="bld_title">BLD</string>
+    <string name="bld_tuning_title_head">BLD Tuning</string>
+    <string name="bld_tuning_summary_head">Set the time to turn off keys light ( 0 means no BLD )</string>
 
     <string name="preset1_default_title">Default.</string>
     <string name="preset2_default_title">Natural</string>

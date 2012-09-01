@@ -44,9 +44,11 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
     private static final String TOUCHKEY_NOTIFICATION_FILE = "/sys/class/misc/notification/enabled";
     private static final String PREF_ENABLED = "1";
     private static final String TAG = "CrespoParts_General";
+    private static final String BLD_FILE = "/sys/class/misc/backlightdimmer/enabled";
 
     private CheckBoxPreference mDeepIdle;
     private CheckBoxPreference mNotification;
+    private bldTuningPreference mbldTuning;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -71,9 +73,12 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
         }
 
 		Preference p = findPreference(DeviceSettings.KEY_DEEPIDLE_STATS);
-		if(p != null) {
+		if(p != null)
 			p.setOnPreferenceClickListener(this);
-		}
+
+        mbldTuning = (bldTuningPreference) findPreference(DeviceSettings.KEY_BLD_TUNING);
+        if(mbldTuning != null)
+            mbldTuning.setEnabled(bldTuningPreference.isSupported());
 
     }
 

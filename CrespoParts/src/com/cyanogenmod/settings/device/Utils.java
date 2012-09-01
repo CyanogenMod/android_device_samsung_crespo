@@ -119,6 +119,21 @@ public class Utils {
     }
 
     /**
+     * Write the "color value" to the specified file. The value is scaled from
+     * seconds to miliseconds multiplying by 1000.
+     * 
+     * @param filename The filename
+     * @param value The value of time 
+     */
+    public static void writebld(String filename, int value) {
+        writeValue(filename, String.valueOf(value * 1000));
+        if(value > 0)
+            writeValue("/sys/class/misc/backlightdimmer/enabled", "1");
+        else
+            writeValue("/sys/class/misc/backlightdimmer/enabled", "0");
+    }
+
+    /**
      * Check if the specified file exists.
      * 
      * @param filename The filename

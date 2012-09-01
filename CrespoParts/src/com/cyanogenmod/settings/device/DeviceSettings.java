@@ -49,6 +49,7 @@ public class DeviceSettings extends Activity {
     public static final String KEY_NOTIFICATION = "touchkey_notification";
     public static final String KEY_CATEGORY_RADIO = "category_radio";
     public static final String KEY_HSPA = "hspa";
+    public static final String KEY_BLD_TUNING = "bld_tuning";
 
     ViewPager mViewPager;
     TabsAdapter mTabsAdapter;
