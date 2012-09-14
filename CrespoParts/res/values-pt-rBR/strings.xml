@@ -45,4 +45,6 @@
     <string name="label_idle1">Ocioso</string>
     <string name="label_idle2">Ociosidade Profunda (TOP=LIGADO)</string>
     <string name="label_idle3">Ociosidade Profunda (TOP=DESLIGADO)</string>
+    <string name="bld_tuning_title_head">Ajustes do BLD</string>
+    <string name="bld_tuning_summary_head">Definir o tempo para a luz das teclas apagarem ( 0 significa nenhum BLD )</string>
 </resources>
