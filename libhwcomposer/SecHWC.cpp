@@ -453,6 +453,17 @@ static int hwc_query(struct hwc_composer_device* dev,
     return 0;
 }
 
+#ifdef VSYNC_IOCTL
+// Linux version of a manual reset event to control when
+// and when not to ask the video card for a VSYNC.  This
+// stops the worker thread from asking for a VSYNC when
+// there is nothing useful to do with it and more closely
+// mimicks the original uevent mechanism
+int vsync_enable = 0;
+pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t vsync_condition = PTHREAD_COND_INITIALIZER;
+#endif
+
 static int hwc_eventControl(struct hwc_composer_device* dev,
         int event, int enabled)
 {
@@ -464,6 +475,18 @@ static int hwc_eventControl(struct hwc_composer_device* dev,
         int err = ioctl(ctx->global_lcd_win.fd, S3CFB_SET_VSYNC_INT, &val);
         if (err < 0)
             return -errno;
+
+#if VSYNC_IOCTL
+        // Enable or disable the ability for the worker thread
+        // to ask for VSYNC events from the video driver
+        pthread_mutex_lock(&vsync_mutex);
+        if(enabled) {
+            vsync_enable = 1;
+            pthread_cond_broadcast(&vsync_condition);
+        }
+        else vsync_enable = 0;
+        pthread_mutex_unlock(&vsync_mutex);
+#endif
 
         return 0;
     }
@@ -496,18 +519,47 @@ void handle_vsync_uevent(hwc_context_t *ctx, const char *buff, int len)
 static void *hwc_vsync_thread(void *data)
 {
     hwc_context_t *ctx = (hwc_context_t *)(data);
+#ifdef VSYNC_IOCTL
+    uint64_t timestamp = 0;
+#else
     char uevent_desc[4096];
     memset(uevent_desc, 0, sizeof(uevent_desc));
+#endif
 
     setpriority(PRIO_PROCESS, 0, HAL_PRIORITY_URGENT_DISPLAY);
 
+#ifndef VSYNC_IOCTL
     uevent_init();
+#endif
     while(true) {
+#ifdef VSYNC_IOCTL
+        // Only continue if hwc_eventControl is enabled, otherwise
+        // just sit here and wait until it is.  This stops the code
+        // from constantly looking for the VSYNC event with the screen
+        // turned off.
+        pthread_mutex_lock(&vsync_mutex);
+        if(!vsync_enable) pthread_cond_wait(&vsync_condition, &vsync_mutex);
+        pthread_mutex_unlock(&vsync_mutex);
+
+        timestamp = 0;          // Reset the timestamp value
+
+        // S3CFB_WAIT_FOR_VSYNC is a custom IOCTL I added to wait for
+        // the VSYNC interrupt, and then return the timestamp that was
+        // originally being communicated via a uevent.  The uevent was
+        // spamming the UEventObserver and events/0 process with more
+        // information than this device could really deal with every 18ms
+        int res = ioctl(ctx->global_lcd_win.fd, S3CFB_WAIT_FOR_VSYNC, &timestamp);
+        if(res > 0) {
+            if(!ctx->procs || !ctx->procs->vsync) continue;
+            ctx->procs->vsync(ctx->procs, 0, timestamp);
+        }
+#else
         int len = uevent_next_event(uevent_desc, sizeof(uevent_desc) - 2);
 
         bool vsync = !strcmp(uevent_desc, "change@/devices/platform/s3cfb");
         if(vsync)
             handle_vsync_uevent(ctx, uevent_desc, len);
+#endif
     }
 
     return NULL;
