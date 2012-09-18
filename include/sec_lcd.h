@@ -34,6 +34,7 @@ struct secfb_user_window {
 #define FBIO_WAITFORVSYNC       _IO  ('F', 32)
 #define SECFB_WIN_POSITION      _IOW ('F', 203, struct secfb_user_window)
 #define S3CFB_SET_VSYNC_INT     _IOW ('F', 206, uint32_t)
+#define S3CFB_WAIT_FOR_VSYNC    _IOR ('F', 311, uint64_t)
 
 #define DEFAULT_LCD_WIDTH   (480)
 #define DEFAULT_LCD_HEIGHT  (800)
