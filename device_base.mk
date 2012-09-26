@@ -140,7 +140,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	lights.s5pc110 \
 	hwcomposer.s5pc110 \
-	sensors.herring
+	sensors.herring \
+    power.s5pc110
 
 # Torch
 PRODUCT_PACKAGES += \
