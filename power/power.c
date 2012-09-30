@@ -28,39 +28,13 @@
 #include <hardware/power.h>
 
 #define BOOSTPULSE_PATH "/sys/devices/system/cpu/cpufreq/ondemand/boostpulse"
-#define SAMPLING_RATE_ONDEMAND "/sys/devices/system/cpu/cpufreq/ondemand/sampling_rate"
-#define SAMPLING_RATE_SCREEN_ON "40000"
-#define SAMPLING_RATE_SCREEN_OFF "400000"
 
 struct s5pc110_power_module {
     struct power_module base;
     pthread_mutex_t lock;
     int boostpulse_fd;
     int boostpulse_warned;
-    char sampling_rate_screen_on[PROPERTY_VALUE_MAX];
-    char sampling_rate_screen_off[PROPERTY_VALUE_MAX];
 };
-
-static void sysfs_write(char *path, char *s)
-{
-    char buf[80];
-    int len;
-    int fd = open(path, O_WRONLY);
-
-    if (fd < 0) {
-        strerror_r(errno, buf, sizeof(buf));
-        ALOGE("Error opening %s: %s\n", path, buf);
-        return;
-    }
-
-    len = write(fd, s, strlen(s));
-    if (len < 0) {
-        strerror_r(errno, buf, sizeof(buf));
-        ALOGE("Error writing to %s: %s\n", path, buf);
-    }
-
-    close(fd);
-}
 
 static int boostpulse_open(struct s5pc110_power_module *s5pc110)
 {
@@ -119,17 +93,12 @@ static void s5pc110_power_hint(struct power_module *module, power_hint_t hint,
 
 static void s5pc110_power_set_interactive(struct power_module *module, int on)
 {
-    struct s5pc110_power_module *s5pc110 = (struct s5pc110_power_module *) module;
-    sysfs_write(SAMPLING_RATE_ONDEMAND,
-            on ? s5pc110->sampling_rate_screen_on : s5pc110->sampling_rate_screen_off);
+    return;
 }
 
 static void s5pc110_power_init(struct power_module *module)
 {
-    struct s5pc110_power_module *s5pc110 = (struct s5pc110_power_module *) module;
-    property_get("ro.sys.sampling_rate_on", s5pc110->sampling_rate_screen_on, SAMPLING_RATE_SCREEN_ON);
-    property_get("ro.sys.sampling_rate_off", s5pc110->sampling_rate_screen_off, SAMPLING_RATE_SCREEN_OFF);
-    sysfs_write(SAMPLING_RATE_ONDEMAND, s5pc110->sampling_rate_screen_on);
+    return;
 }
 
 static struct hw_module_methods_t power_module_methods = {
