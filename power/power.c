@@ -27,28 +27,47 @@
 #include <hardware/hardware.h>
 #include <hardware/power.h>
 
-#define BOOSTPULSE_PATH "/sys/devices/system/cpu/cpufreq/ondemand/boostpulse"
+#define GOVERNOR_PATH "/sys/devices/system/cpu/cpu0/cpufreg/scaling_governor"
+#define ONDEMAND_BOOSTPULSE_PATH "/sys/devices/system/cpu/cpufreq/ondemand/boostpulse"
+#define INTERACTIVE_BOOSTPULSE_PATH "/sys/devices/system/cpu/cpufreq/interactive/boostpulse"
 
 struct s5pc110_power_module {
     struct power_module base;
     pthread_mutex_t lock;
     int boostpulse_fd;
     int boostpulse_warned;
+    char* boostpulse_path;
 };
 
 static int boostpulse_open(struct s5pc110_power_module *s5pc110)
 {
+    char gov[32];
+    int gov_fd;
+    int result;
     char buf[80];
+
+    gov_fd = open(GOVERNOR_PATH, O_RDONLY);
+    result = read(gov_fd, gov, 40);
+    if (!result) {
+		// couldn't read governor info, try ondemand
+		s5pc110->boostpulse_path = ONDEMAND_BOOSTPULSE_PATH;
+	}
+	if (strncmp(gov, "interactive", 32)) {
+		s5pc110->boostpulse_path = INTERACTIVE_BOOSTPULSE_PATH;
+	} else {
+		// assume ondemand if not interactive
+		s5pc110->boostpulse_path = ONDEMAND_BOOSTPULSE_PATH;
+	}
 
     pthread_mutex_lock(&s5pc110->lock);
 
     if (s5pc110->boostpulse_fd < 0) {
-        s5pc110->boostpulse_fd = open(BOOSTPULSE_PATH, O_WRONLY);
+        s5pc110->boostpulse_fd = open(s5pc110->boostpulse_path, O_WRONLY);
 
         if (s5pc110->boostpulse_fd < 0) {
             if (!s5pc110->boostpulse_warned) {
                 strerror_r(errno, buf, sizeof(buf));
-                ALOGE("Error opening %s: %s\n", BOOSTPULSE_PATH, buf);
+                ALOGE("Error opening %s: %s\n", s5pc110->boostpulse_path, buf);
                 s5pc110->boostpulse_warned = 1;
             }
         }
@@ -78,7 +97,7 @@ static void s5pc110_power_hint(struct power_module *module, power_hint_t hint,
 
             if (len < 0) {
                 strerror_r(errno, buf, sizeof(buf));
-                ALOGE("Error writing to %s: %s\n", BOOSTPULSE_PATH, buf);
+                ALOGE("Error writing to %s: %s\n", s5pc110->boostpulse_path, buf);
             }
         }
         break;
