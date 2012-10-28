@@ -11,9 +11,5 @@
     <string name="color_blue_title">Mavi</string>
 
     <string name="category_touchkey_title">Dokunmatik tuşlar</string>
-    <string name="backlight_timeout_title_head">Arka ışık zaman aşımı</string>
-    <string name="backlight_timeout_summary_head">Dokunmatik tuşa ışığı otomatik kapanmadan önceki gecikmeyi ayarlayın</string>
-    <string name="blink_timeout_title_head">Yanıp sönme zaman aşımı</string>
-    <string name="blink_timeout_summary_head">Bir bildirim sonrası dokunmatik tuşun yanıp söner arka ışığın otomatik kapanmadan önceki gecikmeyi ayarlayın.</string>
 
 </resources>

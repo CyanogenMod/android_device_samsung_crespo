@@ -36,10 +36,12 @@
     <string name="credits_presets">Dank an: ale.landra91 cpaixao provolinoo</string>
 
 
-    <string name="category_touchkey_title">Touch Keys</string>
+    <string name="category_touchkey_title">Sensortasten</string>
     <string name="touchkey_notification_title_head">Hintergrundbeleuchtung</string>
     <string name="touchkey_notification_summary_head">Die Hintergrundbeleuchtung wird nach erhalten einer Nachricht aktiviert.</string>
-
+    <string name="bld_title">Abschalten nach</string>
+    <string name="bld_tuning_title_head">Automatisches Abschalten</string>
+    <string name="bld_tuning_summary_head">Zeit nach der die Hintergrundbeleuchtung abgeschaltet wird.\n(0 = kein automatisches Abschalten)</string>
     <string name="category_radio_title">Mobilfunk</string>
     <string name="hspa_title_head">HSPA</string>
     <string name="hspa_summary_head">HSDPA/HSUPA aktivieren</string>

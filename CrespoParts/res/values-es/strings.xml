@@ -10,9 +10,5 @@
     <string name="color_blue_title">Azul</string>
 
     <string name="category_touchkey_title">Teclas</string>
-    <string name="backlight_timeout_title_head">Tiempo de luz teclado</string>
-    <string name="backlight_timeout_summary_head">Adjusta el tiempo al que se desactiva la luz de las teclas con la pantalla encendida</string>
-    <string name="blink_timeout_title_head">Tiempo de parpadeo</string>
-    <string name="blink_timeout_summary_head">Adjusta el tiempo al que deja de parpadear el teclado después de que llegue una notificación</string>
 
 </resources>

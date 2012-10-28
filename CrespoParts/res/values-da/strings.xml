@@ -10,9 +10,5 @@
     <string name="color_blue_title">Blå</string>
 
     <string name="category_touchkey_title">Touch Knapper</string>
-    <string name="backlight_timeout_title_head">Baggrundslys Timeout</string>
-    <string name="backlight_timeout_summary_head">Indstil forsinkelsen for hvornår touch knappernes lys skal slukkes</string>
-    <string name="blink_timeout_title_head">Blink Timeout</string>
-    <string name="blink_timeout_summary_head">Indstil forsinkelsen for hvornår touch knappernes blink lys automatisk skal slukkes efter en notifikation</string>
 
 </resources>

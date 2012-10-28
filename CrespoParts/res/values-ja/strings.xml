@@ -12,10 +12,6 @@
     <string name="color_blue_title">青</string>
 
     <string name="category_touchkey_title">タッチキー</string>
-    <string name="backlight_timeout_title_head">バックライトのタイムアウト</string>
-    <string name="backlight_timeout_summary_head">タッチキーのバックライトが自動的にオフになるまでの遅延を調整する</string>
-    <string name="blink_timeout_title_head">点滅のタイムアウト</string>
-    <string name="blink_timeout_summary_head">タッチキーの点滅のバックライトが通知した後、自動的に消えるまでの遅延時間を調整する</string>
 
     <string name="category_radio_title">ラジオ</string>
     <string name="hspa_title_head">HSPA</string>
