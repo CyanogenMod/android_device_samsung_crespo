@@ -10,10 +10,6 @@
     <string name="color_blue_title">Bleu</string>
 
     <string name="category_touchkey_title">Touches tactiles</string>
-    <string name="backlight_timeout_title_head">Délai rétroéclairage</string>
-    <string name="backlight_timeout_summary_head">Régler le délai avant l\'extinction du rétroéclairage des touches tactiles</string>
-    <string name="blink_timeout_title_head">Délai clignotement</string>
-    <string name="blink_timeout_summary_head">Régler le délai avant l\'arrêt du clignotement du rétroéclairage des touches tactiles après une notification</string>
 
 </resources>
 

@@ -12,10 +12,6 @@
     <string name="color_blue_title">Синий</string>
 
     <string name="category_touchkey_title">Сенсорные кнопки</string>
-    <string name="backlight_timeout_title_head">Таймаут подсветки</string>
-    <string name="backlight_timeout_summary_head">Как долго работает подсветка сенсорных кнопок</string>
-    <string name="blink_timeout_title_head">Таймаут мигания</string>
-    <string name="blink_timeout_summary_head">Как долго будут мигать сенсорные кнопки после уведомления</string>
 
     <string name="category_radio_title">Радиомодуль</string>
     <string name="hspa_title_head">HSPA</string>

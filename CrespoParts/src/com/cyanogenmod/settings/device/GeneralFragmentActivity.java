@@ -48,6 +48,7 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
 
     private CheckBoxPreference mDeepIdle;
     private CheckBoxPreference mNotification;
+    private PreferenceScreen mIdleStats;
     private bldTuningPreference mbldTuning;
 
     @Override
@@ -59,22 +60,21 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
         PreferenceScreen prefSet = getPreferenceScreen();
         mDeepIdle = (CheckBoxPreference) findPreference(DeviceSettings.KEY_DEEPIDLE);
         mNotification = (CheckBoxPreference) findPreference(DeviceSettings.KEY_NOTIFICATION);
+		mIdleStats = (PreferenceScreen) findPreference(DeviceSettings.KEY_DEEPIDLE_STATS);
 
         if (isSupported(CPU_DEEPIDLE_FILE)) {
             mDeepIdle.setChecked(PREF_ENABLED.equals(Utils.readOneLine(CPU_DEEPIDLE_FILE)));
-        } else {
+			mIdleStats.setOnPreferenceClickListener(this);
+		} else {
             mDeepIdle.setEnabled(false);
-        }
+            mIdleStats.setEnabled(false);
+		}
 
         if (isSupported(TOUCHKEY_NOTIFICATION_FILE)) {
             mNotification.setChecked(PREF_ENABLED.equals(Utils.readOneLine(TOUCHKEY_NOTIFICATION_FILE)));
         } else {
             mNotification.setEnabled(false);
         }
-
-		Preference p = findPreference(DeviceSettings.KEY_DEEPIDLE_STATS);
-		if(p != null)
-			p.setOnPreferenceClickListener(this);
 
         mbldTuning = (bldTuningPreference) findPreference(DeviceSettings.KEY_BLD_TUNING);
         if(mbldTuning != null)
@@ -124,8 +124,8 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
 		// display dialog
 		final View content = getActivity().getLayoutInflater().inflate(R.layout.idle_stats_dialog, null);
 
-        String sStatsLine = Utils.readOneLine(CPU_DEEPIDLE_STATS);
-        String[] sValues = sStatsLine.split(" ");
+                String sStatsLine = Utils.readOneLine(CPU_DEEPIDLE_STATS);
+                String[] sValues = sStatsLine.split(" ");
 		((TextView)content.findViewById(R.id.time1)).setText(sValues[0]);
 		((TextView)content.findViewById(R.id.time2)).setText(sValues[2]);
 		((TextView)content.findViewById(R.id.time3)).setText(sValues[4]);

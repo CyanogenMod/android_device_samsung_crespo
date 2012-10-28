@@ -10,9 +10,5 @@
     <string name="color_blue_title">Blauw</string>
 
     <string name="category_touchkey_title">Touch Keys</string>
-    <string name="backlight_timeout_title_head">Backlight Timeout</string>
-    <string name="backlight_timeout_summary_head">Pas de vertraging aan voor het touch key-backlight uitgaat</string>
-    <string name="blink_timeout_title_head">Blink Timeout</string>
-    <string name="blink_timeout_summary_head">Pas de vertraging aan voor het knipperend touch key-backlight uitgaat na een notificatie</string>
 
 </resources>
