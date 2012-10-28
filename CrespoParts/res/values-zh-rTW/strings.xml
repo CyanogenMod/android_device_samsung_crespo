@@ -12,10 +12,6 @@
     <string name="color_blue_title">藍</string>
 
     <string name="category_touchkey_title">觸控鍵</string>
-    <string name="backlight_timeout_title_head">背光逾時</string>
-    <string name="backlight_timeout_summary_head">調整觸控鍵背光自動關閉前的延遲時間</string>
-    <string name="blink_timeout_title_head">閃爍逾時</string>
-    <string name="blink_timeout_summary_head">調整觸控鍵閃爍通知自動關閉前的延遲時間</string>
 
     <string name="category_radio_title">行動網路</string>
     <string name="hspa_title_head">HSPA</string>

@@ -25,7 +25,6 @@
 
         <activity android:name=".GeneralFragmentActivity" />
         <activity android:name=".DisplayFragmentActivity" />
-        <activity android:name=".SoundFragmentActivity" />
     </application>
 
 </manifest>

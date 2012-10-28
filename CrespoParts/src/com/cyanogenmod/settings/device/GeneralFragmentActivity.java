@@ -48,6 +48,7 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
 
     private CheckBoxPreference mDeepIdle;
     private CheckBoxPreference mNotification;
+    private PreferenceScreen mIdleStats;
     private bldTuningPreference mbldTuning;
 
     @Override
@@ -59,11 +60,14 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
         PreferenceScreen prefSet = getPreferenceScreen();
         mDeepIdle = (CheckBoxPreference) findPreference(DeviceSettings.KEY_DEEPIDLE);
         mNotification = (CheckBoxPreference) findPreference(DeviceSettings.KEY_NOTIFICATION);
+        mIdleStats = (PreferenceScreen) findPreference(DeviceSettings.KEY_DEEPIDLE_STATS);
 
         if (isSupported(CPU_DEEPIDLE_FILE)) {
             mDeepIdle.setChecked(PREF_ENABLED.equals(Utils.readOneLine(CPU_DEEPIDLE_FILE)));
+            mIdleStats.setOnPreferenceClickListener(this);
         } else {
             mDeepIdle.setEnabled(false);
+            mIdleStats.setEnabled(false);
         }
 
         if (isSupported(TOUCHKEY_NOTIFICATION_FILE)) {
@@ -71,10 +75,6 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
         } else {
             mNotification.setEnabled(false);
         }
-
-		Preference p = findPreference(DeviceSettings.KEY_DEEPIDLE_STATS);
-		if(p != null)
-			p.setOnPreferenceClickListener(this);
 
         mbldTuning = (bldTuningPreference) findPreference(DeviceSettings.KEY_BLD_TUNING);
         if(mbldTuning != null)
@@ -120,45 +120,45 @@ public class GeneralFragmentActivity extends PreferenceFragment implements OnPre
         }
     }
 
-	private void showIdleStatsDialog() {
-		// display dialog
-		final View content = getActivity().getLayoutInflater().inflate(R.layout.idle_stats_dialog, null);
+    private void showIdleStatsDialog() {
+        // display dialog
+        final View content = getActivity().getLayoutInflater().inflate(R.layout.idle_stats_dialog, null);
 
         String sStatsLine = Utils.readOneLine(CPU_DEEPIDLE_STATS);
         String[] sValues = sStatsLine.split(" ");
-		((TextView)content.findViewById(R.id.time1)).setText(sValues[0]);
-		((TextView)content.findViewById(R.id.time2)).setText(sValues[2]);
-		((TextView)content.findViewById(R.id.time3)).setText(sValues[4]);
-		((TextView)content.findViewById(R.id.avg1)).setText(sValues[1]);
-		((TextView)content.findViewById(R.id.avg2)).setText(sValues[3]);
-		((TextView)content.findViewById(R.id.avg3)).setText(sValues[5]);
+        ((TextView)content.findViewById(R.id.time1)).setText(sValues[0]);
+        ((TextView)content.findViewById(R.id.time2)).setText(sValues[2]);
+        ((TextView)content.findViewById(R.id.time3)).setText(sValues[4]);
+        ((TextView)content.findViewById(R.id.avg1)).setText(sValues[1]);
+        ((TextView)content.findViewById(R.id.avg2)).setText(sValues[3]);
+        ((TextView)content.findViewById(R.id.avg3)).setText(sValues[5]);
 
-		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-		builder.setTitle(getString(R.string.label_deepidle_stats));
-		builder.setView(content);
-		builder.setPositiveButton(getString(R.string.label_reset), new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				Utils.writeValue(CPU_DEEPIDLE_RESET, "1");
-				dialog.dismiss();
-			}
-		});
-		builder.setNegativeButton(getString(R.string.label_close), new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-			}
-		});
-		builder.show();
-	}
-	
-	@Override
-	public boolean onPreferenceClick(Preference preference) {
-		boolean ret = false;
-		if(preference.getKey().equals(DeviceSettings.KEY_DEEPIDLE_STATS)) {
-			showIdleStatsDialog();
-			ret = true;
-		}
-		return ret;
-	}
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle(getString(R.string.label_deepidle_stats));
+        builder.setView(content);
+        builder.setPositiveButton(getString(R.string.label_reset), new OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Utils.writeValue(CPU_DEEPIDLE_RESET, "1");
+                dialog.dismiss();
+            }
+        });
+        builder.setNegativeButton(getString(R.string.label_close), new OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.show();
+    }
+
+    @Override
+    public boolean onPreferenceClick(Preference preference) {
+        boolean ret = false;
+        if(preference.getKey().equals(DeviceSettings.KEY_DEEPIDLE_STATS)) {
+            showIdleStatsDialog();
+            ret = true;
+        }
+        return ret;
+    }
 }

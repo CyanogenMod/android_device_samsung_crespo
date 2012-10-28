@@ -10,10 +10,6 @@
     <string name="color_blue_title">Azul</string>
 
     <string name="category_touchkey_title">Botões Capacitivos</string>
-    <string name="backlight_timeout_title_head">Temporizador Luz de Fundo</string>
-    <string name="backlight_timeout_summary_head">Ajusta o tempo que as teclas capacitivas demoram a desligar a sua luz de fundo</string>
-    <string name="blink_timeout_title_head">Temporizador de Intermitência</string>
-    <string name="blink_timeout_summary_head">Ajusta o tempo que as teclas demoram a desligar a retroiluminação intermitente após notificação.</string>
 
     <string name="category_radio_title">Radio</string>
     <string name="hspa_title_head">HSPA</string>
