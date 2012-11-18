@@ -23,6 +23,9 @@
     <string name="color_default_title">Default</string>
     <string name="color_CM_title">Impost. CM</string>
     <string name="color_dark_title">Impost. Scuro</string>
+    <string name="bld_title">BLD</string>
+    <string name="bld_tuning_title_head">Impostazioni BLD</string>
+    <string name="bld_tuning_summary_head">Imposta il tempo dopo il quale i tasti si spengono (0 equivale a BLD disattivato)</string>
     <string name="preset1_default_title">Default.</string>
     <string name="preset2_default_title">Naturali</string>
     <string name="preset3_default_title">Blu scuro</string>
