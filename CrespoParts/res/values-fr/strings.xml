@@ -2,14 +2,58 @@
 <resources>
     <string name="app_name">Paramètres Nexus S</string>
 
+    <!-- Page Headers -->
+    <string name="general_title">GÉNÉRAL</string>
+    <string name="display_title">ÉCRAN</string>
+    <string name="sound_title">SON</string>
+
+    <string name="category_cpu_title">CPU</string>
+    <string name="cpu_deepidle_title_head">Niveau de veille</string>
+    <string name="cpu_deepidle_summary_head">Activer le niveaux de veille</string>
     <string name="category_screen_title">Paramètres WM8994 ( voodoo )</string>
-    <string name="color_tuning_title_head">Réglages Couleurs</string>
+    <string name="color_tuning_title_head">Réglages des couleurs</string>
     <string name="color_tuning_summary_head">Calibrage des couleurs de l\'écran</string>
+    <string name="gamma_tuning_title_head">Réglage de la correction Gamma</string>
+    <string name="gamma_tuning_summary_head">Défini la correction Gamma</string>
+    <string name="color_hack_presets_title_head">Préréglage des couleurs</string>
+    <string name="color_hack_presets_summary_head">Préréglages du Gamma et des multiplicateurs testés par d\'autres utilisateurs</string>
     <string name="color_red_title">Rouge</string>
     <string name="color_green_title">Vert</string>
     <string name="color_blue_title">Bleu</string>
+    <string name="gamma_default_title">Défaut</string>
+    <string name="gamma_CM_title">Paramètre CM</string>
+    <string name="gamma_bright_title">Paramètre de l\'élairage</string>
+    <string name="color_default_title">Défaut</string>
+    <string name="color_CM_title">Paramètre CM</string>
+    <string name="color_dark_title">Paramètre du noir</string>
+    <string name="bld_title">Rétroéclairage</string>
+    <string name="bld_tuning_title_head">Paramètres rétroéclairage</string>
+    <string name="bld_tuning_summary_head">Définir le délai avant l\'extinction des touches (La valeur 0 n\'allume jamais les touches)</string>
+
+    <string name="preset1_default_title">Défaut</string>
+    <string name="preset2_default_title">Naturel</string>
+    <string name="preset3_default_title">Bleu sombre</string>
+    <string name="preset4_default_title">Chaud</string>
+    <string name="preset5_default_title">Bleu clair</string>
+    <string name="preset6_default_title">Cross Proc.</string>
+    <string name="credits_presets">Crédits: ale.landra91 cpaixao provolinoo</string>
 
     <string name="category_touchkey_title">Touches tactiles</string>
+    <string name="touchkey_notification_title_head">Notification par rétroéclairage des touches</string>
+    <string name="touchkey_notification_summary_head">Les touches tactiles s\'éclairent lors d\'une notification</string>
+
+    <string name="category_radio_title">Radio</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">Activer HSDPA/HSUPA</string>
+
+    <string name="label_deepidle_stats">Statistique de veille</string>
+    <string name="label_state">Statut</string>
+    <string name="label_time">Temps (ms)</string>
+    <string name="label_average">Avg (ms)</string>
+    <string name="label_reset">Réinitialiser</string>
+    <string name="label_close">Fermer</string>
+    <string name="label_idle1">Veille</string>
+    <string name="label_idle2">Niveau de veille (TOP=ON)</string>
+    <string name="label_idle3">Niveau de veille (TOP=OFF)</string>
 
 </resources>
-

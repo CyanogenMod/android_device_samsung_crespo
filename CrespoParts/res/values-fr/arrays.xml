@@ -1,0 +1,28 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string-array name="backlight_timeout_entries">
+        <item>2 secondes</item>
+        <item>Défaut (5 secondes)</item>
+        <item>10 secondes</item>
+        <item>15 secondes</item>
+        <item>20 secondes</item>
+        <item>30 secondes</item>
+        <item>Jamais</item>
+    </string-array>
+
+    <string-array name="blink_timeout_entries">
+        <item>1 minute</item>
+        <item>2 minutes</item>
+        <item>Défaut (5 minutes)</item>
+        <item>10 minutes</item>
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>Jamais</item>
+    </string-array>
+
+    <string-array name="hspa_entries">
+        <item>Seulement UMTS</item>
+        <item>Seulement HSDPA</item>
+        <item>HSDPA + HSUPA</item>
+    </string-array>
+
+</resources>
