@@ -15,9 +15,28 @@
     <string name="color_tuning_summary_head">调整屏幕颜色增值</string>
     <string name="gamma_tuning_title_head">伽玛颜色校正</string>
     <string name="gamma_tuning_summary_head">调整伽玛颜色校正</string>
+    <string name="color_hack_presets_title_head">颜色预设</string>
+    <string name="color_hack_presets_summary_head">预设为一些用户测试的伽玛颜色和乘数值</string>
     <string name="color_red_title">红</string>
     <string name="color_green_title">绿</string>
     <string name="color_blue_title">蓝</string>
+    <string name="gamma_default_title">默认</string>
+    <string name="gamma_CM_title">CM预设.</string>
+    <string name="gamma_bright_title">亮度设置.</string>
+    <string name="color_default_title">默认</string>
+    <string name="color_CM_title">CM预设.</string>
+    <string name="color_dark_title">暗度设置.</string>
+    <string name="bld_title">Led延迟</string>
+    <string name="bld_tuning_title_head">Led延迟开启</string>
+    <string name="bld_tuning_summary_head">设置Led延迟的时间 ( ”0“意味着关闭Led延迟 )</string>
+
+    <string name="preset1_default_title">默认.</string>
+    <string name="preset2_default_title">自然</string>
+    <string name="preset3_default_title">深蓝</string>
+    <string name="preset4_default_title">暖色</string>
+    <string name="preset5_default_title">冷色</string>
+    <string name="preset6_default_title">交叉处理.</string>
+    <string name="credits_presets">归功于: ale.landra91 cpaixao provolinoo</string>
 
     <string name="category_touchkey_title">触控键</string>
     <string name="touchkey_notification_title_head">背光灯提醒</string>
@@ -26,4 +45,15 @@
     <string name="category_radio_title">无线电</string>
     <string name="hspa_title_head">HSPA</string>
     <string name="hspa_summary_head">启用 HSDPA／HSUPA</string>
+
+    <string name="label_deepidle_stats">深度休眠</string>
+    <string name="label_state">分类</string>
+    <string name="label_time">时间 (毫秒)</string>
+    <string name="label_average">平均 (毫秒)</string>
+    <string name="label_reset">重置</string>
+    <string name="label_close">关闭</string>
+    <string name="label_idle1">休眠</string>
+    <string name="label_idle2">深度休眠 (TOP=ON)</string>
+    <string name="label_idle3">深度休眠 (TOP=OFF)</string>
+
 </resources>
