@@ -67,10 +67,6 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.kl:system/usr/keylayout/mxt224_ts_input.kl \
 	device/samsung/crespo/mxt224_ts_input.kcm:system/usr/keychars/mxt224_ts_input.kcm
 
-#Bluetooth setup
-PRODUCT_COPY_FILES += \
-	system/bluetooth/data/main.conf:system/etc/bluetooth/main.conf \
-
 #NVRAM setup
 PRODUCT_COPY_FILES += \
         device/samsung/crespo/nvram_net.txt:system/vendor/firmware/nvram_net.txt
