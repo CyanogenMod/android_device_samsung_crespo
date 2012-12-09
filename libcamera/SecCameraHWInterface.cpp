@@ -965,9 +965,10 @@ void CameraHardwareSec::save_postview(const char *fname, uint8_t *buf, uint32_t 
     int nw;
     int cnt = 0;
     uint32_t written = 0;
+    mode_t mode = S_IRUSR | S_IWUSR;
 
     ALOGD("opening file [%s]\n", fname);
-    int fd = open(fname, O_RDWR | O_CREAT);
+    int fd = open(fname, O_RDWR | O_CREAT, mode);
     if (fd < 0) {
         ALOGE("failed to create file [%s]: %s", fname, strerror(errno));
     return;
