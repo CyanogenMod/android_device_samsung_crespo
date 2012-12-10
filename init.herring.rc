@@ -108,13 +108,13 @@ service wpa_supplicant /system/bin/wpa_supplicant -iwlan0 -Dnl80211 -c/data/misc
 
 # DHCPCD
 # wi-fi
-service dhcpcd_wlan0 /system/bin/dhcpcd -aABKL
+service dhcpcd_wlan0 /system/bin/dhcpcd -aABDKL
     class main
     disabled
     oneshot
 
 # wimax
-service dhcpcd_uwbr0 /system/bin/dhcpcd -ABKL
+service dhcpcd_uwbr0 /system/bin/dhcpcd -ABDKL
     class main
     disabled
     oneshot
