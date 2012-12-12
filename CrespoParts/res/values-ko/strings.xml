@@ -8,13 +8,13 @@
     <string name="sound_title">소리</string>
 
     <string name="category_cpu_title">CPU</string>
-    <string name="cpu_deepidle_title_head">Deep Idle</string>
-    <string name="cpu_deepidle_summary_head">Deep idle 활성화.</string>
-    <string name="category_screen_title">WM8994 설정 ( voodoo )</string>
+    <string name="cpu_deepidle_title_head">Deep idle</string>
+    <string name="cpu_deepidle_summary_head">Deep idle 활성화</string>
+    <string name="category_screen_title">WM8994 설정 (Voodoo)</string>
     <string name="color_tuning_title_head">색상 혼합 설정</string>
-    <string name="color_tuning_summary_head">화면 색상 배율을 조절합니다.</string>
+    <string name="color_tuning_summary_head">화면 색상 배율을 조절합니다</string>
     <string name="gamma_tuning_title_head">색상 감마 조정</string>
-    <string name="gamma_tuning_summary_head">색상 감마를 조정합니다.</string>
+    <string name="gamma_tuning_summary_head">색상 감마를 조정합니다</string>
     <string name="color_hack_presets_title_head">색상 프리셋</string>
     <string name="color_hack_presets_summary_head">일부 유저들이 만든 감마와 배율 프리셋입니다</string>
     <string name="color_red_title">빨강</string>
@@ -37,7 +37,7 @@
 
     <string name="category_touchkey_title">터치 키</string>
     <string name="touchkey_notification_title_head">터치 키 백라이트 알림</string>
-    <string name="touchkey_notification_summary_head">알림이 있을 때 터치 키 백라이트가 켜집니다.</string>
+    <string name="touchkey_notification_summary_head">알림이 있을 때 터치 키 백라이트가 켜집니다</string>
 
     <string name="category_radio_title">무선</string>
     <string name="hspa_title_head">HSPA</string>
@@ -50,6 +50,6 @@
     <string name="label_reset">초기화 </string>
     <string name="label_close">닫기</string>
     <string name="label_idle1">Idle</string>
-    <string name="label_idle2">Deep Idle (TOP=ON)</string>
-    <string name="label_idle3">Deep Idle (TOP=OFF)</string>
+    <string name="label_idle2">Deep idle (TOP=ON)</string>
+    <string name="label_idle3">Deep idle (TOP=OFF)</string>
 </resources>
