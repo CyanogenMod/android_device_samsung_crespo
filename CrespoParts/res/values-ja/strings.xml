@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Nexus S 設定</string>
 
-    <string name="category_screen_title">WM8994 設定 ( voodoo )</string>
+    <string name="category_screen_title">WM8994 設定 (Voodoo)</string>
     <string name="color_tuning_title_head">色の調整</string>
     <string name="color_tuning_summary_head">画面色の調整</string>
     <string name="gamma_tuning_title_head">ガンマの調整</string>
@@ -15,6 +15,6 @@
 
     <string name="category_radio_title">ラジオ</string>
     <string name="hspa_title_head">HSPA</string>
-    <string name="hspa_summary_head">HSDPA/HSUPAを有効にする</string>
+    <string name="hspa_summary_head">HSDPA/HSUPA を有効にする</string>
 
 </resources>

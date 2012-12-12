@@ -2,13 +2,13 @@
 <resources>
     <string name="app_name">Nexus S-instellingen</string>
 
-    <string name="category_screen_title">WM8994-instellingen ( voodoo )</string>
+    <string name="category_screen_title">WM8994-instellingen (Voodoo)</string>
     <string name="color_tuning_title_head">Kleuraanpassing</string>
     <string name="color_tuning_summary_head">Kalibreer schermkleur</string>
     <string name="color_red_title">Rood</string>
     <string name="color_green_title">Groen</string>
     <string name="color_blue_title">Blauw</string>
 
-    <string name="category_touchkey_title">Touch Keys</string>
+    <string name="category_touchkey_title">Touch keys</string>
 
 </resources>

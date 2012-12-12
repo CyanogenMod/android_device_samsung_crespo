@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">Parámetros Nexus S</string>
 
-    <string name="category_screen_title">Parámetros WM8994 ( voodoo )</string>
-    <string name="color_tuning_title_head">Modificar Color</string>
+    <string name="category_screen_title">Parámetros WM8994 (Voodoo)</string>
+    <string name="color_tuning_title_head">Modificar color</string>
     <string name="color_tuning_summary_head">Calibrar color pantalla</string>
     <string name="color_red_title">Rojo</string>
     <string name="color_green_title">Verde</string>
