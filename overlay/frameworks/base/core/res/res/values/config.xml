@@ -107,11 +107,12 @@
     <!-- Default blink frequency for notification LED is 9 seconds. -->
     <integer name="config_defaultNotificationLedOff">9000</integer>
 
-    <!-- Package name providing network location support. -->
-    <string name="config_networkLocationProviderPackageName" translatable="false">com.google.android.location</string>
-
-    <!-- Package name providing geocoder API support. -->
-    <string name="config_geocodeProviderPackageName" translatable="false">com.google.android.location</string>
+    <string-array name="config_locationProviderPackageNames" translatanle="false">
+        <!-- The standard AOSP fused location provider -->
+        <item>com.google.android.location.fused</item>
+        <!-- The Google Network Location Services location provider -->
+        <item>com.google.android.location</item>
+    </string-array>
 
     <!-- XXXXX NOTE THE FOLLOWING RESOURCES USE THE WRONG NAMING CONVENTION.
          Please don't copy them, copy anything else. -->
@@ -207,8 +208,6 @@
     <bool name="config_bluetooth_wide_band_speech">false</bool>
 
     <bool name="config_ui_enableFadingMarquee">false</bool>
-
-    <bool name="config_bluetooth_adapter_quick_switch">false</bool>
 
     <!-- The attenuation in dB applied to the sound effects played
          through AudioManager.playSoundEffect() when no volume is specified. -->
