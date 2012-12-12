@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Nexus S Einstellungen</string>
+    <string name="app_name">Nexus S-Einstellungen</string>
 
     <!-- Page Headers -->
-    <string name="general_title">ALLGEMEIN</string>
-    <string name="display_title">BILDSCHIRM</string>
-    <string name="sound_title">TON</string>
+    <string name="general_title">Allgemein</string>
+    <string name="display_title">Display</string>
+    <string name="sound_title">Ton</string>
 
     <string name="category_cpu_title">Prozessor</string>
     <string name="cpu_deepidle_title_head">Deep Idle</string>
-    <string name="cpu_deepidle_summary_head">Aktiviert Deep Idle (Tiefschlaf), um die Akku Laufzeit zu erhöhen.</string>
-    <string name="category_screen_title">WM8994 Einstellungen (voodoo)</string>
+    <string name="cpu_deepidle_summary_head">Deep Idle (Tiefschlaf) aktivieren</string>
+    <string name="category_screen_title">WM8994-Einstellungen (Voodoo)</string>
     <string name="color_tuning_title_head">Farbmultiplikator</string>
     <string name="color_tuning_summary_head">Farbmultiplikator einstellen</string>
     <string name="gamma_tuning_title_head">Gammakorrektur</string>
@@ -29,7 +29,7 @@
 
     <string name="preset1_default_title">Standard</string>
     <string name="preset2_default_title">Natürlich</string>
-    <string name="preset3_default_title">Dunkles Blau</string>
+    <string name="preset3_default_title">Dunkles blau</string>
     <string name="preset4_default_title">Warm</string>
     <string name="preset5_default_title">Kalt</string>
     <string name="preset6_default_title">X-Processing</string>
@@ -38,18 +38,18 @@
 
     <string name="category_touchkey_title">Sensortasten</string>
     <string name="touchkey_notification_title_head">Hintergrundbeleuchtung</string>
-    <string name="touchkey_notification_summary_head">Die Hintergrundbeleuchtung wird nach erhalten einer Nachricht aktiviert.</string>
+    <string name="touchkey_notification_summary_head">Die Hintergrundbeleuchtung wird nach erhalten einer Nachricht aktiviert</string>
     <string name="bld_title">Abschalten nach</string>
     <string name="bld_tuning_title_head">Automatisches Abschalten</string>
-    <string name="bld_tuning_summary_head">Zeit nach der die Hintergrundbeleuchtung abgeschaltet wird.\n(0 = kein automatisches Abschalten)</string>
+    <string name="bld_tuning_summary_head">Zeit nach der die Hintergrundbeleuchtung abgeschaltet wird\n(0 = kein automatisches Abschalten)</string>
     <string name="category_radio_title">Mobilfunk</string>
     <string name="hspa_title_head">HSPA</string>
     <string name="hspa_summary_head">HSDPA/HSUPA aktivieren</string>
 
-    <string name="label_deepidle_stats">Deep Idle Statistik</string>
+    <string name="label_deepidle_stats">Deep Idle-Statistik</string>
     <string name="label_state">Status</string>
-    <string name="label_time">Zeit(ms)</string>
-    <string name="label_average">Mittel(ms)</string>
+    <string name="label_time">Zeit (ms)</string>
+    <string name="label_average">Mittel (ms)</string>
     <string name="label_reset">Zurücksetzen</string>
     <string name="label_close">Schließen</string>
     <string name="label_idle1">Normal Idle</string>

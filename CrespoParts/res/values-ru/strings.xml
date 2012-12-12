@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Настройки Nexus S</string>
 
-    <string name="category_screen_title">Настройки WM8994 ( voodoo )</string>
+    <string name="category_screen_title">Настройки WM8994 (Voodoo)</string>
     <string name="color_tuning_title_head">Настройка умножителей цвета</string>
     <string name="color_tuning_summary_head">Калибровка умножителей цветов экрана</string>
     <string name="gamma_tuning_title_head">Настройка цветовой гаммы</string>
