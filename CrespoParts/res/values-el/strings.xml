@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ρυθμίσεις Nexus S</string>
+
+    <!-- Page Headers -->
+    <string name="general_title">ΓΕΝΙΚΑ</string>
+    <string name="display_title">ΟΘΟΝΗ</string>
+    <string name="sound_title">ΗΧΟΣ</string>
+
+    <string name="category_cpu_title">Επεξεργαστής</string>
+    <string name="cpu_deepidle_title_head">Βαθιά Αδράνεια</string>
+    <string name="cpu_deepidle_summary_head">Ενεργοποιεί την βαθιά αδράνεια.</string>
+    <string name="category_screen_title">Ρυθμίσεις WM8994 ( voodoo )</string>
+    <string name="color_tuning_title_head">Χρωματικοί Πολλαπασιαστές</string>
+    <string name="color_tuning_summary_head">Ρύθμιση χρωματικών πολλαπλασιαστών οθόνης</string>
+    <string name="gamma_tuning_title_head">Γάμμα Χρώματος</string>
+    <string name="gamma_tuning_summary_head">Ρύθμιση χρωματικής διόρθωσης γάμμα</string>
+    <string name="color_hack_presets_title_head">Προσχεδιασμένες Ρυθμίσεις</string>
+    <string name="color_hack_presets_summary_head">Δοκιμασμένες ρυθμίσεις γάμμα και πολλαπλασσιαστών</string>
+    <string name="color_red_title">Κόκκινο</string>
+    <string name="color_green_title">Πράσινο</string>
+    <string name="color_blue_title">Μπλέ</string>
+    <string name="gamma_default_title">Προεπιλογή</string>
+    <string name="gamma_CM_title">Ρύθμιση CM</string>
+    <string name="gamma_bright_title">Φωτεινό</string>
+    <string name="color_default_title">Προεπιλογή</string>
+    <string name="color_CM_title">Ρύθμιση CM</string>
+    <string name="color_dark_title">Σκοτεινό</string>
+    <string name="bld_title">ΑΦΕ</string>
+    <string name="bld_tuning_title_head">Ρυθμίσεις Απενεργοποίησης ΦΕ</string>
+    <string name="bld_tuning_summary_head">Καθορισμός χρόνου απενεργοποίησης του φωτός των πλήκτρων αφής ( επιλέξτε 0 για ποτέ )</string>
+
+    <string name="preset1_default_title">Προεπιλογή</string>
+    <string name="preset2_default_title">Φυσικό</string>
+    <string name="preset3_default_title">Βαθύ Μπλέ</string>
+    <string name="preset4_default_title">Θερμό</string>
+    <string name="preset5_default_title">Σκούρο Ψυχρό</string>
+    <string name="preset6_default_title">Cross proc.</string>
+    <string name="credits_presets">Συντελεστές: ale.landra91 cpaixao provolinoo</string>
+
+    <string name="category_touchkey_title">Πλήκτρα Αφής</string>
+    <string name="touchkey_notification_title_head">Φωτεινές Ειδοποιήσεις (ΦΕ)</string>
+    <string name="touchkey_notification_summary_head">Το φώς των πλήκτρων αφής θα ενεργοποιηθεί όταν υπάρξει ειδοποίηση.</string>
+
+    <string name="category_radio_title">Ράδιο</string>
+    <string name="hspa_title_head">HSPA</string>
+    <string name="hspa_summary_head">Ενεργοποίηση HSDPA/HSUPA</string>
+
+    <string name="label_deepidle_stats">Στατιστικά Αδράνειας</string>
+    <string name="label_state">Κατάσταση</string>
+    <string name="label_time">Χρόνος (ms)</string>
+    <string name="label_average">Μ.Ο. (ms)</string>
+    <string name="label_reset">Επαναφορά</string>
+    <string name="label_close">Κλείσιμο</string>
+    <string name="label_idle1">Αδράνεια</string>
+    <string name="label_idle2">Βαθιά Αδράνεια (Πάνω=Ενεργ.)</string>
+    <string name="label_idle3">Βαθιά Αδράνεια (Πάνω=Απενεργ.)</string>
+
+</resources>
