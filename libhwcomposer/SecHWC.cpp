@@ -23,10 +23,12 @@
  *
  */
 
+#include <sys/resource.h>
 #include <cutils/log.h>
 #include <cutils/atomic.h>
 #include <EGL/egl.h>
 #include <GLES/gl.h>
+#include <hardware_legacy/uevent.h>
 #include "SecHWCUtils.h"
 
 static IMG_gralloc_module_public_t *gpsGrallocModule;
@@ -41,8 +43,8 @@ static struct hw_module_methods_t hwc_module_methods = {
 hwc_module_t HAL_MODULE_INFO_SYM = {
     common: {
         tag: HARDWARE_MODULE_TAG,
-        version_major: 1,
-        version_minor: 0,
+        module_api_version: HWC_MODULE_API_VERSION_0_1,
+        hal_api_version: HARDWARE_HAL_API_VERSION,
         id: HWC_HARDWARE_MODULE_ID,
         name: "Samsung S5PC11X hwcomposer module",
         author: "SAMSUNG",
@@ -51,7 +53,7 @@ hwc_module_t HAL_MODULE_INFO_SYM = {
 };
 
 static void dump_layer(hwc_layer_t const* l) {
-    LOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
+    ALOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
             l->compositionType, l->flags, l->handle, l->transform, l->blending,
             l->sourceCrop.left,
             l->sourceCrop.top,
@@ -118,7 +120,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
     dst_rect->w = win->rect_info.w;
     dst_rect->h = win->rect_info.h;
 
-    LOGV("%s::sr_x %d sr_y %d sr_w %d sr_h %d dr_x %d dr_y %d dr_w %d dr_h %d ",
+    ALOGV("%s::sr_x %d sr_y %d sr_w %d sr_h %d dr_x %d dr_y %d dr_w %d dr_h %d ",
             __func__, src_rect->x, src_rect->y, src_rect->w, src_rect->h,
             dst_rect->x, dst_rect->y, dst_rect->w, dst_rect->h);
 
@@ -128,7 +130,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
 static int get_hwc_compos_decision(hwc_layer_t* cur)
 {
     if(cur->flags & HWC_SKIP_LAYER || !cur->handle) {
-        LOGV("%s::is_skip_layer %d cur->handle %x",
+        ALOGV("%s::is_skip_layer %d cur->handle %x",
                 __func__, cur->flags & HWC_SKIP_LAYER, (uint32_t)cur->handle);
         return HWC_FRAMEBUFFER;
     }
@@ -156,7 +158,7 @@ static int get_hwc_compos_decision(hwc_layer_t* cur)
     else
         compositionType = HWC_FRAMEBUFFER;
 
-    LOGV("%s::compositionType %d bpp %d format %x usage %x",
+    ALOGV("%s::compositionType %d bpp %d format %x usage %x",
             __func__,compositionType, prev_handle->uiBpp, prev_handle->iFormat,
             prev_handle->usage & GRALLOC_USAGE_PHYS_CONTIG);
 
@@ -196,7 +198,7 @@ static int assign_overlay_window(struct hwc_context_t *ctx,
     win->layer_index = layer_idx;
     win->status = HWC_WIN_RESERVED;
 
-    LOGV("%s:: win_x %d win_y %d win_w %d win_h %d lay_idx %d win_idx %d",
+    ALOGV("%s:: win_x %d win_y %d win_w %d win_h %d lay_idx %d win_idx %d",
             __func__, win->rect_info.x, win->rect_info.y, win->rect_info.w,
             win->rect_info.h, win->layer_index, win_idx );
 
@@ -231,7 +233,7 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     }
     ctx->num_of_hwc_layer = 0;
     ctx->num_of_fb_layer = 0;
-    LOGV("%s:: hwc_prepare list->numHwLayers %d", __func__, list->numHwLayers);
+    ALOGV("%s:: hwc_prepare list->numHwLayers %d", __func__, list->numHwLayers);
 
     for (int i = 0; i < list->numHwLayers ; i++) {
         hwc_layer_t* cur = &list->hwLayers[i];
@@ -262,7 +264,7 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     }
 
     if(list->numHwLayers != (ctx->num_of_fb_layer + ctx->num_of_hwc_layer))
-        LOGV("%s:: numHwLayers %d num_of_fb_layer %d num_of_hwc_layer %d ",
+        ALOGV("%s:: numHwLayers %d num_of_fb_layer %d num_of_hwc_layer %d ",
                 __func__, list->numHwLayers, ctx->num_of_fb_layer,
                 ctx->num_of_hwc_layer);
 
@@ -291,7 +293,6 @@ static int hwc_set(hwc_composer_device_t *dev,
     struct sec_img dst_img;
     struct sec_rect src_rect;
     struct sec_rect dst_rect;
-
 
     if (dpy == NULL && sur == NULL && list == NULL) {
         // release our resources, the screen is turning off
@@ -358,7 +359,7 @@ static int hwc_set(hwc_composer_device_t *dev,
                 ret = gpsGrallocModule->GetPhyAddrs(gpsGrallocModule,
                         cur->handle, phyAddr);
                 if (ret) {
-                    LOGE("%s::GetPhyAddrs fail : ret=%d\n", __func__, ret);
+                    ALOGE("%s::GetPhyAddrs fail : ret=%d\n", __func__, ret);
                     skipped_window_mask |= (1 << i);
                     continue;
                 }
@@ -370,7 +371,7 @@ static int hwc_set(hwc_composer_device_t *dev,
                 ret = runFimc(ctx, &src_img, &src_rect, &dst_img, &dst_rect,
                         phyAddr, cur->transform);
                 if (ret < 0){
-                   LOGE("%s::runFimc fail : ret=%d\n", __func__, ret);
+                   ALOGE("%s::runFimc fail : ret=%d\n", __func__, ret);
                    skipped_window_mask |= (1 << i);
                    continue;
                 }
@@ -378,7 +379,7 @@ static int hwc_set(hwc_composer_device_t *dev,
                 if (win->set_win_flag == 1) {
                     /* turnoff the window and set the window position with new conf... */
                     if (window_set_pos(win) < 0) {
-                        LOGE("%s::window_set_pos is failed : %s", __func__,
+                        ALOGE("%s::window_set_pos is failed : %s", __func__,
                                 strerror(errno));
                         skipped_window_mask |= (1 << i);
                         continue;
@@ -400,13 +401,13 @@ static int hwc_set(hwc_composer_device_t *dev,
                     window_show(win);
 
             } else {
-                LOGE("%s:: error : layer %d compositionType should have been \
+                ALOGE("%s:: error : layer %d compositionType should have been \
                         HWC_OVERLAY", __func__, win->layer_index);
                 skipped_window_mask |= (1 << i);
                 continue;
             }
          } else {
-             LOGE("%s:: error : window status should have been HWC_WIN_RESERVED \
+             ALOGE("%s:: error : window status should have been HWC_WIN_RESERVED \
                      by now... ", __func__);
              skipped_window_mask |= (1 << i);
              continue;
@@ -424,6 +425,146 @@ static int hwc_set(hwc_composer_device_t *dev,
     return 0;
 }
 
+static void hwc_registerProcs(struct hwc_composer_device* dev,
+        hwc_procs_t const* procs)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+    ctx->procs = const_cast<hwc_procs_t *>(procs);
+}
+
+static int hwc_query(struct hwc_composer_device* dev,
+        int what, int* value)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+
+    switch (what) {
+    case HWC_BACKGROUND_LAYER_SUPPORTED:
+        // we don't support the background layer yet
+        value[0] = 0;
+        break;
+    case HWC_VSYNC_PERIOD:
+        // vsync period in nanosecond
+        value[0] = 1000000000.0 / gpsGrallocModule->psFrameBufferDevice->base.fps;
+        break;
+    default:
+        // unsupported query
+        return -EINVAL;
+    }
+    return 0;
+}
+
+#ifdef VSYNC_IOCTL
+// Linux version of a manual reset event to control when
+// and when not to ask the video card for a VSYNC.  This
+// stops the worker thread from asking for a VSYNC when
+// there is nothing useful to do with it and more closely
+// mimicks the original uevent mechanism
+int vsync_enable = 0;
+pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t vsync_condition = PTHREAD_COND_INITIALIZER;
+#endif
+
+static int hwc_eventControl(struct hwc_composer_device* dev,
+        int event, int enabled)
+{
+    struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+
+    switch (event) {
+    case HWC_EVENT_VSYNC:
+        int val = !!enabled;
+        int err = ioctl(ctx->global_lcd_win.fd, S3CFB_SET_VSYNC_INT, &val);
+        if (err < 0)
+            return -errno;
+
+#if VSYNC_IOCTL
+        // Enable or disable the ability for the worker thread
+        // to ask for VSYNC events from the video driver
+        pthread_mutex_lock(&vsync_mutex);
+        if(enabled) {
+            vsync_enable = 1;
+            pthread_cond_broadcast(&vsync_condition);
+        }
+        else vsync_enable = 0;
+        pthread_mutex_unlock(&vsync_mutex);
+#endif
+
+        return 0;
+    }
+
+    return -EINVAL;
+}
+
+void handle_vsync_uevent(hwc_context_t *ctx, const char *buff, int len)
+{
+    uint64_t timestamp = 0;
+    const char *s = buff;
+
+    if(!ctx->procs || !ctx->procs->vsync)
+       return;
+
+    s += strlen(s) + 1;
+
+    while(*s) {
+        if (!strncmp(s, "VSYNC=", strlen("VSYNC=")))
+            timestamp = strtoull(s + strlen("VSYNC="), NULL, 0);
+
+        s += strlen(s) + 1;
+        if (s - buff >= len)
+            break;
+    }
+
+    ctx->procs->vsync(ctx->procs, 0, timestamp);
+}
+
+static void *hwc_vsync_thread(void *data)
+{
+    hwc_context_t *ctx = (hwc_context_t *)(data);
+#ifdef VSYNC_IOCTL
+    uint64_t timestamp = 0;
+#else
+    char uevent_desc[4096];
+    memset(uevent_desc, 0, sizeof(uevent_desc));
+#endif
+
+    setpriority(PRIO_PROCESS, 0, HAL_PRIORITY_URGENT_DISPLAY);
+
+#ifndef VSYNC_IOCTL
+    uevent_init();
+#endif
+    while(true) {
+#ifdef VSYNC_IOCTL
+        // Only continue if hwc_eventControl is enabled, otherwise
+        // just sit here and wait until it is.  This stops the code
+        // from constantly looking for the VSYNC event with the screen
+        // turned off.
+        pthread_mutex_lock(&vsync_mutex);
+        if(!vsync_enable) pthread_cond_wait(&vsync_condition, &vsync_mutex);
+        pthread_mutex_unlock(&vsync_mutex);
+
+        timestamp = 0;          // Reset the timestamp value
+
+        // S3CFB_WAIT_FOR_VSYNC is a custom IOCTL I added to wait for
+        // the VSYNC interrupt, and then return the timestamp that was
+        // originally being communicated via a uevent.  The uevent was
+        // spamming the UEventObserver and events/0 process with more
+        // information than this device could really deal with every 18ms
+        int res = ioctl(ctx->global_lcd_win.fd, S3CFB_WAIT_FOR_VSYNC, &timestamp);
+        if(res > 0) {
+            if(!ctx->procs || !ctx->procs->vsync) continue;
+            ctx->procs->vsync(ctx->procs, 0, timestamp);
+        }
+#else
+        int len = uevent_next_event(uevent_desc, sizeof(uevent_desc) - 2);
+
+        bool vsync = !strcmp(uevent_desc, "change@/devices/platform/s3cfb");
+        if(vsync)
+            handle_vsync_uevent(ctx, uevent_desc, len);
+#endif
+    }
+
+    return NULL;
+}
+
 static int hwc_device_close(struct hw_device_t *dev)
 {
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
@@ -432,26 +573,38 @@ static int hwc_device_close(struct hw_device_t *dev)
 
     if (ctx) {
         if (destroyFimc(&ctx->fimc) < 0) {
-            LOGE("%s::destroyFimc fail", __func__);
+            ALOGE("%s::destroyFimc fail", __func__);
+            ret = -1;
+        }
+
+        if (window_close(&ctx->global_lcd_win) < 0) {
+            ALOGE("%s::window_close() fail", __func__);
             ret = -1;
         }
 
         for (i = 0; i < NUM_OF_WIN; i++) {
             if (window_close(&ctx->win[i]) < 0) {
-                LOGE("%s::window_close() fail", __func__);
+                ALOGE("%s::window_close() fail", __func__);
                 ret = -1;
             }
         }
+
+        // TODO: stop vsync_thread
 
         free(ctx);
     }
     return ret;
 }
 
+static const struct hwc_methods hwc_methods = {
+    eventControl: hwc_eventControl
+};
+
 static int hwc_device_open(const struct hw_module_t* module, const char* name,
         struct hw_device_t** device)
 {
     int status = 0;
+    int err;
     struct hwc_win_info_t *win;
 
     if(hw_get_module(GRALLOC_HARDWARE_MODULE_ID,
@@ -472,32 +625,42 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
     /* initialize the procs */
     dev->device.common.tag = HARDWARE_DEVICE_TAG;
-    dev->device.common.version = 0;
+    dev->device.common.version = HWC_DEVICE_API_VERSION_0_3;
     dev->device.common.module = const_cast<hw_module_t*>(module);
     dev->device.common.close = hwc_device_close;
 
     dev->device.prepare = hwc_prepare;
     dev->device.set = hwc_set;
+    dev->device.registerProcs = hwc_registerProcs;
+    dev->device.query = hwc_query;
+    dev->device.methods = &hwc_methods;
 
     *device = &dev->device.common;
 
     /* initializing */
     memset(&(dev->fimc), 0, sizeof(s5p_fimc_t));
-	dev->fimc.dev_fd = -1;
+    dev->fimc.dev_fd = -1;
 
     /* open WIN0 & WIN1 here */
     for (int i = 0; i < NUM_OF_WIN; i++) {
         if (window_open(&(dev->win[i]), i) < 0) {
-             LOGE("%s:: Failed to open window %d device ", __func__, i);
+             ALOGE("%s:: Failed to open window %d device ", __func__, i);
              status = -EINVAL;
              goto err;
         }
     }
 
+    /* open window 2, used to query global LCD info */
+    if (window_open(&dev->global_lcd_win, 2) < 0) {
+        ALOGE("%s:: Failed to open window 2 device ", __func__);
+        status = -EINVAL;
+        goto err;
+    }
+
     /* get default window config */
-    if (window_get_global_lcd_info(&dev->lcd_info) < 0) {
-        LOGE("%s::window_get_global_lcd_info is failed : %s",
-				__func__, strerror(errno));
+    if (window_get_global_lcd_info(dev) < 0) {
+        ALOGE("%s::window_get_global_lcd_info is failed : %s",
+                __func__, strerror(errno));
         status = -EINVAL;
         goto err;
     }
@@ -516,15 +679,15 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
         win->rect_info.h = win->var_info.yres;
 
         if (window_set_pos(win) < 0) {
-            LOGE("%s::window_set_pos is failed : %s",
-					__func__, strerror(errno));
+            ALOGE("%s::window_set_pos is failed : %s",
+                    __func__, strerror(errno));
             status = -EINVAL;
             goto err;
         }
 
         if (window_get_info(win) < 0) {
-            LOGE("%s::window_get_info is failed : %s",
-					__func__, strerror(errno));
+            ALOGE("%s::window_get_info is failed : %s",
+                    __func__, strerror(errno));
             status = -EINVAL;
             goto err;
         }
@@ -532,35 +695,45 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
         win->size = win->fix_info.line_length * win->var_info.yres;
 
         if (!win->fix_info.smem_start){
-            LOGE("%s:: win-%d failed to get the reserved memory", __func__, i);
+            ALOGE("%s:: win-%d failed to get the reserved memory", __func__, i);
             status = -EINVAL;
             goto err;
         }
 
         for (int j = 0; j < NUM_OF_WIN_BUF; j++) {
             win->addr[j] = win->fix_info.smem_start + (win->size * j);
-            LOGI("%s::win-%d add[%d] %x ", __func__, i, j, win->addr[j]);
+            ALOGI("%s::win-%d add[%d] %x ", __func__, i, j, win->addr[j]);
         }
     }
 
     /* open pp */
     if (createFimc(&dev->fimc) < 0) {
-        LOGE("%s::creatFimc() fail", __func__);
+        ALOGE("%s::creatFimc() fail", __func__);
         status = -EINVAL;
         goto err;
     }
 
-    LOGD("%s:: success\n", __func__);
+    err = pthread_create(&dev->vsync_thread, NULL, hwc_vsync_thread, dev);
+    if (err) {
+        ALOGE("%s::pthread_create() failed : %s", __func__, strerror(err));
+        status = -err;
+        goto err;
+    }
+
+    ALOGD("%s:: success\n", __func__);
 
     return 0;
 
 err:
     if (destroyFimc(&dev->fimc) < 0)
-        LOGE("%s::destroyFimc() fail", __func__);
+        ALOGE("%s::destroyFimc() fail", __func__);
+
+    if (window_close(&dev->global_lcd_win) < 0)
+        ALOGE("%s::window_close() fail", __func__);
 
     for (int i = 0; i < NUM_OF_WIN; i++) {
         if (window_close(&dev->win[i]) < 0)
-            LOGE("%s::window_close() fail", __func__);
+            ALOGE("%s::window_close() fail", __func__);
     }
 
     return status;

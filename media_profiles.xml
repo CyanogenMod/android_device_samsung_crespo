@@ -56,7 +56,7 @@
 <!ATTLIST VideoEncoderCap minFrameRate CDATA #REQUIRED>
 <!ATTLIST VideoEncoderCap maxFrameRate CDATA #REQUIRED>
 <!ELEMENT AudioEncoderCap EMPTY>
-<!ATTLIST AudioEncoderCap name (amrnb|amrwb|aac|wma) #REQUIRED>
+<!ATTLIST AudioEncoderCap name (amrnb|amrwb|aac|heaac|aaceld|wma) #REQUIRED>
 <!ATTLIST AudioEncoderCap enabled (true|false) #REQUIRED>
 <!ATTLIST AudioEncoderCap minBitRate CDATA #REQUIRED>
 <!ATTLIST AudioEncoderCap maxBitRate CDATA #REQUIRED>
@@ -97,7 +97,7 @@
                    frameRate="30" />
 
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -125,7 +125,7 @@
 
             <!-- Audio settings are not used for timealpse video recording -->
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -160,7 +160,7 @@
                    frameRate="15" />
 
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -188,7 +188,7 @@
 
             <!-- Audio settings are not used for timealpse video recording -->
             <Audio codec="aac"
-                   bitRate="96000"
+                   bitRate="24000"
                    sampleRate="16000"
                    channels="1" />
         </EncoderProfile>
@@ -241,8 +241,18 @@
         minFrameRate="15" maxFrameRate="30" />
 
     <AudioEncoderCap name="aac" enabled="true"
-        minBitRate="8192" maxBitRate="96000"
-        minSampleRate="8000" maxSampleRate="16000"
+        minBitRate="758" maxBitRate="288000"
+        minSampleRate="8000" maxSampleRate="48000"
+        minChannels="1" maxChannels="1" />
+
+    <AudioEncoderCap name="heaac" enabled="true"
+        minBitRate="8000" maxBitRate="64000"
+        minSampleRate="16000" maxSampleRate="48000"
+        minChannels="1" maxChannels="1" />
+
+    <AudioEncoderCap name="aaceld" enabled="true"
+        minBitRate="16000" maxBitRate="192000"
+        minSampleRate="16000" maxSampleRate="48000"
         minChannels="1" maxChannels="1" />
 
     <AudioEncoderCap name="amrwb" enabled="true"
@@ -251,7 +261,7 @@
         minChannels="1" maxChannels="1" />
 
     <AudioEncoderCap name="amrnb" enabled="true"
-        minBitRate="5525" maxBitRate="12200"
+        minBitRate="4750" maxBitRate="12200"
         minSampleRate="8000" maxSampleRate="8000"
         minChannels="1" maxChannels="1" />
 

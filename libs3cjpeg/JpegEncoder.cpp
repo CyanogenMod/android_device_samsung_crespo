@@ -40,7 +40,7 @@ JpegEncoder::JpegEncoder() : available(false)
 
     mDevFd = open(JPG_DRIVER_NAME, O_RDWR);
     if (mDevFd < 0) {
-        LOGE("Failed to open the device");
+        ALOGE("Failed to open the device");
         return;
     }
 
@@ -52,20 +52,20 @@ JpegEncoder::JpegEncoder() : available(false)
                                       0);
 
     if (mArgs.mmapped_addr == MAP_FAILED) {
-        LOGE("Failed to mmap");
+        ALOGE("Failed to mmap");
         return;
     }
 
     mArgs.enc_param = new jpg_enc_proc_param;
     if (mArgs.enc_param == NULL) {
-        LOGE("Failed to allocate the memory for enc_param");
+        ALOGE("Failed to allocate the memory for enc_param");
         return;
     }
     memset(mArgs.enc_param, 0, sizeof(jpg_enc_proc_param));
 
     mArgs.thumb_enc_param = new jpg_enc_proc_param;
     if (mArgs.thumb_enc_param == NULL) {
-        LOGE("Failed to allocate the memory for thumb_enc_param");
+        ALOGE("Failed to allocate the memory for thumb_enc_param");
     delete mArgs.enc_param;
         return;
     }
@@ -154,12 +154,12 @@ jpg_return_status JpegEncoder::setConfig(jpeg_conf type, int32_t value)
         break;
 
     default:
-        LOGE("Invalid Config type");
+        ALOGE("Invalid Config type");
         ret = ERR_UNKNOWN;
     }
 
     if (ret == JPG_FAIL)
-        LOGE("Invalid value(%d) for %d type", value, type);
+        ALOGE("Invalid value(%d) for %d type", value, type);
 
     return ret;
 }
@@ -170,7 +170,7 @@ void* JpegEncoder::getInBuf(uint64_t size)
         return NULL;
 
     if (size > JPG_FRAME_BUF_SIZE) {
-        LOGE("The buffer size requested is too large");
+        ALOGE("The buffer size requested is too large");
         return NULL;
     }
     mArgs.in_buf = (char *)ioctl(mDevFd, IOCTL_JPG_GET_FRMBUF, mArgs.mmapped_addr);
@@ -183,7 +183,7 @@ void* JpegEncoder::getOutBuf(uint64_t *size)
         return NULL;
 
     if (mArgs.enc_param->file_size <= 0) {
-        LOGE("The buffer requested doesn't have data");
+        ALOGE("The buffer requested doesn't have data");
         return NULL;
     }
     mArgs.out_buf = (char *)ioctl(mDevFd, IOCTL_JPG_GET_STRBUF, mArgs.mmapped_addr);
@@ -197,7 +197,7 @@ void* JpegEncoder::getThumbInBuf(uint64_t size)
         return NULL;
 
     if (size > JPG_FRAME_THUMB_BUF_SIZE) {
-        LOGE("The buffer size requested is too large");
+        ALOGE("The buffer size requested is too large");
         return NULL;
     }
     mArgs.in_thumb_buf = (char *)ioctl(mDevFd, IOCTL_JPG_GET_THUMB_FRMBUF, mArgs.mmapped_addr);
@@ -210,7 +210,7 @@ void* JpegEncoder::getThumbOutBuf(uint64_t *size)
         return NULL;
 
     if (mArgs.thumb_enc_param->file_size <= 0) {
-        LOGE("The buffer requested doesn't have data");
+        ALOGE("The buffer requested doesn't have data");
         return NULL;
     }
     mArgs.out_thumb_buf = (char *)ioctl(mDevFd, IOCTL_JPG_GET_THUMB_STRBUF, mArgs.mmapped_addr);
@@ -223,7 +223,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
     if (!available)
         return JPG_FAIL;
 
-    LOGD("encode E");
+    ALOGD("encode E");
 
     jpg_return_status ret = JPG_FAIL;
     unsigned char *exifOut = NULL;
@@ -236,7 +236,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
     param->enc_type = JPG_MAIN;
     ret = (jpg_return_status)ioctl(mDevFd, IOCTL_JPG_ENCODE, &mArgs);
     if (ret != JPG_SUCCESS) {
-        LOGE("Failed to encode main image");
+        ALOGE("Failed to encode main image");
         return ret;
     }
 
@@ -249,7 +249,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
         if (exifInfo->enableThumb) {
             ret = encodeThumbImg(&thumbLen);
             if (ret != JPG_SUCCESS) {
-                LOGE("Failed to encode for thumbnail image");
+                ALOGE("Failed to encode for thumbnail image");
                 bufSize = EXIF_FILE_SIZE;
                 exifInfo->enableThumb = false;
             } else {
@@ -264,14 +264,14 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
 
         exifOut = new unsigned char[bufSize];
         if (exifOut == NULL) {
-            LOGE("Failed to allocate for exifOut");
+            ALOGE("Failed to allocate for exifOut");
             return ret;
         }
         memset(exifOut, 0, bufSize);
 
         ret = makeExif (exifOut, exifInfo, &exifLen);
         if (ret != JPG_SUCCESS) {
-            LOGE("Failed to make EXIF");
+            ALOGE("Failed to make EXIF");
             delete[] exifOut;
             return ret;
         }
@@ -295,7 +295,7 @@ jpg_return_status JpegEncoder::encode(unsigned int *size, exif_attribute_t *exif
     fclose(fout);
 #endif
 
-    LOGD("encode X");
+    ALOGD("encode X");
 
     return ret;
 }
@@ -305,7 +305,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     if (!available)
         return JPG_FAIL;
 
-    LOGD("encodeThumbImg E");
+    ALOGD("encodeThumbImg E");
 
     jpg_return_status ret = JPG_FAIL;
     jpg_enc_proc_param *param = mArgs.thumb_enc_param;
@@ -313,7 +313,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     if (useMain) {
         mArgs.in_thumb_buf = (char *)getThumbInBuf(param->width*param->height*2);
         if (mArgs.in_thumb_buf == NULL) {
-            LOGE("Failed to get the buffer for thumbnail");
+            ALOGE("Failed to get the buffer for thumbnail");
             return JPG_FAIL;
         }
 
@@ -334,7 +334,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     mArgs.enc_param->enc_type = JPG_THUMBNAIL;
     ret = (jpg_return_status)ioctl(mDevFd, IOCTL_JPG_ENCODE, &mArgs);
     if (ret != JPG_SUCCESS) {
-        LOGE("Failed to encode for thumbnail");
+        ALOGE("Failed to encode for thumbnail");
         return JPG_FAIL;
     }
 
@@ -350,7 +350,7 @@ jpg_return_status JpegEncoder::encodeThumbImg(unsigned int *size, bool useMain)
     fclose(fout);
 #endif
 
-    LOGD("encodeThumbImg X");
+    ALOGD("encodeThumbImg X");
 
     return JPG_SUCCESS;
 }
@@ -363,7 +363,7 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
     if (!available)
         return JPG_FAIL;
 
-    LOGD("makeExif E");
+    ALOGD("makeExif E");
 
     unsigned char *pCur, *pApp1Start, *pIfdStart, *pGpsIfdPtr, *pNextIfdOffset;
     unsigned int tmp, LongerTagOffest = 0;
@@ -595,7 +595,7 @@ jpg_return_status JpegEncoder::makeExif (unsigned char *exifOut,
     unsigned char size_mm[2] = {(tmp >> 8) & 0xFF, tmp & 0xFF};
     memcpy(pApp1Start, size_mm, 2);
 
-    LOGD("makeExif X");
+    ALOGD("makeExif X");
 
     return JPG_SUCCESS;
 }
@@ -625,20 +625,20 @@ jpg_return_status JpegEncoder::checkMcu(sample_mode_t sampleMode,
         break;
 
     default:
-        LOGE("Invaild sample mode");
+        ALOGE("Invaild sample mode");
         return JPG_FAIL;
     }
 
     if (expectedWidth == width && expectedHeight == height)
         return JPG_SUCCESS;
 
-    LOGW("The image is not matched for MCU");
+    ALOGW("The image is not matched for MCU");
 
     uint32_t size = width*height * 2;
     char *srcBuf, *dstBuf;
 
     if ((srcBuf = new char[size]) == NULL) {
-        LOGE("Failed to allocate for srcBuf");
+        ALOGE("Failed to allocate for srcBuf");
         return JPG_FAIL;
     }
 
@@ -662,7 +662,7 @@ bool JpegEncoder::pad(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
         return false;
 
     if (srcBuf == NULL || dstBuf == NULL) {
-        LOGE("srcBuf or dstBuf is NULL");
+        ALOGE("srcBuf or dstBuf is NULL");
         return false;
     }
 
@@ -671,7 +671,7 @@ bool JpegEncoder::pad(char *srcBuf, uint32_t srcWidth, uint32_t srcHight,
 
     if ((int)(dstWidth - srcWidth) < 0 ||
             (int)(dstHight - srcHight) < 0) {
-        LOGE("dstSize is smaller than srcSize");
+        ALOGE("dstSize is smaller than srcSize");
         return false;
     }
     memset(dstBuf, 0, dstWidth*dstHight * 2);
@@ -693,7 +693,7 @@ bool JpegEncoder::scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_t srcH
     int32_t x, y, src_y_start_pos, dst_pos, src_pos;
 
     if (dstWidth % 2 != 0 || dstHight % 2 != 0){
-        LOGE("scale_down_yuv422: invalid width, height for scaling");
+        ALOGE("scale_down_yuv422: invalid width, height for scaling");
         return false;
     }
 

@@ -1,0 +1,28 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string-array name="backlight_timeout_entries">
+        <item>2 δευτερόλεπτα</item>
+        <item>Προεπιλογή (5 δευτερόλεπτα)</item>
+        <item>10 δευτερόλεπτα</item>
+        <item>15 δευτερόλεπτα</item>
+        <item>20 δευτερόλεπτα</item>
+        <item>30 δευτερόλεπτα</item>
+        <item>Ποτέ</item>
+    </string-array>
+
+    <string-array name="blink_timeout_entries">
+        <item>1 λεπτό</item>
+        <item>2 λεπτά</item>
+        <item>Προεπιλογή (5 λεπτά)</item>
+        <item>10 λεπτά</item>
+        <item>15 λεπτά</item>
+        <item>30 λεπτά</item>
+        <item>Ποτέ</item>
+    </string-array>
+
+    <string-array name="hspa_entries">
+        <item>Μόνο UMTS</item>
+        <item>Μόνο HSDPA</item>
+        <item>HSDPA + HSUPA</item>
+    </string-array>
+
+</resources>

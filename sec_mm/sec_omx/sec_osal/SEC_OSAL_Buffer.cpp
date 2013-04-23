@@ -47,13 +47,12 @@ extern "C" {
 }
 #endif
 
-#include <ui/android_native_buffer.h>
 #include <ui/GraphicBuffer.h>
 #include <ui/GraphicBufferMapper.h>
 #include <ui/Rect.h>
-#include <media/stagefright/HardwareAPI.h>
+#include <HardwareAPI.h>
 #include <hardware/hardware.h>
-#include <media/stagefright/MetadataBufferType.h>
+#include <MetadataBufferType.h>
 #include "hal_public.h"
 
 #define HAL_PIXEL_FORMAT_C110_NV12          0x100

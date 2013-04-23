@@ -8,8 +8,6 @@ on boot
     setprop ro.radio.noril yes
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
-    setprop ro.crypto.keyfile.userdata /efs/userdata_footer
-
 # fake some battery state
     setprop status.battery.state Slow
     setprop status.battery.level 5
@@ -37,12 +35,13 @@ on fs
     mount yaffs2 mtd@efs /efs noatime nosuid nodev
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/system /system wait ro
-    mount ext4 /dev/block/platform/s3c-sdhci.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
+    mount_all /fstab.herring
 
-    export EXTERNAL_STORAGE /mnt/sdcard
-    mkdir /mnt/sdcard 0000 system system
-    symlink /mnt/sdcard /sdcard
+    export EXTERNAL_STORAGE /storage/sdcard0
+    mkdir /storage 0050 system sdcard_r
+    mkdir /storage/sdcard0 0000 system system
+    symlink /storage/sdcard0 /sdcard
+    symlink /storage/sdcard0 /mnt/sdcard
 
 # permissions for bluetooth.
     chown bluetooth bluetooth /efs/bluetooth
@@ -64,6 +63,11 @@ on fs
 
 # Permissions for System Server and daemons.
     chown system system /sys/class/backlight/s5p_bl/brightness
+
+# Configure and enable KSM
+    write /sys/kernel/mm/ksm/pages_to_scan 100
+    write /sys/kernel/mm/ksm/sleep_millisecs 500
+    write /sys/kernel/mm/ksm/run 1
 
 on post-fs-data
 # wi-fi
@@ -96,7 +100,7 @@ service pvrsrvinit /system/vendor/bin/pvrsrvinit
     group root
     oneshot
 
-service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0
+service wpa_supplicant /system/bin/wpa_supplicant -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -e/data/misc/wifi/entropy.bin
     class main
     socket wpa_wlan0 dgram 0660 wifi wifi
     disabled
@@ -104,13 +108,13 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0
 
 # DHCPCD
 # wi-fi
-service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+service dhcpcd_wlan0 /system/bin/dhcpcd -aABDKL
     class main
     disabled
     oneshot
 
 # wimax
-service dhcpcd_uwbr0 /system/bin/dhcpcd -ABKL
+service dhcpcd_uwbr0 /system/bin/dhcpcd -ABDKL
     class main
     disabled
     oneshot
@@ -149,11 +153,11 @@ service hciattach /system/bin/brcm_patchram_plus --enable_hci --enable_lpm \
     oneshot
 
 # bugreport is triggered by holding down volume down, volume up and power
-service bugreport /system/bin/bugmailer.sh -v
-    class main
-    disabled
-    oneshot
-    keycodes 114 115 116
+#service bugreport /system/bin/bugmailer.sh -v
+#    class main
+#    disabled
+#    oneshot
+#    keycodes 114 115 116
 
 service wimax_route /system/bin/route add default dev uwbr0
     class main

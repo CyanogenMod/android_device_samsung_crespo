@@ -44,7 +44,7 @@ int window_open(struct hwc_win_info_t *win, int id)
     case 2:
         break;
     default:
-        LOGE("%s::id(%d) is weird", __func__, id);
+        ALOGE("%s::id(%d) is weird", __func__, id);
         goto error;
     }
 
@@ -52,7 +52,7 @@ int window_open(struct hwc_win_info_t *win, int id)
 
     win->fd = open(name, O_RDWR);
     if (win->fd < 0) {
-		LOGE("%s::Failed to open window device (%s) : %s",
+		ALOGE("%s::Failed to open window device (%s) : %s",
 				__func__, strerror(errno), device_template);
         goto error;
     }
@@ -93,7 +93,7 @@ int window_set_pos(struct hwc_win_info_t *win)
     win->var_info.activate |= FB_ACTIVATE_FORCE;
 
     if (ioctl(win->fd, FBIOPUT_VSCREENINFO, &(win->var_info)) < 0) {
-        LOGE("%s::FBIOPUT_VSCREENINFO(%d, %d) fail",
+        ALOGE("%s::FBIOPUT_VSCREENINFO(%d, %d) fail",
           		__func__, win->rect_info.w, win->rect_info.h);
         return -1;
     }
@@ -102,7 +102,7 @@ int window_set_pos(struct hwc_win_info_t *win)
     window.y = win->rect_info.y;
 
     if (ioctl(win->fd, SECFB_WIN_POSITION, &window) < 0) {
-        LOGE("%s::S3CFB_WIN_POSITION(%d, %d) fail",
+        ALOGE("%s::S3CFB_WIN_POSITION(%d, %d) fail",
             	__func__, window.x, window.y);
       return -1;
     }
@@ -113,7 +113,7 @@ int window_set_pos(struct hwc_win_info_t *win)
 int window_get_info(struct hwc_win_info_t *win)
 {
     if (ioctl(win->fd, FBIOGET_FSCREENINFO, &win->fix_info) < 0) {
-        LOGE("FBIOGET_FSCREENINFO failed : %s", strerror(errno));
+        ALOGE("FBIOGET_FSCREENINFO failed : %s", strerror(errno));
         goto error;
     }
 
@@ -132,7 +132,7 @@ int window_pan_display(struct hwc_win_info_t *win)
     lcd_info->yoffset = lcd_info->yres * win->buf_index;
 
     if (ioctl(win->fd, FBIOPAN_DISPLAY, lcd_info) < 0) {
-        LOGE("%s::FBIOPAN_DISPLAY(%d / %d / %d) fail(%s)",
+        ALOGE("%s::FBIOPAN_DISPLAY(%d / %d / %d) fail(%s)",
             	__func__, lcd_info->yres, win->buf_index, lcd_info->yres_virtual,
             strerror(errno));
         return -1;
@@ -144,7 +144,7 @@ int window_show(struct hwc_win_info_t *win)
 {
     if(win->power_state == 0) {
         if (ioctl(win->fd, FBIOBLANK, FB_BLANK_UNBLANK) < 0) {
-            LOGE("%s: FBIOBLANK failed : (%d:%s)", __func__, win->fd,
+            ALOGE("%s: FBIOBLANK failed : (%d:%s)", __func__, win->fd,
                     strerror(errno));
             return -1;
         }
@@ -157,7 +157,7 @@ int window_hide(struct hwc_win_info_t *win)
 {
     if (win->power_state == 1) {
         if (ioctl(win->fd, FBIOBLANK, FB_BLANK_POWERDOWN) < 0) {
-            LOGE("%s::FBIOBLANK failed : (%d:%s)",
+            ALOGE("%s::FBIOBLANK failed : (%d:%s)",
              		__func__, win->fd, strerror(errno));
             return -1;
         }
@@ -166,40 +166,30 @@ int window_hide(struct hwc_win_info_t *win)
     return 0;
 }
 
-int window_get_global_lcd_info(struct fb_var_screeninfo *lcd_info)
+int window_get_global_lcd_info(struct hwc_context_t *ctx)
 {
     struct hwc_win_info_t win;
     int ret = 0;
 
-    if (window_open(&win, 2)  < 0) {
-        LOGE("%s:: Failed to open window 2 device ", __func__);
+    if (ioctl(ctx->global_lcd_win.fd, FBIOGET_VSCREENINFO, &ctx->lcd_info) < 0) {
+        ALOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
         return -1;
     }
 
-    if (ioctl(win.fd, FBIOGET_VSCREENINFO, lcd_info) < 0) {
-        LOGE("FBIOGET_VSCREENINFO failed : %s", strerror(errno));
-        ret = -1;
-        goto fun_err;
+    if (ctx->lcd_info.xres == 0) {
+        ctx->lcd_info.xres = DEFAULT_LCD_WIDTH;
+        ctx->lcd_info.xres_virtual = DEFAULT_LCD_WIDTH;
     }
 
-    if (lcd_info->xres == 0) {
-        lcd_info->xres = DEFAULT_LCD_WIDTH;
-        lcd_info->xres_virtual = DEFAULT_LCD_WIDTH;
+    if (ctx->lcd_info.yres == 0) {
+        ctx->lcd_info.yres = DEFAULT_LCD_HEIGHT;
+        ctx->lcd_info.yres_virtual = DEFAULT_LCD_HEIGHT * NUM_OF_WIN_BUF;
     }
 
-    if (lcd_info->yres == 0) {
-        lcd_info->yres = DEFAULT_LCD_HEIGHT;
-        lcd_info->yres_virtual = DEFAULT_LCD_HEIGHT * NUM_OF_WIN_BUF;
-    }
+    if (ctx->lcd_info.bits_per_pixel == 0)
+        ctx->lcd_info.bits_per_pixel = DEFAULT_LCD_BPP;
 
-    if (lcd_info->bits_per_pixel == 0)
-        lcd_info->bits_per_pixel = DEFAULT_LCD_BPP;
-
-fun_err:
-    if (window_close(&win) < 0)
-        LOGE("%s::window2 close fail", __func__);   
-
-    return ret;
+    return 0;
 }
 
 int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
@@ -219,7 +209,7 @@ int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
     fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 
     if (ioctl (fd, VIDIOC_S_FMT, &fmt) < 0) {
-        LOGE("VIDIOC_S_FMT failed : errno=%d (%s) : fd=%d", errno,
+        ALOGE("VIDIOC_S_FMT failed : errno=%d (%s) : fd=%d", errno,
                 strerror(errno), fd);
         return -1;
     }
@@ -238,7 +228,7 @@ int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
     crop.c.width  = src->width;
     crop.c.height = src->height;
     if (ioctl(fd, VIDIOC_S_CROP, &crop) < 0) {
-        LOGE("Error in video VIDIOC_S_CROP (%d, %d, %d, %d)",
+        ALOGE("Error in video VIDIOC_S_CROP (%d, %d, %d, %d)",
                 crop.c.left, crop.c.top, crop.c.width, crop.c.height);
         return -1;
     }
@@ -251,7 +241,7 @@ int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src)
     req.memory      = V4L2_MEMORY_USERPTR;
 
     if (ioctl (fd, VIDIOC_REQBUFS, &req) < 0) {
-        LOGE("Error in VIDIOC_REQBUFS");
+        ALOGE("Error in VIDIOC_REQBUFS");
         return -1;
     }
 
@@ -275,21 +265,21 @@ int fimc_v4l2_set_dst(int fd,
     vc.id = V4L2_CID_HFLIP;
     vc.value = flag_h_flip;
     if (ioctl(fd, VIDIOC_S_CTRL, &vc) < 0) {
-        LOGE("Error in video VIDIOC_S_CTRL - flag_h_flip (%d)", flag_h_flip);
+        ALOGE("Error in video VIDIOC_S_CTRL - flag_h_flip (%d)", flag_h_flip);
         return -1;
     }
 
     vc.id = V4L2_CID_VFLIP;
     vc.value = flag_v_flip;
     if (ioctl(fd, VIDIOC_S_CTRL, &vc) < 0) {
-        LOGE("Error in video VIDIOC_S_CTRL - flag_v_flip (%d)", flag_v_flip);
+        ALOGE("Error in video VIDIOC_S_CTRL - flag_v_flip (%d)", flag_v_flip);
         return -1;
     }
 
     vc.id = V4L2_CID_ROTATION;
     vc.value = rotation;
     if (ioctl(fd, VIDIOC_S_CTRL, &vc) < 0) {
-        LOGE("Error in video VIDIOC_S_CTRL - rotation (%d)", rotation);
+        ALOGE("Error in video VIDIOC_S_CTRL - rotation (%d)", rotation);
         return -1;
     }
 
@@ -297,7 +287,7 @@ int fimc_v4l2_set_dst(int fd,
      * set size, format & address for destination image (DMA-OUTPUT)
      */
     if (ioctl (fd, VIDIOC_G_FBUF, &fbuf) < 0) {
-        LOGE("Error in video VIDIOC_G_FBUF");
+        ALOGE("Error in video VIDIOC_G_FBUF");
         return -1;
     }
 
@@ -306,7 +296,7 @@ int fimc_v4l2_set_dst(int fd,
     fbuf.fmt.height      = dst->full_height;
     fbuf.fmt.pixelformat = dst->color_space;
     if (ioctl (fd, VIDIOC_S_FBUF, &fbuf) < 0) {
-        LOGE("Error in video VIDIOC_S_FBUF 0x%x %d %d %d",
+        ALOGE("Error in video VIDIOC_S_FBUF 0x%x %d %d %d",
                 (void *)addr, dst->full_width, dst->full_height,
                 dst->color_space);
         return -1;
@@ -321,7 +311,7 @@ int fimc_v4l2_set_dst(int fd,
     sFormat.fmt.win.w.width  = dst->width;
     sFormat.fmt.win.w.height = dst->height;
     if (ioctl(fd, VIDIOC_S_FMT, &sFormat) < 0) {
-        LOGE("Error in video VIDIOC_S_FMT %d %d %d %d",
+        ALOGE("Error in video VIDIOC_S_FMT %d %d %d %d",
                 dst->start_x, dst->start_y, dst->width, dst->height);
         return -1;
     }
@@ -332,7 +322,7 @@ int fimc_v4l2_set_dst(int fd,
 int fimc_v4l2_stream_on(int fd, enum v4l2_buf_type type)
 {
     if (ioctl (fd, VIDIOC_STREAMON, &type) < 0) {
-        LOGE("Error in VIDIOC_STREAMON");
+        ALOGE("Error in VIDIOC_STREAMON");
         return -1;
     }
 
@@ -350,7 +340,7 @@ int fimc_v4l2_queue(int fd, struct fimc_buf *fimc_buf)
     buf.index       = 0;
 
     if (ioctl (fd, VIDIOC_QBUF, &buf) < 0) {
-        LOGE("Error in VIDIOC_QBUF");
+        ALOGE("Error in VIDIOC_QBUF");
         return -1;
     }
 
@@ -365,7 +355,7 @@ int fimc_v4l2_dequeue(int fd)
     buf.memory      = V4L2_MEMORY_USERPTR;
 
     if (ioctl (fd, VIDIOC_DQBUF, &buf) < 0) {
-        LOGE("Error in VIDIOC_DQBUF");
+        ALOGE("Error in VIDIOC_DQBUF");
         return -1;
     }
 
@@ -378,7 +368,7 @@ int fimc_v4l2_stream_off(int fd)
     type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 
     if (ioctl (fd, VIDIOC_STREAMOFF, &type) < 0) {
-        LOGE("Error in VIDIOC_STREAMOFF");
+        ALOGE("Error in VIDIOC_STREAMOFF");
         return -1;
     }
 
@@ -394,7 +384,7 @@ int fimc_v4l2_clr_buf(int fd)
     req.memory  = V4L2_MEMORY_USERPTR;
 
     if (ioctl (fd, VIDIOC_REQBUFS, &req) < 0) {
-        LOGE("Error in VIDIOC_REQBUFS");
+        ALOGE("Error in VIDIOC_REQBUFS");
     }
 
     return 0;
@@ -405,30 +395,30 @@ int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf)
     int ret =0;
 
     if (fimc_v4l2_stream_on(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT) < 0) {
-        LOGE("Fail : v4l2_stream_on()");
+        ALOGE("Fail : v4l2_stream_on()");
         return -1;
     }
 
     if (fimc_v4l2_queue(fd, fimc_buf) < 0) {
-        LOGE("Fail : v4l2_queue()");
+        ALOGE("Fail : v4l2_queue()");
         ret = -1;
         goto stream_off;
     }
 
     if (fimc_v4l2_dequeue(fd) < 0) {
-        LOGE("Fail : v4l2_dequeue()");
+        ALOGE("Fail : v4l2_dequeue()");
         ret = -1;
         goto stream_off;
     }
 
 stream_off:
     if (fimc_v4l2_stream_off(fd) < 0) {
-        LOGE("Fail : v4l2_stream_off()");
+        ALOGE("Fail : v4l2_stream_off()");
         return -1;
     }
 
     if (fimc_v4l2_clr_buf(fd) < 0) {
-        LOGE("Fail : v4l2_clr_buf()");
+        ALOGE("Fail : v4l2_clr_buf()");
         return -1;
     }
 
@@ -448,12 +438,12 @@ static int get_src_phys_addr(struct hwc_context_t *ctx,
             fimc->params.src.buf_addr_phy_cb    = phyAddr[1];
             break;
         default:
-            LOGE("%s format error (format=0x%x)", __func__,
+            ALOGE("%s format error (format=0x%x)", __func__,
                     src_img->format);
             return -1;
         }
     } else {
-        LOGE("%s mem_type error (mem_type=%d)", __func__, src_img->mem_type);
+        ALOGE("%s mem_type error (mem_type=%d)", __func__, src_img->mem_type);
         return -1;
     }
 
@@ -468,7 +458,7 @@ static int get_dst_phys_addr(struct hwc_context_t *ctx,
     if (HWC_PHYS_MEM_TYPE == dst_img->mem_type && 0 != dst_img->base)
         dst_phys_addr = dst_img->base;
     else {
-        LOGE("%s::get_dst_phys_addr fail ", __func__);
+        ALOGE("%s::get_dst_phys_addr fail ", __func__);
         dst_phys_addr = 0;
     }
     return dst_phys_addr;
@@ -639,7 +629,7 @@ static int runcFimcCore(struct hwc_context_t *ctx,
 
     /* check minimum */
     if (src_rect->w < 16 || src_rect->h < 8) {
-        LOGE("%s src size is not supported by fimc : f_w=%d f_h=%d x=%d y=%d \
+        ALOGE("%s src size is not supported by fimc : f_w=%d f_h=%d x=%d y=%d \
             	w=%d h=%d (ow=%d oh=%d) format=0x%x", __func__,
 				params->src.full_width, params->src.full_height,
 				params->src.start_x, params->src.start_y, params->src.width,
@@ -708,7 +698,7 @@ switch (rotate_value) {
 
     /* check minimum */
     if (dst_rect->w  < 8 || dst_rect->h < 4) {
-        LOGE("%s dst size is not supported by fimc : \
+        ALOGE("%s dst size is not supported by fimc : \
 				f_w=%d f_h=%d x=%d y=%d w=%d h=%d (ow=%d oh=%d) format=0x%x",
 				__func__, params->dst.full_width, params->dst.full_height,
 				params->dst.start_x, params->dst.start_y, params->dst.width,
@@ -724,7 +714,7 @@ switch (rotate_value) {
         ((src_rect->w / dst_rect->w) > MAX_RESIZING_RATIO_LIMIT)) ||
         ((dst_rect->w > src_rect->w) &&
         ((dst_rect->w / src_rect->w) > MAX_RESIZING_RATIO_LIMIT))) {
-        LOGE("%s over scaling limit : src.w=%d dst.w=%d (limit=%d)",
+        ALOGE("%s over scaling limit : src.w=%d dst.w=%d (limit=%d)",
             	__func__, src_rect->w, dst_rect->w, MAX_RESIZING_RATIO_LIMIT);
         return -1;
     }
@@ -789,24 +779,24 @@ int createFimc(s5p_fimc_t *fimc)
         fimc->dev_fd = open(PP_DEVICE_DEV_NAME, O_RDWR);
 
         if (fimc->dev_fd < 0) {
-            LOGE("%s::Post processor open error (%d)", __func__, errno);
+            ALOGE("%s::Post processor open error (%d)", __func__, errno);
             goto err;
         }
     }
 
     /* check capability */
     if (ioctl(fimc->dev_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        LOGE("VIDIOC_QUERYCAP failed");
+        ALOGE("VIDIOC_QUERYCAP failed");
         goto err;
     }
 
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-        LOGE("%d has no streaming support", fimc->dev_fd);
+        ALOGE("%d has no streaming support", fimc->dev_fd);
         goto err;
     }
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_OUTPUT)) {
-        LOGE("%d is no video output", fimc->dev_fd);
+        ALOGE("%d is no video output", fimc->dev_fd);
         goto err;
     }
 
@@ -815,7 +805,7 @@ int createFimc(s5p_fimc_t *fimc)
      */
     fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
     if (ioctl(fimc->dev_fd, VIDIOC_G_FMT, &fmt) < 0) {
-        LOGE("%s::Error in video VIDIOC_G_FMT", __func__);
+        ALOGE("%s::Error in video VIDIOC_G_FMT", __func__);
         goto err;
     }
 
@@ -823,7 +813,7 @@ int createFimc(s5p_fimc_t *fimc)
     vc.value = 0;
 
     if (ioctl(fimc->dev_fd, VIDIOC_G_CTRL, &vc) < 0) {
-        LOGE("%s::Error in video VIDIOC_G_CTRL", __func__);
+        ALOGE("%s::Error in video VIDIOC_G_CTRL", __func__);
         goto err;
     }
     fimc->hw_ver = vc.value;
