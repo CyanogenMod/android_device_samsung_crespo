@@ -35,6 +35,7 @@
 #include <linux/videodev.h>
 
 #include <hardware/gralloc.h>
+#define HWC_REMOVE_DEPRECATED_VERSIONS 1
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
 
@@ -109,7 +110,7 @@ enum {
 };
 
 struct hwc_context_t {
-    hwc_composer_device_t     device;
+    hwc_composer_device_1_t   device;
 
     /* our private state goes below here */
     struct hwc_win_info_t     win[NUM_OF_WIN];

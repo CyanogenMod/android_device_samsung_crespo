@@ -52,7 +52,7 @@ hwc_module_t HAL_MODULE_INFO_SYM = {
     }
 };
 
-static void dump_layer(hwc_layer_t const* l) {
+static void dump_layer(hwc_layer_1_t const* l) {
     ALOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
             l->compositionType, l->flags, l->handle, l->transform, l->blending,
             l->sourceCrop.left,
@@ -65,7 +65,7 @@ static void dump_layer(hwc_layer_t const* l) {
             l->displayFrame.bottom);
 }
 
-static int set_src_dst_info(hwc_layer_t *cur,
+static int set_src_dst_info(hwc_layer_1_t *cur,
                             struct hwc_win_info_t *win,
                             struct sec_img *src_img,
                             struct sec_img *dst_img,
@@ -127,7 +127,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
     return 0;
 }
 
-static int get_hwc_compos_decision(hwc_layer_t* cur)
+static int get_hwc_compos_decision(hwc_layer_1_t* cur)
 {
     if(cur->flags & HWC_SKIP_LAYER || !cur->handle) {
         ALOGV("%s::is_skip_layer %d cur->handle %x",
@@ -166,7 +166,7 @@ static int get_hwc_compos_decision(hwc_layer_t* cur)
 }
 
 static int assign_overlay_window(struct hwc_context_t *ctx,
-                                 hwc_layer_t *cur,
+                                 hwc_layer_1_t *cur,
                                  int win_idx,
                                  int layer_idx)
 {
@@ -214,13 +214,52 @@ static void reset_win_rect_info(hwc_win_info_t *win)
     return;
 }
 
-static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
+/*
+ * We're using "implicit" synchronization, so make sure we aren't passing any
+ * sync object descriptors around.
+ */
+static void check_sync_fds(size_t numDisplays, hwc_display_contents_1_t** displays)
+{
+    //ALOGD("checking sync FDs");
+    unsigned int i, j;
+    for (i = 0; i < numDisplays; i++) {
+        hwc_display_contents_1_t* list = displays[i];
+        if (list->retireFenceFd >= 0) {
+            ALOGW("retireFenceFd[%u] was %d", i, list->retireFenceFd);
+            list->retireFenceFd = -1;
+        }
+
+        for (j = 0; j < list->numHwLayers; j++) {
+            hwc_layer_1_t* layer = &list->hwLayers[j];
+            if (layer->acquireFenceFd >= 0) {
+                ALOGW("acquireFenceFd[%u][%u] was %d, closing", i, j, layer->acquireFenceFd);
+                close(layer->acquireFenceFd);
+                layer->acquireFenceFd = -1;
+            }
+            if (layer->releaseFenceFd >= 0) {
+                ALOGW("releaseFenceFd[%u][%u] was %d", i, j, layer->releaseFenceFd);
+                layer->releaseFenceFd = -1;
+            }
+        }
+    }
+}
+
+static int hwc_prepare(hwc_composer_device_1_t *dev,
+                       size_t numDisplays,
+                       hwc_display_contents_1_t **displays)
 {
 
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
     int overlay_win_cnt = 0;
     int compositionType = 0;
     int ret;
+    hwc_display_contents_1_t *list;
+
+    if (!numDisplays || displays == NULL)
+        return 0;
+
+    // XXX Ignore displays beyond the first
+    list = displays[0];
 
     //if geometry is not changed, there is no need to do any work here
     if( !list || (!(list->flags & HWC_GEOMETRY_CHANGED)))
@@ -236,7 +275,7 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     ALOGV("%s:: hwc_prepare list->numHwLayers %d", __func__, list->numHwLayers);
 
     for (int i = 0; i < list->numHwLayers ; i++) {
-        hwc_layer_t* cur = &list->hwLayers[i];
+        hwc_layer_1_t* cur = &list->hwLayers[i];
 
         if (overlay_win_cnt < NUM_OF_WIN) {
             compositionType = get_hwc_compos_decision(cur);
@@ -278,21 +317,34 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
     return 0;
 }
 
-static int hwc_set(hwc_composer_device_t *dev,
-                   hwc_display_t dpy,
-                   hwc_surface_t sur,
-                   hwc_layer_list_t* list)
+static int hwc_set(hwc_composer_device_1_t *dev,
+                   size_t numDisplays,
+                   hwc_display_contents_1_t **displays)
 {
+    hwc_display_t dpy = NULL;
+    hwc_surface_t sur = NULL;
     struct hwc_context_t *ctx = (struct hwc_context_t *)dev;
     unsigned int phyAddr[MAX_NUM_PLANES];
     int skipped_window_mask = 0;
-    hwc_layer_t* cur;
+    hwc_layer_1_t* cur;
     struct hwc_win_info_t *win;
     int ret;
     struct sec_img src_img;
     struct sec_img dst_img;
     struct sec_rect src_rect;
     struct sec_rect dst_rect;
+
+    if (!numDisplays || displays == NULL) {
+        ALOGD("set: empty display list");
+        return 0;
+    }
+
+    // XXX Ignore displays beyond the first
+    hwc_display_contents_1_t *list = displays[0];
+    if (list != NULL) {
+        dpy = list->dpy;
+        sur = list->sur;
+    }
 
     if (dpy == NULL && sur == NULL && list == NULL) {
         // release our resources, the screen is turning off
@@ -422,17 +474,19 @@ static int hwc_set(hwc_composer_device_t *dev,
         }
     }
 
+    check_sync_fds(numDisplays, displays);
+
     return 0;
 }
 
-static void hwc_registerProcs(struct hwc_composer_device* dev,
+static void hwc_registerProcs(struct hwc_composer_device_1* dev,
         hwc_procs_t const* procs)
 {
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
     ctx->procs = const_cast<hwc_procs_t *>(procs);
 }
 
-static int hwc_query(struct hwc_composer_device* dev,
+static int hwc_query(struct hwc_composer_device_1* dev,
         int what, int* value)
 {
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
@@ -464,8 +518,8 @@ pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t vsync_condition = PTHREAD_COND_INITIALIZER;
 #endif
 
-static int hwc_eventControl(struct hwc_composer_device* dev,
-        int event, int enabled)
+static int hwc_eventControl(struct hwc_composer_device_1* dev,
+        int dpy, int event, int enabled)
 {
     struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
 
@@ -596,9 +650,17 @@ static int hwc_device_close(struct hw_device_t *dev)
     return ret;
 }
 
-static const struct hwc_methods hwc_methods = {
-    eventControl: hwc_eventControl
-};
+static int hwc_blank(struct hwc_composer_device_1 *dev, int dpy, int blank)
+{
+    if (blank) {
+        // release our resources, the screen is turning off
+        // in our case, there is nothing to do.
+        struct hwc_context_t* ctx = (struct hwc_context_t*)dev;
+        ctx->num_of_fb_layer_prev = 0;
+    }
+
+    return 0;
+}
 
 static int hwc_device_open(const struct hw_module_t* module, const char* name,
         struct hw_device_t** device)
@@ -625,7 +687,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
     /* initialize the procs */
     dev->device.common.tag = HARDWARE_DEVICE_TAG;
-    dev->device.common.version = HWC_DEVICE_API_VERSION_0_3;
+    dev->device.common.version = HWC_DEVICE_API_VERSION_1_0;
     dev->device.common.module = const_cast<hw_module_t*>(module);
     dev->device.common.close = hwc_device_close;
 
@@ -633,7 +695,8 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     dev->device.set = hwc_set;
     dev->device.registerProcs = hwc_registerProcs;
     dev->device.query = hwc_query;
-    dev->device.methods = &hwc_methods;
+    dev->device.eventControl = hwc_eventControl;
+    dev->device.blank = hwc_blank;
 
     *device = &dev->device.common;
 
