@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Configurações Nexus S</string>
+    <string name="app_name">Configurações avançadas</string>
     <string name="general_title">Geral</string>
     <string name="display_title">Tela</string>
     <string name="sound_title">Som</string>
