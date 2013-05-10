@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (C) 2012-2013 The CyanogenMod Project
+<!-- Copyright (C) 2013 The CyanogenMod Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -12,9 +12,8 @@
      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
      See the License for the specific language governing permissions and
      limitations under the License.
- -->
-
-<resources>
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string-array name="backlight_timeout_entries">
         <item>2 secondes</item>
         <item>5 secondes (Défaut)</item>
@@ -22,7 +21,7 @@
         <item>15 secondes</item>
         <item>20 secondes</item>
         <item>30 secondes</item>
-        <item>Jamais</item>
+        <item>Désactivé</item>
     </string-array>
     <string-array name="blink_timeout_entries">
         <item>1 minute</item>
@@ -31,7 +30,7 @@
         <item>10 minutes</item>
         <item>15 minutes</item>
         <item>30 minutes</item>
-        <item>Jamais</item>
+        <item>Désactivé</item>
     </string-array>
     <string-array name="hspa_entries">
         <item>UMTS seulement</item>
