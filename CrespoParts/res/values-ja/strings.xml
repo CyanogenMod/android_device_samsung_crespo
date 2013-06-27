@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Nexus S 設定</string>
 
     <string name="category_screen_title">WM8994 設定 (Voodoo)</string>
@@ -30,5 +30,4 @@
     <string name="category_radio_title">ラジオ</string>
     <string name="hspa_title_head">HSPA</string>
     <string name="hspa_summary_head">HSDPA/HSUPA を有効にする</string>
-
 </resources>

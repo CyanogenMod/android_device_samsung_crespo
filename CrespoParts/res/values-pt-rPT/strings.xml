@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Definições Nexus S</string>
 
     <string name="category_screen_title">Definições WM8994 (Voodoo)</string>

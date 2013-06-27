@@ -65,5 +65,4 @@
     <string name="label_idle1">休眠</string>
     <string name="label_idle2">深度休眠 (TOP=ON)</string>
     <string name="label_idle3">深度休眠 (TOP=OFF)</string>
-
 </resources>

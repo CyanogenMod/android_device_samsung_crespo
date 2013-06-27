@@ -13,8 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
-
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Nexus S ayarları</string>
 
     <string name="category_screen_title">WM8994 ayarları (Voodoo)</string>
@@ -25,5 +24,4 @@
     <string name="color_blue_title">Mavi</string>
 
     <string name="category_touchkey_title">Dokunmatik tuşlar</string>
-
 </resources>

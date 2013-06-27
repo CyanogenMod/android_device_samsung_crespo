@@ -13,10 +13,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Nexus S-Einstellungen</string>
 
-    <!-- Page Headers -->
     <string name="general_title">Allgemein</string>
     <string name="display_title">Display</string>
     <string name="sound_title">Ton</string>
@@ -49,7 +48,6 @@
     <string name="preset6_default_title">X-Processing</string>
     <string name="credits_presets">Dank an: ale.landra91 cpaixao provolinoo</string>
 
-
     <string name="category_touchkey_title">Sensortasten</string>
     <string name="touchkey_notification_title_head">Hintergrundbeleuchtung</string>
     <string name="touchkey_notification_summary_head">Die Hintergrundbeleuchtung wird nach erhalten einer Nachricht aktiviert</string>
@@ -69,5 +67,4 @@
     <string name="label_idle1">Normal Idle</string>
     <string name="label_idle2">Deep Idle (TOP=EIN)</string>
     <string name="label_idle3">Deep Idle (TOP=AUS)</string>
-
 </resources>

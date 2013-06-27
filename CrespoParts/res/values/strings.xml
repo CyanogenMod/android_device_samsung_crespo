@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Advanced settings</string>
 
     <!-- Page Headers -->
@@ -69,5 +69,4 @@
     <string name="label_idle1">Idle</string>
     <string name="label_idle2">Deep idle (TOP=ON)</string>
     <string name="label_idle3">Deep idle (TOP=OFF)</string>
-
 </resources>

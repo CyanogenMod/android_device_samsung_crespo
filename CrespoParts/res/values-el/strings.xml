@@ -13,10 +13,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Ρυθμίσεις Nexus S</string>
 
-    <!-- Page Headers -->
     <string name="general_title">Γενικα</string>
     <string name="display_title">Οθονη</string>
     <string name="sound_title">Ηχος</string>
@@ -69,5 +68,4 @@
     <string name="label_idle1">Αδράνεια</string>
     <string name="label_idle2">Βαθιά αδράνεια (Πάνω=Ενεργ.)</string>
     <string name="label_idle3">Βαθιά αδράνεια (Πάνω=Απενεργ.)</string>
-
 </resources>

@@ -13,10 +13,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">넥서스 S 설정</string>
 
-    <!-- Page Headers -->
     <string name="general_title">일반</string>
     <string name="display_title">화면</string>
     <string name="sound_title">소리</string>
