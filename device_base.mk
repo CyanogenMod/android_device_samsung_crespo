@@ -44,7 +44,6 @@ DEVICE_PACKAGE_OVERLAYS += device/samsung/crespo/overlay
 
 # These are the hardware-specific configuration files
 PRODUCT_COPY_FILES := \
-	device/samsung/crespo/vold.fstab:system/etc/vold.fstab \
 	device/samsung/crespo/egl.cfg:system/lib/egl/egl.cfg
 
 # Init files
@@ -174,12 +173,6 @@ PRODUCT_COPY_FILES += \
 # Device app
 PRODUCT_PACKAGES += \
         CrespoParts
-
-# for bugmailer
-PRODUCT_PACKAGES += send_bug
-PRODUCT_COPY_FILES += \
-	system/extras/bugmailer/bugmailer.sh:system/bin/bugmailer.sh \
-	system/extras/bugmailer/send_bug:system/bin/send_bug
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
