@@ -5,7 +5,6 @@ on boot
 
     setprop ro.build.product herring
     setprop ro.product.device herring
-    setprop ro.radio.noril yes
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
 # fake some battery state
