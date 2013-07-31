@@ -24,8 +24,8 @@
     <string name="cpu_deepidle_title_head">Deep idle</string>
     <string name="cpu_deepidle_summary_head">Povolit deep idle</string>
     <string name="category_screen_title">Nastavení WM8994 (Voodoo)</string>
-    <string name="color_tuning_title_head">Ladění barevných násobitelů</string>
-    <string name="color_tuning_summary_head">Kalibrace barevných násobitelů</string>
+    <string name="color_tuning_title_head">Ladění barev</string>
+    <string name="color_tuning_summary_head">Kalibrovat barvy obrazovky</string>
     <string name="gamma_tuning_title_head">Ladění barevného gamutu</string>
     <string name="gamma_tuning_summary_head">Kalibrace korekce barevného gamutu</string>
     <string name="color_hack_presets_title_head">Barevná předvolba</string>
@@ -51,9 +51,9 @@
     <string name="preset6_default_title">Cross proc.</string>
     <string name="credits_presets">Titulky: ale.landra91 cpaixao provolinoo</string>
 
-    <string name="category_touchkey_title">Dotykové klávesy</string>
+    <string name="category_touchkey_title">Dotyková tlačítka</string>
     <string name="touchkey_notification_title_head">Upozornění podsvícením</string>
-    <string name="touchkey_notification_summary_head">Podsvícení dotykových kláves slouží jako upozornění</string>
+    <string name="touchkey_notification_summary_head">Podsvícení dotykových tlačítek slouží jako upozornění</string>
 
     <string name="category_radio_title">Rádio</string>
     <string name="hspa_title_head">HSPA</string>
