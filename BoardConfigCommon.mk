@@ -67,6 +67,8 @@ BOARD_KERNEL_CMDLINE := console=ttyFIQ0 no_console_suspend
 
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
+TARGET_RECOVERY_FSTAB := device/samsung/crespo/fstab.herring
+RECOVERY_FSTAB_VERSION := 2
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 
 # Define kernel config for inline building
