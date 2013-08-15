@@ -114,6 +114,9 @@ BOARD_CUSTOM_VSYNC_IOCTL := true
 
 BOARD_HARDWARE_CLASS := device/samsung/crespo/cmhw/
 
+# Enable dalvik startup with a low memory footprint
+TARGET_ARCH_LOWMEM := true
+
 # SELinux
 BOARD_SEPOLICY_DIRS += \
     device/samsung/crespo/sepolicy
