@@ -24,5 +24,8 @@
 # config.
 TARGET_BOARD_INFO_FILE ?= device/samsung/crespo/board-info.txt
 
+# Enable dalvik startup with a low memory footprint
+TARGET_ARCH_LOWMEM := true
+
 # Use the parts that are common between all crespos
 include device/samsung/crespo/BoardConfigCommon.mk
