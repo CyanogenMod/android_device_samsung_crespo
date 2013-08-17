@@ -1,0 +1,1 @@
+allow mediaserver mfc_device:chr_file rw_file_perms;

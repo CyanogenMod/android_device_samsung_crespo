@@ -1,0 +1,14 @@
+# aries rild wants to access /data/data/com.android.providers.telephony/optable.db
+allow rild app_data_file:dir { search open read write add_name remove_name };
+allow rild app_data_file:file create_file_perms;
+
+# optable.db is created by rild as user 'radio' with permission 600, but rild is 'root'
+allow rild self:capability dac_override;
+
+# for modem in /radio
+type rild_file, file_type;
+allow rild rild_file:dir search;
+allow rild rild_file:file r_file_perms;
+
+allow rild self:netlink_kobject_uevent_socket *;
+allow rild self:socket *;

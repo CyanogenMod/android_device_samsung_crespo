@@ -50,6 +50,8 @@ on fs
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    restorecon /sys/class/rfkill/rfkill0/state
+    restorecon /sys/class/rfkill/rfkill0/type
 
 # We chown/chmod /efs because mount is run as root + defaults
     chown radio radio /efs
@@ -67,6 +69,58 @@ on fs
     write /sys/kernel/mm/ksm/pages_to_scan 100
     write /sys/kernel/mm/ksm/sleep_millisecs 500
     write /sys/kernel/mm/ksm/run 1
+
+# permission for tuning knobs
+    chown system system /sys/class/misc/backlightdimmer/delay
+    chmod 660 /sys/class/misc/backlightdimmer/delay
+    restorecon /sys/class/misc/backlightdimmer/delay
+
+    chown system system /sys/class/misc/pwm_duty/pwm_duty
+    chmod 660 /sys/class/misc/pwm_duty/pwm_duty
+    restorecon /sys/class/misc/pwm_duty/pwm_duty
+
+    chown system system /sys/class/misc/samoled_color/blue_multiplier
+    chown system system /sys/class/misc/samoled_color/blue_v1_offset
+    chown system system /sys/class/misc/samoled_color/green_multiplier
+    chown system system /sys/class/misc/samoled_color/green_v1_offset
+    chown system system /sys/class/misc/samoled_color/red_multiplier
+    chown system system /sys/class/misc/samoled_color/red_v1_offset
+    chmod 660 /sys/class/misc/samoled_color/blue_multiplier
+    chmod 660 /sys/class/misc/samoled_color/blue_v1_offset
+    chmod 660 /sys/class/misc/samoled_color/green_multiplier
+    chmod 660 /sys/class/misc/samoled_color/green_v1_offset
+    chmod 660 /sys/class/misc/samoled_color/red_multiplier
+    chmod 660 /sys/class/misc/samoled_color/red_v1_offset
+    restorecon /sys/class/misc/samoled_color/blue_multiplier
+    restorecon /sys/class/misc/samoled_color/blue_v1_offset
+    restorecon /sys/class/misc/samoled_color/green_multiplier
+    restorecon /sys/class/misc/samoled_color/green_v1_offset
+    restorecon /sys/class/misc/samoled_color/red_multiplier
+    restorecon /sys/class/misc/samoled_color/red_v1_offset
+
+# Intentionally left world-writable for Voodoo Sound app
+    restorecon /sys/devices/virtual/misc/voodoo_sound/adc_osr128
+    restorecon /sys/devices/virtual/misc/voodoo_sound/dac_direct
+    restorecon /sys/devices/virtual/misc/voodoo_sound/dac_osr128
+    restorecon /sys/devices/virtual/misc/voodoo_sound/debug_log
+    restorecon /sys/devices/virtual/misc/voodoo_sound/digital_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/fll_tuning
+    restorecon /sys/devices/virtual/misc/voodoo_sound/fm_radio_headset_normalize_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/fm_radio_headset_restore_bass
+    restorecon /sys/devices/virtual/misc/voodoo_sound/fm_radio_headset_restore_highs
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_amplifier_level
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_b1_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_b2_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_b3_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_b4_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_b5_gain
+    restorecon /sys/devices/virtual/misc/voodoo_sound/headphone_eq_bands_values
+    restorecon /sys/devices/virtual/misc/voodoo_sound/mono_downmix
+    restorecon /sys/devices/virtual/misc/voodoo_sound/recording_preset
+    restorecon /sys/devices/virtual/misc/voodoo_sound/speaker_tuning
+    restorecon /sys/devices/virtual/misc/voodoo_sound/stereo_expansion
+    restorecon /sys/devices/virtual/misc/voodoo_sound/stereo_expansion_gain
 
 on post-fs-data
 # wi-fi

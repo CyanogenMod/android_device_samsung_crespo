@@ -1,0 +1,24 @@
+# RIL
+/dev/s3c2410_serial3                                u:object_r:radio_device:s0
+/dev/onedram                                        u:object_r:radio_device:s0
+/radio(/.*)?                                        u:object_r:rild_file:s0
+
+# Bluetooth
+/dev/s3c2410_serial0                                u:object_r:hci_attach_dev:s0
+
+# GFX
+/dev/pvrsrvkm                                       u:object_r:powervr_device:s0
+/system/vendor/bin/pvrsrvinit                       u:object_r:pvrsrvinit_exec:s0
+
+# Hardware codec
+/dev/s3c-mfc                                        u:object_r:mfc_device:s0
+/dev/s3c-jpg                                        u:object_r:mfc_device:s0
+
+# GPS
+/dev/s3c2410_serial1                                u:object_r:gps_device:s0
+
+# Advanced settings
+# TODO: sysfs_writable may not be a good choice
+/sys/class/misc/pwm_duty/pwm_duty                   u:object_r:sysfs_writable:s0
+/sys/class/misc/samoled_color/(.*)                  u:object_r:sysfs_writable:s0
+/sys/devices/virtual/misc/voodoo_sound/(.*)         u:object_r:sysfs_writable:s0
