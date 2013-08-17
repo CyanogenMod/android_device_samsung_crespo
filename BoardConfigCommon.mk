@@ -113,3 +113,5 @@ BOARD_ALLOW_EGL_HIBERNATION := true
 # hwcomposer: custom vsync ioctl
 BOARD_CUSTOM_VSYNC_IOCTL := true
 
+BOARD_HARDWARE_CLASS := device/samsung/crespo/cmhw/
+
