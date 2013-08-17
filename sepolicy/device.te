@@ -1,0 +1,2 @@
+type powervr_device, dev_type, mlstrustedobject;
+type mfc_device, dev_type;

@@ -113,3 +113,16 @@ BOARD_CUSTOM_VSYNC_IOCTL := true
 
 BOARD_HARDWARE_CLASS := device/samsung/crespo/cmhw/
 
+# SELinux
+BOARD_SEPOLICY_DIRS += \
+    device/samsung/crespo/sepolicy
+
+BOARD_SEPOLICY_UNION += \
+    device.te \
+    domain.te \
+    file_contexts \
+    mediaserver.te \
+    property_contexts \
+    pvrsrvinit.te \
+    rild.te
+
