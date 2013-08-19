@@ -170,10 +170,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
-# Device app
-PRODUCT_PACKAGES += \
-        CrespoParts
-
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
