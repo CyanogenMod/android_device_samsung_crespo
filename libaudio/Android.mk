@@ -26,6 +26,8 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 LOCAL_SRC_FILES := AudioPolicyManager.cpp
 LOCAL_SHARED_LIBRARIES := libcutils libutils
 LOCAL_STATIC_LIBRARIES := libmedia_helper
