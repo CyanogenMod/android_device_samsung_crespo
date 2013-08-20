@@ -205,6 +205,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 	persist.sys.usb.config=mass_storage
 
+# Disable scissor optimizations
+PRODUCT_PROPERTY_OVERRIDES += \
+       ro.hwui.disable_scissor_opt=true
+
 include frameworks/native/build/phone-hdpi-512-dalvik-heap.mk
 
 # we have enough storage space to hold precise GC data
