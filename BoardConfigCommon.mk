@@ -45,7 +45,6 @@ TARGET_SEC_INTERNAL_STORAGE := false
 # Enable NEON feature
 TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
-ARCH_ARM_HAVE_TLS_REGISTER := true
 
 # USE_CAMERA_STUB := true
 # ifeq ($(USE_CAMERA_STUB),false)
@@ -68,7 +67,6 @@ BOARD_KERNEL_CMDLINE := console=ttyFIQ0 no_console_suspend
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
 TARGET_RECOVERY_FSTAB := device/samsung/crespo/fstab.herring
-RECOVERY_FSTAB_VERSION := 2
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 
 # Define kernel config for inline building
