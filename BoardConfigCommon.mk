@@ -72,7 +72,7 @@ TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 # Define kernel config for inline building
 TARGET_KERNEL_CONFIG := crespo_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/crespo
-TARGET_KERNEL_CUSTOM_TOOLCHAIN := arm-eabi-4.6/bin/arm-eabi-
+
 
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 536870912
