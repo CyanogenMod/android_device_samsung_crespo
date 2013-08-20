@@ -16,7 +16,7 @@ LOCAL_SHARED_LIBRARIES:= \
 LOCAL_WHOLE_STATIC_LIBRARIES := libaudiohw_legacy
 LOCAL_MODULE_TAGS := optional
 
-LOCAL_SHARED_LIBRARIES += libdl
+LOCAL_SHARED_LIBRARIES += libdl liblog
 LOCAL_C_INCLUDES += \
 	external/tinyalsa/include \
 	$(call include-path-for, audio-effects) \

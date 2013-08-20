@@ -26,6 +26,7 @@ TARGET_BOOTANIMATION_USE_RGB565 := true
 
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
+TARGET_CPU_VARIANT := cortex-a8
 
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
@@ -44,7 +45,6 @@ TARGET_SEC_INTERNAL_STORAGE := false
 # Enable NEON feature
 TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
-ARCH_ARM_HAVE_TLS_REGISTER := true
 
 # USE_CAMERA_STUB := true
 # ifeq ($(USE_CAMERA_STUB),false)
@@ -66,6 +66,7 @@ BOARD_KERNEL_CMDLINE := console=ttyFIQ0 no_console_suspend
 
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 TARGET_RECOVERY_UI_LIB := librecovery_ui_crespo
+TARGET_RECOVERY_FSTAB := device/samsung/crespo/fstab.herring
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/crespo
 
 # Define kernel config for inline building
@@ -110,4 +111,6 @@ BOARD_ALLOW_EGL_HIBERNATION := true
 
 # hwcomposer: custom vsync ioctl
 BOARD_CUSTOM_VSYNC_IOCTL := true
+
+BOARD_HARDWARE_CLASS := device/samsung/crespo/cmhw/
 
