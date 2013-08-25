@@ -170,6 +170,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
+# legacy version of skia
+# fixes the app switcher previews
+PRODUCT_PACKAGES += \
+    libskia_legacy
+
 # Device app
 PRODUCT_PACKAGES += \
         CrespoParts
