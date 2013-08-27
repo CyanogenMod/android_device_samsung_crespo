@@ -77,6 +77,9 @@ public class DisplayColorCalibration {
             long colorValue = Long.parseLong(parts[i], 10);
             colorValue <<= 24;
             --colorValue;
+            if (colorValue < 0) {
+                colorValue = 0;
+            }
             if (!FileUtils.writeLine(FILE_PATH[i], Long.toString(colorValue))) {
                 return false;
             }
