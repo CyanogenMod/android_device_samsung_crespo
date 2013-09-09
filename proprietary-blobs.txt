@@ -19,7 +19,6 @@
 /system/vendor/bin/gpsd
 /system/vendor/bin/pvrsrvinit
 /system/vendor/firmware/bcm4329.hcd
-/system/vendor/firmware/cypress-touchkey.bin
 /system/vendor/firmware/libpn544_fw.so
 /system/vendor/lib/egl/libEGL_POWERVR_SGX540_120.so
 /system/vendor/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so
