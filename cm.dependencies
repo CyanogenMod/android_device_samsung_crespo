@@ -2,5 +2,9 @@
     {
       "repository": "android_kernel_samsung_crespo",
       "target_path": "kernel/samsung/crespo"
+    },
+    {
+        "repository": "android_hardware_samsung",
+        "target_path": "hardware/samsung"
     }
 ]

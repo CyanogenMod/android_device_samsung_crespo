@@ -117,7 +117,7 @@ PRODUCT_CHARACTERISTICS := nosdcard
 
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
+	hardware/samsung/exynos3/s5pc110/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
 	device/samsung/crespo/media_profiles.xml:system/etc/media_profiles.xml \
 	device/samsung/crespo/media_codecs.xml:system/etc/media_codecs.xml
 
@@ -132,10 +132,11 @@ PRODUCT_PACKAGES += \
 
 # Misc other modules
 PRODUCT_PACKAGES += \
-	lights.s5pc110 \
+	lights.herring \
 	hwcomposer.s5pc110 \
 	sensors.herring \
-    power.s5pc110
+	power.s5pc110 \
+	libs3cjpeg
 
 # Torch
 PRODUCT_PACKAGES += \
