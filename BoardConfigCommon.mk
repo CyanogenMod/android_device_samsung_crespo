@@ -117,6 +117,8 @@ BOARD_HARDWARE_CLASS := device/samsung/crespo/cmhw/
 # Enable dalvik startup with a low memory footprint
 TARGET_ARCH_LOWMEM := true
 
+TARGET_SEC_OMX_MMAP_BUFFER_SIZE := 20*1024*1024
+
 # SELinux
 BOARD_SEPOLICY_DIRS += \
     device/samsung/crespo/sepolicy
