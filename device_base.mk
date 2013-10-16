@@ -154,8 +154,7 @@ PRODUCT_PACKAGES += \
 	audio.usb.default
 
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/libaudio/audio_policy.conf:system/etc/audio_policy.conf \
-	device/samsung/crespo/libaudio/audio_effects.conf:system/vendor/etc/audio_effects.conf
+	device/samsung/crespo/libaudio/audio_policy.conf:system/etc/audio_policy.conf
 
 # NFC
 PRODUCT_PACKAGES += \
