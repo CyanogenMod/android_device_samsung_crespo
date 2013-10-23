@@ -81,7 +81,6 @@ BOARD_FLASH_BLOCK_SIZE := 4096
 
 
 BOARD_HAS_NO_SELECT_BUTTON := true
-BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/crespo/graphics.c
 
 BOARD_USE_SKIA_LCDTEXT := true
 
