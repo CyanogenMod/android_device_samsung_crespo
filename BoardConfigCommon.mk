@@ -122,7 +122,6 @@ BOARD_SEPOLICY_DIRS += \
 
 BOARD_SEPOLICY_UNION += \
     device.te \
-    domain.te \
     file_contexts \
     mediaserver.te \
     property_contexts \

@@ -7,12 +7,7 @@
 /dev/s3c2410_serial0                                u:object_r:hci_attach_dev:s0
 
 # GFX
-/dev/pvrsrvkm                                       u:object_r:powervr_device:s0
 /system/vendor/bin/pvrsrvinit                       u:object_r:pvrsrvinit_exec:s0
-
-# Hardware codec
-/dev/s3c-mfc                                        u:object_r:mfc_device:s0
-/dev/s3c-jpg                                        u:object_r:mfc_device:s0
 
 # GPS
 /dev/s3c2410_serial1                                u:object_r:gps_device:s0
