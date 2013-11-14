@@ -32,13 +32,14 @@ on boot
 on fs
     mkdir /efs 0775 radio radio
     mount yaffs2 mtd@efs /efs noatime nosuid nodev
+    mount yaffs2 mtd@cache /cache noatime nosuid nodev
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
     mount_all /fstab.herring
 
     export EXTERNAL_STORAGE /storage/sdcard0
-    mkdir /storage 0050 system sdcard_r
     mkdir /storage/sdcard0 0000 system system
+    mkdir /mnt/media_rw/sdcard0 0000 system system
     symlink /storage/sdcard0 /sdcard
     symlink /storage/sdcard0 /mnt/sdcard
 
@@ -152,6 +153,11 @@ service pvrsrvinit /system/vendor/bin/pvrsrvinit
     user root
     group root
     oneshot
+
+# FUSE sdcard daemon for rich permissions (runs as media_rw)
+service fuse_sdcard0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard0
+    class late_start
+    disabled
 
 service wpa_supplicant /system/bin/wpa_supplicant \
     -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
