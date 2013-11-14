@@ -210,6 +210,10 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
        ro.hwui.disable_scissor_opt=true
 
+# Mark the device as low ram
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.config.low_ram=true
+
 PRODUCT_PROPERTY_OVERRIDES += \
        ro.bq.gpu_to_cpu_unsupported=1
 
