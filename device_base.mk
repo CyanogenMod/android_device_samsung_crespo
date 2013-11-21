@@ -214,6 +214,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.config.low_ram=true
 
+# Disable JIT
+PRODUCT_PROPERTY_OVERRIDES += \
+    dalvik.vm.jit.codecachesize=0
+
 PRODUCT_PROPERTY_OVERRIDES += \
        ro.bq.gpu_to_cpu_unsupported=1
 
