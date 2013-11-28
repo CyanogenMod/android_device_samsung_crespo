@@ -22,4 +22,7 @@
 <resources>
     <!-- If there is no sysfs-based control mechanism, enable this -->
     <bool name="useCameraInterface">true</bool>
+
+    <!-- If the device does not support high brightness mode, disable this -->
+    <bool name="hasHighBrightness">false</bool>
 </resources>
