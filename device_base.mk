@@ -171,7 +171,6 @@ PRODUCT_COPY_FILES += \
 	device/samsung/crespo/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
 # legacy version of skia
-# fixes the app switcher previews
 PRODUCT_PACKAGES += \
     libskia_legacy
 
@@ -206,16 +205,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 	persist.sys.usb.config=mass_storage
 
-# Disable scissor optimizations
 PRODUCT_PROPERTY_OVERRIDES += \
-       ro.hwui.disable_scissor_opt=true
-
-# Mark the device as low ram
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.config.low_ram=true
-
-PRODUCT_PROPERTY_OVERRIDES += \
-       ro.bq.gpu_to_cpu_unsupported=1
+    ro.hwui.disable_scissor_opt=true \
+    ro.config.low_ram=true \
+    ro.bq.gpu_to_cpu_unsupported=1 \
+    ro.zram.default=18 \
 
 include frameworks/native/build/phone-hdpi-512-dalvik-heap.mk
 
