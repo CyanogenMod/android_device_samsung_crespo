@@ -209,7 +209,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.hwui.disable_scissor_opt=true \
     ro.config.low_ram=true \
     ro.bq.gpu_to_cpu_unsupported=1 \
-    ro.zram.default=18 \
 
 include frameworks/native/build/phone-hdpi-512-dalvik-heap.mk
 

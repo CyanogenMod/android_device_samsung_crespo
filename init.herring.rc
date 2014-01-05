@@ -36,6 +36,7 @@ on fs
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
     mount_all /fstab.herring
+    swapon_all /fstab.herring
 
     export EXTERNAL_STORAGE /storage/sdcard0
     mkdir /storage/sdcard0 0000 system system
