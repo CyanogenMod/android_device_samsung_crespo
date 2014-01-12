@@ -210,6 +210,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.config.low_ram=true \
     ro.bq.gpu_to_cpu_unsupported=1 \
     ro.zram.default=18 \
+    ro.ksm.default=1
 
 include frameworks/native/build/phone-hdpi-512-dalvik-heap.mk
 
