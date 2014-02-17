@@ -34,6 +34,10 @@ public class DisplayColorCalibration {
         return 0;
     }
 
+    public static int getDefValue() {
+        return 127;
+    }
+
     public static boolean fileExists(String filename) {
         return new File(filename).exists();
     }
