@@ -2261,6 +2261,11 @@ CameraParameters CameraHardwareSec::getParameters() const
 
 status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t arg2)
 {
+    if (command = CAMERA_CMD_ENABLE_FOCUS_MOVE_MSG && arg1 == 0) {
+        // We don't support focus move callback, but Google Camera wants to "disable"
+        // it in video mode. Allow the disable.
+        return NO_ERROR;
+    }
     return BAD_VALUE;
 }
 
